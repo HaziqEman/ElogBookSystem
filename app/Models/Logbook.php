@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use App\Models\Attachment;
+use App\Models\Feedback;
+use App\Models\student;
+
+class Logbook extends Model
+{
+    use HasFactory;
+
+    protected $primaryKey = 'logbook_id';
+
+    protected $fillable = [
+        'student_id',
+        'week_no',
+        'title',
+        'description',
+        'activity_date',
+        'status',
+    ];
+
+        public function student()
+    {
+        return $this->belongsTo(
+            Student::class,
+            'student_id'
+        );
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(
+            Attachment::class,
+            'logbook_id'
+        );
+    }
+
+
+
+    public function feedbacks()
+    {
+        return $this->hasMany(
+            Feedback::class,
+            'logbook_id'
+            );
+    }
+}
