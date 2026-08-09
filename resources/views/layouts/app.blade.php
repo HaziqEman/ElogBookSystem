@@ -90,12 +90,18 @@
                             <a href="/student/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
                                 <i class="fa-solid fa-chart-pie w-5"></i> Dashboard Overview
                             </a>
+                            <a href="/student/messages" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
+                                <i class="fa-solid fa-comments w-5"></i> Messages
+                            </a>
                             <a href="/student/feedback" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                <i class="fa-solid fa-comments w-5"></i> Supervisor Feedback
+                                <i class="fa-solid fa-comments-dollar w-5"></i> Supervisor Feedback
                             </a>
                         @elseif(request()->is('lecturer*'))
                             <a href="/lecturer/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
                                 <i class="fa-solid fa-gauge-high w-5"></i> Lecturer Dashboard
+                            </a>
+                            <a href="/lecturer/messages" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
+                                <i class="fa-solid fa-comments w-5"></i> Messages
                             </a>
                         @else
                             <a href="/admin/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">

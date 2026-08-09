@@ -8,6 +8,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\LecturerLogbookController;
 use App\Http\Controllers\AdminStudentController;
+use App\Http\Controllers\StudentMessageController;
+use App\Http\Controllers\LecturerMessageController;
 
 // Home Page
 Route::get('/', function () {
@@ -39,6 +41,8 @@ Route::middleware('auth:student')->group(function () {
     Route::post('/student/logbook/update/{id}', [LogbookController::class, 'update']);
     Route::get('/student/logbook/delete/{id}', [LogbookController::class, 'destroy']);
     Route::get('/student/feedback', [StudentController::class, 'feedback']);
+    Route::get('/student/messages', [StudentMessageController::class, 'index'])->name('student.messages.index');
+    Route::post('/student/messages', [StudentMessageController::class, 'store'])->name('student.messages.store');
 });
 
 Route::middleware('auth:lecturer')->group(function () {
@@ -46,6 +50,9 @@ Route::middleware('auth:lecturer')->group(function () {
     Route::get('/lecturer/logbook/{id}', [LecturerLogbookController::class, 'show']);
     Route::post('/lecturer/approve/{id}', [LecturerLogbookController::class, 'approve']);
     Route::post('/lecturer/reject/{id}', [LecturerLogbookController::class, 'reject']);
+    Route::get('/lecturer/messages', [LecturerMessageController::class, 'index'])->name('lecturer.messages.index');
+    Route::get('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'show'])->name('lecturer.messages.show');
+    Route::post('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'store'])->name('lecturer.messages.store');
 });
 
 Route::middleware('auth:admin')->group(function () {

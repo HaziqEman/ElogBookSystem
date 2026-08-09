@@ -25,7 +25,7 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
         <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-4">
             <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-signature text-xl"></i></div>
             <div><p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Logbook Entries</p><h3 class="text-2xl font-bold mt-0.5">{{ $totalLogs }}</h3></div>
@@ -38,6 +38,10 @@
             <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i class="fa-solid fa-comment-dots text-xl"></i></div>
             <div><p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Lecturer Reviews</p><h3 class="text-2xl font-bold mt-0.5">{{ $totalReviews }} Received</h3></div>
         </div>
+        <a href="/student/messages" class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-4 transition hover:border-blue-300">
+            <div class="p-3 bg-slate-50 text-slate-700 rounded-xl"><i class="fa-solid fa-comments text-xl"></i></div>
+            <div><p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Messages</p><h3 class="text-2xl font-bold mt-0.5">Chat with Lecturer</h3></div>
+        </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">

@@ -12,6 +12,9 @@
                 <a href="/lecturer/logbook" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
                     Add Review
                 </a>
+                <a href="/lecturer/messages" class="inline-flex items-center rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                    View Conversations
+                </a>
                 <a href="/lecturer/dashboard" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                     Refresh list
                 </a>
