@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Lecturer;
 use App\Models\Student;
@@ -44,6 +45,14 @@ class LecturerMessageController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
+        $conversation->load(['messages' => function ($query) {
+            $query->orderBy('created_at');
+        }]);
+
+        $conversation->setRelation('messages', $conversation->messages->reject(function ($message) {
+            return $message->deleted_for_lecturer && ! $message->deleted_at;
+        }));
+
         return view('lecturer.messages.chat', compact('conversation', 'lecturer'));
     }
 
@@ -63,11 +72,28 @@ class LecturerMessageController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
-        $conversation->messages()->create([
+        $message = $conversation->messages()->create([
             'sender_type' => Lecturer::class,
             'sender_id' => $lecturer->lecturer_id,
             'message' => trim($data['message']),
         ]);
+
+        broadcast(new MessageSent($message))->toOthers();
+
+        // If the request is AJAX/JSON (fetch from the chat UI), return JSON to avoid a full page redirect
+        if ($request->ajax() || $request->wantsJson()) {
+            $payload = [
+                'message_id' => $message->message_id,
+                'conversation_id' => $message->conversation_id,
+                'sender_type' => $message->sender_type,
+                'sender_id' => $message->sender_id,
+                'sender_name' => $message->sender?->name ?? null,
+                'message' => $message->message,
+                'created_at' => optional($message->created_at)->format('d M Y H:i'),
+            ];
+
+            return response()->json(['message' => $payload], 201);
+        }
 
         return redirect()->route('lecturer.messages.show', $conversation->conversation_id)->with('success', 'Message sent successfully.');
     }

@@ -10,6 +10,7 @@ use App\Http\Controllers\LecturerLogbookController;
 use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\StudentMessageController;
 use App\Http\Controllers\LecturerMessageController;
+use App\Http\Controllers\MessageDeleteController;
 
 // Home Page
 Route::get('/', function () {
@@ -53,6 +54,11 @@ Route::middleware('auth:lecturer')->group(function () {
     Route::get('/lecturer/messages', [LecturerMessageController::class, 'index'])->name('lecturer.messages.index');
     Route::get('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'show'])->name('lecturer.messages.show');
     Route::post('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'store'])->name('lecturer.messages.store');
+});
+
+Route::middleware('auth:student,lecturer')->group(function () {
+    Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
+    Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
 });
 
 Route::middleware('auth:admin')->group(function () {

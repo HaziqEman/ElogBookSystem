@@ -16,6 +16,15 @@ class Message extends Model
         'sender_id',
         'message',
         'read_at',
+        'deleted_for_student',
+        'deleted_for_lecturer',
+        'deleted_at',
+    ];
+
+    protected $casts = [
+        'deleted_for_student' => 'boolean',
+        'deleted_for_lecturer' => 'boolean',
+        'deleted_at' => 'datetime',
     ];
 
     public function conversation(): BelongsTo
