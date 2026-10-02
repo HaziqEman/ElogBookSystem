@@ -42,14 +42,17 @@ class AuthController extends Controller
         return back()->withInput()->with('error', 'Invalid email or password.');
     }
 
-    public function logout()
-    {
-        Auth::guard('student')->logout();
-        Auth::guard('lecturer')->logout();
-        Auth::guard('admin')->logout();
+public function logout(Request $request)
+{
+    Auth::guard('student')->logout();
+    Auth::guard('lecturer')->logout();
+    Auth::guard('admin')->logout();
 
-        return redirect('/');
-    }
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/');
+}
 
     public function switchModule($role)
     {
