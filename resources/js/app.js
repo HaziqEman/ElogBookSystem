@@ -1,6 +1,12 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
+if ('serviceWorker' in navigator) {
+	window.addEventListener('load', () => {
+		navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+	});
+}
+
 window.Pusher = Pusher;
 
 window.Echo = new Echo({
@@ -52,7 +58,19 @@ const appendIncomingMessage = (payload) => {
 	const isCurrentUserSender = currentUser && currentUser.type === payload.sender_type && Number(currentUser.id) === Number(payload.sender_id);
 	div.dataset.messageId = payload.message_id;
 	div.className = `rounded-2xl p-4 ${isCurrentUserSender ? 'bg-blue-50 self-end' : 'bg-slate-100'}`;
-	div.innerHTML = `<div class="flex items-center justify-between gap-3 text-xs text-slate-500 mb-2"><span>${payload.sender_name ?? 'Unknown'}</span><span>${payload.created_at}</span></div><div class="text-sm text-slate-800">${payload.message}</div>`;
+
+	const header = document.createElement('div');
+	header.className = 'flex items-center justify-between gap-3 text-xs text-slate-500 mb-2';
+	const sender = document.createElement('span');
+	sender.textContent = payload.sender_name ?? 'Unknown';
+	const timestamp = document.createElement('span');
+	timestamp.textContent = payload.created_at ?? '';
+	header.append(sender, timestamp);
+
+	const messageBody = document.createElement('div');
+	messageBody.className = 'text-sm text-slate-800';
+	messageBody.textContent = payload.message ?? '';
+	div.append(header, messageBody);
 	list.appendChild(div);
 	list.scrollTop = list.scrollHeight;
 };
@@ -63,7 +81,9 @@ const markMessageDeleted = (messageId) => {
 
 	const body = item.querySelector('.text-sm.text-slate-800');
 	if (body) {
-		body.innerHTML = '<em>This message was deleted</em>';
+		const deletedMessage = document.createElement('em');
+		deletedMessage.textContent = 'This message was deleted';
+		body.replaceChildren(deletedMessage);
 	}
 
 	const button = item.querySelector('.delete-message-button');

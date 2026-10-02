@@ -85,7 +85,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'password' => 'required|string|min:6',
-            'role' => 'required|in:admin,lecturer,student',
+            'role' => 'required|in:lecturer,student',
         ];
 
         if ($role === 'lecturer') {
@@ -103,16 +103,6 @@ class AuthController extends Controller
         $password = Hash::make($data['password']);
 
         try {
-            if ($role === 'admin') {
-                $model = Admin::create([
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                    'password' => $password,
-                ]);
-                Auth::guard('admin')->login($model);
-                return redirect('/admin/dashboard');
-            }
-
             if ($role === 'lecturer') {
                 $model = Lecturer::create([
                     'name' => $data['name'],
@@ -128,13 +118,9 @@ class AuthController extends Controller
                 $lecturerId = $data['lecturer_id'] ?? Lecturer::first()?->lecturer_id;
 
                 if (! $lecturerId) {
-                    $lecturer = Lecturer::create([
-                        'name' => 'Default Lecturer',
-                        'email' => 'lecturer@default.local',
-                        'password' => Hash::make('password123'),
-                        'faculty' => 'Default Faculty',
+                    return back()->withInput()->withErrors([
+                        'lecturer_id' => 'A lecturer must be available or selected before registering a student.',
                     ]);
-                    $lecturerId = $lecturer->lecturer_id;
                 }
 
                 $model = Student::create([

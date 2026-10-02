@@ -137,13 +137,29 @@
 
                     div.className = `rounded-2xl p-4 ${isOutgoing ? 'bg-blue-50 self-end' : 'bg-slate-100'}`;
                     div.dataset.messageId = payload.message_id;
-                    div.innerHTML = `<div class="flex items-center justify-between gap-3 text-xs text-slate-500 mb-2"><span>${payload.sender_name ?? 'You'}</span><span>${payload.created_at}</span></div><div class="text-sm text-slate-800">${payload.message}</div>${isSender ? `<button type="button" class="delete-message-button mt-2 text-xs text-slate-500 hover:text-slate-800" data-message-id="${payload.message_id}" data-sender="true">Delete</button>` : ''}`;
+
+                    const header = document.createElement('div');
+                    header.className = 'flex items-center justify-between gap-3 text-xs text-slate-500 mb-2';
+                    const sender = document.createElement('span');
+                    sender.textContent = payload.sender_name ?? 'You';
+                    const timestamp = document.createElement('span');
+                    timestamp.textContent = payload.created_at ?? '';
+                    header.append(sender, timestamp);
+
+                    const messageBody = document.createElement('div');
+                    messageBody.className = 'text-sm text-slate-800';
+                    messageBody.textContent = payload.message ?? '';
+                    div.append(header, messageBody);
 
                     if (isSender) {
-                        const button = div.querySelector('.delete-message-button');
-                        if (button) {
-                            attachDeleteButtonListener(button);
-                        }
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'delete-message-button mt-2 text-xs text-slate-500 hover:text-slate-800';
+                        button.dataset.messageId = payload.message_id;
+                        button.dataset.sender = 'true';
+                        button.textContent = 'Delete';
+                        div.appendChild(button);
+                        attachDeleteButtonListener(button);
                     }
 
                     return div;
@@ -161,7 +177,9 @@
                     if (! item) return;
                     const body = item.querySelector('.text-sm.text-slate-800');
                     if (body) {
-                        body.innerHTML = '<em>This message was deleted</em>';
+                        const deletedMessage = document.createElement('em');
+                        deletedMessage.textContent = 'This message was deleted';
+                        body.replaceChildren(deletedMessage);
                     }
                     const button = item.querySelector('.delete-message-button');
                     if (button) button.remove();

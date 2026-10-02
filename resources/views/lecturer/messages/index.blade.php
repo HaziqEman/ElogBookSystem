@@ -58,7 +58,21 @@
                     a.href = `/lecturer/messages/${convId}`;
                     a.setAttribute('data-conversation-id', convId);
                     a.className = 'conversation-item rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-300';
-                    a.innerHTML = `<div class="flex items-center justify-between gap-3 text-sm text-slate-600"><span class="conversation-student-name">${payload.sender_name ?? 'Student'}</span><span class="conversation-updated">${payload.created_at}</span></div><p class="mt-3 text-slate-500 text-sm">New conversation</p>`;
+
+                    const header = document.createElement('div');
+                    header.className = 'flex items-center justify-between gap-3 text-sm text-slate-600';
+                    const studentName = document.createElement('span');
+                    studentName.className = 'conversation-student-name';
+                    studentName.textContent = payload.sender_name ?? 'Student';
+                    const timestamp = document.createElement('span');
+                    timestamp.className = 'conversation-updated';
+                    timestamp.textContent = payload.created_at ?? '';
+                    header.append(studentName, timestamp);
+
+                    const newConversation = document.createElement('p');
+                    newConversation.className = 'mt-3 text-slate-500 text-sm';
+                    newConversation.textContent = 'New conversation';
+                    a.append(header, newConversation);
                     container.prepend(a);
                 }
             });

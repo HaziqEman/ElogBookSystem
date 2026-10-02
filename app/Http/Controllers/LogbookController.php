@@ -74,12 +74,8 @@ class LogbookController extends Controller
             'description' => 'nullable|string|max:2000',
         ]);
 
-        \Log::info('AI Help request received', $data);
-
         $apiKey = config('services.gemini.api_key');
         $model = config('services.gemini.model', 'gemini-2.5-flash');
-
-        \Log::info('Gemini config', ['apiKey' => substr($apiKey ?? '', 0, 10), 'model' => $model]);
 
         $week = data_get($data, 'week_no', 'N/A');
         $activityDate = data_get($data, 'activity_date', 'N/A');
@@ -105,10 +101,13 @@ Activity: {$activity}
 Return only the paragraph.
 PROMPT;
 
-        \Log::info('Prompt being sent to Gemini', ['prompt' => $prompt]);
-
         try {
             if (! $apiKey) {
+                \Log::notice('Gemini AI fallback used', [
+                    'operation' => 'ai_help',
+                    'reason' => 'missing_api_key',
+                ]);
+
                 return response()->json([
                     'text' => $this->buildFallbackDraft($data),
                     'fallback' => true,
@@ -134,38 +133,40 @@ PROMPT;
 
             if ($response->failed()) {
                 $status = $response->status();
-                $body = $response->body();
-                $json = $response->json();
-                $apiMessage = trim((string) data_get($json, 'error.message', 'Gemini is currently unavailable.'));
-
-                \Log::warning('Gemini AI request failed', ['status' => $status, 'body' => $body, 'json' => $json, 'apiMessage' => $apiMessage]);
+                \Log::warning('Gemini AI request failed', [
+                    'operation' => 'ai_help',
+                    'http_status' => $status,
+                    'error_category' => 'upstream_http_error',
+                ]);
 
                 return response()->json([
                     'text' => $this->buildFallbackDraft($data),
                     'fallback' => true,
-                    'message' => 'Gemini is currently unavailable, so a local draft was created instead. ' . $apiMessage,
+                    'message' => 'Gemini is currently unavailable, so a local draft was created instead.',
                 ]);
             }
 
             $json = $response->json();
-            \Log::info('Full Gemini response', ['json' => $json]);
-            \Log::info('Gemini finish reason', ['finish' => data_get($json, 'candidates.0.finishReason')]);
-            
+            \Log::info('Gemini AI request completed', [
+                'operation' => 'ai_help',
+                'http_status' => $response->status(),
+                'status' => 'success',
+            ]);
+
             $text = data_get($json, 'candidates.0.content.parts.0.text', '');
-            \Log::info('Extracted text from candidates path', ['text' => $text]);
 
             if (empty($text)) {
                 $text = data_get($json, 'candidates.0.content.0', '') ?: data_get($json, 'output.0.content.0.text', '');
-                \Log::info('Tried fallback paths', ['text' => $text]);
             }
-
-            \Log::info('Gemini response parsed', ['text_length' => strlen($text), 'text_preview' => substr($text, 0, 100)]);
 
             return response()->json([
                 'text' => trim($text),
             ]);
-        } catch (\Throwable $e) {
-            \Log::error('Gemini AI exception', ['message' => $e->getMessage()]);
+        } catch (\Throwable) {
+            \Log::error('Gemini AI request failed', [
+                'operation' => 'ai_help',
+                'error_category' => 'request_or_response_exception',
+            ]);
 
             return response()->json([
                 'text' => $this->buildFallbackDraft($data),
@@ -183,8 +184,6 @@ PROMPT;
 
         $draft = "During week {$week}, on {$date}, I carried out and completed a range of internship tasks and activities. I focused on improving my understanding of the work process, contributed to the assigned responsibilities, and documented my progress carefully. {$notes}";
         
-        \Log::info('Fallback draft generated', ['length' => strlen($draft), 'draft_preview' => substr($draft, 0, 100)]);
-        
         return $draft;
     }
 
@@ -200,8 +199,7 @@ PROMPT;
         try {
             $student = Auth::guard('student')->user();
 
-            $logbook = Logbook::create([
-                'student_id' => $student ? $student->student_id : 1,
+            $logbook = $student->logbooks()->create([
                 'week_no' => $data['week_no'],
                 'title' => 'Week '.$data['week_no'],
                 'description' => $data['description'],
@@ -234,13 +232,15 @@ PROMPT;
 
     public function edit($id)
     {
-        $logbook = Logbook::findOrFail($id);
+        $student = Auth::guard('student')->user();
+        $logbook = $student->logbooks()->findOrFail($id);
         return view('student.logbook_edit', compact('logbook'));
     }
 
     public function update(Request $request, $id)
     {
-        $logbook = Logbook::findOrFail($id);
+        $student = Auth::guard('student')->user();
+        $logbook = $student->logbooks()->findOrFail($id);
 
         $data = $request->validate([
             'week_no' => 'required|integer',
@@ -260,10 +260,9 @@ PROMPT;
 
     public function destroy($id)
     {
-        $logbook = Logbook::find($id);
-        if ($logbook) {
-            $logbook->delete();
-        }
+        $student = Auth::guard('student')->user();
+        $student->logbooks()->findOrFail($id)->delete();
+
         return redirect('/student/logbooks')->with('success', 'Log entry removed.');
     }
 }

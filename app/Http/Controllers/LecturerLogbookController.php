@@ -30,7 +30,7 @@ class LecturerLogbookController extends Controller
 
     public function show($id)
 {
-    $logbook = Logbook::with(
+    $logbook = $this->assignedLogbooks()->with(
                     'student',
                     'attachments'
                 )
@@ -45,7 +45,7 @@ public function approve(
     Request $request,
     $id)
 {
-    $logbook = Logbook::findOrFail($id);
+    $logbook = $this->assignedLogbooks()->findOrFail($id);
 
     $logbook->update([
         'status'=>'Approved'
@@ -70,7 +70,7 @@ public function approve(
 
 public function reject(Request $request,$id)
 {
-    $logbook = Logbook::findOrFail($id);
+    $logbook = $this->assignedLogbooks()->findOrFail($id);
 
     $logbook->update([
         'status'=>'Rejected'
@@ -89,5 +89,14 @@ public function reject(Request $request,$id)
     ]);
 
     return redirect('/lecturer/dashboard'    );
+}
+
+private function assignedLogbooks()
+{
+    $lecturer = Auth::guard('lecturer')->user();
+
+    return Logbook::whereHas('student', function ($query) use ($lecturer) {
+        $query->where('lecturer_id', $lecturer->lecturer_id);
+    });
 }
 }
