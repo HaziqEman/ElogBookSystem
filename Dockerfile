@@ -77,4 +77,3 @@ EXPOSE 10000
 ENTRYPOINT ["render-entrypoint"]
 
 CMD ["apache2-foreground"]
-`
