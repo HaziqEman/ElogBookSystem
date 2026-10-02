@@ -1,4 +1,4 @@
-```dockerfile
+
 FROM node:22-bookworm-slim AS assets
 
 WORKDIR /app
