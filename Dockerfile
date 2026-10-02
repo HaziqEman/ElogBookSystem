@@ -45,12 +45,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pdo_mysql \
         pdo_pgsql \
         zip \
-    && docker-php-ext-install \
-        dom \
-        simplexml \
-        xml \
-        xmlreader \
-        xmlwriter \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
@@ -83,4 +77,4 @@ EXPOSE 10000
 ENTRYPOINT ["render-entrypoint"]
 
 CMD ["apache2-foreground"]
-
+`
