@@ -15,9 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withBroadcasting(__DIR__.'/../routes/channels.php', [
         'middleware' => ['web', 'auth:student,lecturer,admin'],
     ])
-    ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
-    })
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->trustProxies(at: '*');
+    $middleware->web(append: [\App\Http\Middleware\DebugSession::class]); // TEMPORARY
+})
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
