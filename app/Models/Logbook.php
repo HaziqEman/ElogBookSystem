@@ -4,9 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Attachment;
-use App\Models\Feedback;
-use App\Models\student;
 
 class Logbook extends Model
 {
@@ -23,29 +20,18 @@ class Logbook extends Model
         'status',
     ];
 
-        public function student()
+    public function student()
     {
-        return $this->belongsTo(
-            Student::class,
-            'student_id'
-        );
+        return $this->belongsTo(Student::class, 'student_id');
     }
 
     public function attachments()
     {
-        return $this->hasMany(
-            Attachment::class,
-            'logbook_id'
-        );
+        return $this->hasMany(Attachment::class, 'logbook_id');
     }
-
-
 
     public function feedbacks()
     {
-        return $this->hasMany(
-            Feedback::class,
-            'logbook_id'
-            );
+        return $this->hasMany(Feedback::class, 'logbook_id');
     }
 }
