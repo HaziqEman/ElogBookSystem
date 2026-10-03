@@ -4,9 +4,9 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\LecturerController;
+use App\Http\Controllers\LecturerReviewController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LogbookController;
-use App\Http\Controllers\LecturerLogbookController;
 use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\StudentMessageController;
 use App\Http\Controllers\LecturerMessageController;
@@ -47,9 +47,9 @@ Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->m
 
 Route::middleware('auth:lecturer')->group(function () {
     Route::get('/lecturer/dashboard', [LecturerController::class, 'dashboard']);
-    Route::get('/lecturer/logbook/{id}', [LecturerLogbookController::class, 'show']);
-    Route::post('/lecturer/approve/{id}', [LecturerLogbookController::class, 'approve']);
-    Route::post('/lecturer/reject/{id}', [LecturerLogbookController::class, 'reject']);
+    Route::get('/lecturer/logbook', [LecturerReviewController::class, 'next']);
+    Route::get('/lecturer/logbook/{id}', [LecturerReviewController::class, 'show'])->whereNumber('id');
+    Route::post('/lecturer/logbook/{id}/review', [LecturerReviewController::class, 'store'])->whereNumber('id');
     Route::get('/lecturer/messages', [LecturerMessageController::class, 'index'])->name('lecturer.messages.index');
     Route::get('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'show'])->name('lecturer.messages.show');
     Route::post('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'store'])->name('lecturer.messages.store');
