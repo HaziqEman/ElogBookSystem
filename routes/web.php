@@ -69,3 +69,9 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/reports/export/excel', [App\Http\Controllers\ReportsController::class, 'exportExcel']);
     Route::get('/admin/reports/export/pdf', [App\Http\Controllers\ReportsController::class, 'exportPdf']);
 });
+
+Route::get('/probe-laravel', function () {
+    return response('ok')
+        ->header('X-Probe', '1')
+        ->cookie('probe2', '1', 5, '/', null, true, true, false, 'lax');
+})->withoutMiddleware('*');
