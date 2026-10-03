@@ -1,17 +1,8 @@
-const CACHE_NAME = 'smart-elogbook-static-v1';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'smart-elogbook-static-v2';
 const MAX_STATIC_ASSETS = 50;
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll([
-                OFFLINE_URL,
-                '/pwa/icon-192.svg',
-                '/pwa/icon-512.svg',
-            ]))
-            .then(() => self.skipWaiting())
-    );
+    event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
@@ -32,15 +23,8 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
 
-    if (request.mode === 'navigate') {
-        event.respondWith(
-            fetch(request).catch(async () => {
-                const cache = await caches.open(CACHE_NAME);
-                return (await cache.match(OFFLINE_URL)) || Response.error();
-            })
-        );
-        return;
-    }
+    // Page loads and redirects go straight to the network, untouched.
+    if (request.mode === 'navigate') return;
 
     const isStaticBuildAsset = url.pathname.startsWith('/build/')
         && ['script', 'style', 'font', 'image'].includes(request.destination);
