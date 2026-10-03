@@ -8,6 +8,7 @@ use App\Models\Feedback;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class LogbookController extends Controller
@@ -35,14 +36,6 @@ class LogbookController extends Controller
                 ->get();
 
             $totalLogs = $student ? Logbook::where('student_id', $student->student_id)->count() : 0;
-
-            if ($student) {
-                $logbooks = $logbooks->map(function ($logbook) {
-                    $latestStatus = $logbook->status;
-
-                    return $logbook;
-                });
-            }
         }
 
         if ($student && $hasAttachmentsTable) {
@@ -77,103 +70,82 @@ class LogbookController extends Controller
         $apiKey = config('services.gemini.api_key');
         $model = config('services.gemini.model', 'gemini-2.5-flash');
 
-        $week = data_get($data, 'week_no', 'N/A');
-        $activityDate = data_get($data, 'activity_date', 'N/A');
-        $activity = data_get($data, 'description', 'No notes provided');
+        if (! $apiKey) {
+            Log::notice('Gemini AI fallback used', [
+                'operation' => 'ai_help',
+                'reason' => 'missing_api_key',
+            ]);
 
-        $prompt = <<<PROMPT
-You are an internship report writing assistant.
-Write ONE complete internship logbook entry.
-Requirements:
-- Write between 120 and 180 words.
-- Use first person.
-- Write in professional English.
-- Expand the activity into a realistic daily report.
-- Mention what I learned and what I accomplished.
-- Do not use bullet points.
-- Do not use headings.
-- Finish with a complete sentence.
+            return $this->fallbackResponse($data, 'Gemini API key is not configured, so a local draft was created instead.');
+        }
 
-Week: {$week}
-Date: {$activityDate}
-Activity: {$activity}
+        $week = data_get($data, 'week_no') ?: 'N/A';
+        $activityDate = data_get($data, 'activity_date') ?: 'N/A';
+        $activity = trim((string) data_get($data, 'description', '')) ?: 'No notes provided';
 
-Return only the paragraph.
-PROMPT;
+        $prompt = "Write ONE internship logbook entry of 100 to 150 words. "
+            . "First person, professional English, one paragraph, no bullet points, no headings. "
+            . "Mention what I did and what I learned. End with a complete sentence.\n"
+            . "Week: {$week}\nDate: {$activityDate}\nNotes: {$activity}\n"
+            . "Return only the paragraph.";
 
         try {
-            if (! $apiKey) {
-                \Log::notice('Gemini AI fallback used', [
-                    'operation' => 'ai_help',
-                    'reason' => 'missing_api_key',
-                ]);
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
-                return response()->json([
-                    'text' => $this->buildFallbackDraft($data),
-                    'fallback' => true,
-                    'message' => 'Gemini API key is not configured, so a local draft was created instead.',
-                ]);
-            }
-
-            $url = "https://generativelanguage.googleapis.com/v1/models/{$model}:generateContent?key={$apiKey}";
-
-            $response = Http::timeout(30)->post($url, [
-                'contents' => [
-                    [
-                        'parts' => [[
-                            'text' => $prompt,
-                        ]],
+            $response = Http::timeout(30)
+                ->withHeaders(['x-goog-api-key' => $apiKey])
+                ->post($url, [
+                    'contents' => [
+                        ['parts' => [['text' => $prompt]]],
                     ],
-                ],
-                'generationConfig' => [
-                    'temperature' => 0.4,
-                    'maxOutputTokens' => 1024,
-                ],
-            ]);
+                    'generationConfig' => [
+                        'temperature' => 0.4,
+                        'maxOutputTokens' => 300,
+                        'thinkingConfig' => ['thinkingBudget' => 0],
+                    ],
+                ]);
 
             if ($response->failed()) {
                 $status = $response->status();
-                \Log::warning('Gemini AI request failed', [
+
+                Log::warning('Gemini AI request failed', [
                     'operation' => 'ai_help',
                     'http_status' => $status,
                     'error_category' => 'upstream_http_error',
                 ]);
 
-                return response()->json([
-                    'text' => $this->buildFallbackDraft($data),
-                    'fallback' => true,
-                    'message' => 'Gemini is currently unavailable, so a local draft was created instead.',
-                ]);
+                $message = $status === 429
+                    ? 'AI quota reached for now, so a local draft was created instead.'
+                    : 'Gemini is currently unavailable, so a local draft was created instead.';
+
+                return $this->fallbackResponse($data, $message);
             }
 
-            $json = $response->json();
-            \Log::info('Gemini AI request completed', [
-                'operation' => 'ai_help',
-                'http_status' => $response->status(),
-                'status' => 'success',
-            ]);
+            $text = trim((string) data_get($response->json(), 'candidates.0.content.parts.0.text', ''));
 
-            $text = data_get($json, 'candidates.0.content.parts.0.text', '');
-
-            if (empty($text)) {
-                $text = data_get($json, 'candidates.0.content.0', '') ?: data_get($json, 'output.0.content.0.text', '');
+            if ($text === '') {
+                return $this->fallbackResponse($data, 'Gemini returned no text, so a local draft was created instead.');
             }
 
-            return response()->json([
-                'text' => trim($text),
-            ]);
-        } catch (\Throwable) {
-            \Log::error('Gemini AI request failed', [
+            return response()->json(['text' => $text]);
+        } catch (\Throwable $e) {
+            Log::error('Gemini AI request exception', [
                 'operation' => 'ai_help',
                 'error_category' => 'request_or_response_exception',
+                'exception' => get_class($e),
             ]);
 
-            return response()->json([
-                'text' => $this->buildFallbackDraft($data),
-                'fallback' => true,
-                'message' => 'Gemini is currently unavailable, so a local draft was created instead.',
-            ]);
+            return $this->fallbackResponse($data, 'Gemini is currently unavailable, so a local draft was created instead.');
         }
+    }
+
+    protected function fallbackResponse(array $data, string $message)
+    {
+        return response()->json([
+            'text' => $this->buildFallbackDraft($data),
+            'fallback' => true,
+            'message' => $message,
+        ]);
     }
 
     protected function buildFallbackDraft(array $data): string
@@ -182,9 +154,9 @@ PROMPT;
         $date = $data['activity_date'] ?? 'the specified date';
         $notes = trim((string) ($data['description'] ?? '')) ?: 'I completed several tasks related to my internship training.';
 
-        $draft = "During week {$week}, on {$date}, I carried out and completed a range of internship tasks and activities. I focused on improving my understanding of the work process, contributed to the assigned responsibilities, and documented my progress carefully. {$notes}";
-        
-        return $draft;
+        return "During week {$week}, on {$date}, I carried out and completed a range of internship tasks and activities. "
+            . "I focused on improving my understanding of the work process, contributed to the assigned responsibilities, "
+            . "and documented my progress carefully. {$notes}";
     }
 
     public function store(Request $request)
@@ -193,7 +165,7 @@ PROMPT;
             'week_no' => 'required|integer',
             'description' => 'required|string',
             'activity_date' => 'required|date',
-            'attachment' => 'sometimes|file',
+            'attachment' => 'nullable|file|max:5120',
         ]);
 
         try {
@@ -225,7 +197,8 @@ PROMPT;
 
             return redirect('/student/dashboard')->with('success', 'Log entry created successfully.');
         } catch (\Throwable $e) {
-            // log the error if you want: \Log::error($e);
+            Log::error('Logbook store failed: '.$e->getMessage());
+
             return redirect()->back()->withInput()->with('error', 'Failed to create log entry. Please try again.');
         }
     }

@@ -37,8 +37,7 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/student/dashboard', [LogbookController::class, 'dashboard']);
     Route::get('/student/logbooks', [LogbookController::class, 'dashboard']);
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
-    Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp']);
-    Route::get('/student/logbook/edit/{id}', [LogbookController::class, 'edit']);
+Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware('throttle:5,1');    Route::get('/student/logbook/edit/{id}', [LogbookController::class, 'edit']);
     Route::post('/student/logbook/update/{id}', [LogbookController::class, 'update']);
     Route::get('/student/logbook/delete/{id}', [LogbookController::class, 'destroy']);
     Route::get('/student/feedback', [StudentController::class, 'feedback']);
