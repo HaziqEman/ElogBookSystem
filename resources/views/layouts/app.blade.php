@@ -22,7 +22,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
     @php
-        $showDashboardShell = request()->is('student*') || request()->is('lecturer*') || request()->is('admin*');
+        $showDashboardShell = request()->is('student*') || request()->is('lecturer*') || request()->is('supervisor*') || request()->is('admin*');
     @endphp
 
     @if($showDashboardShell)
@@ -34,9 +34,10 @@
                     <a href="{{ route('login.home') }}" title="Return to the login page to access another system module." class="bg-amber-500 text-slate-950 font-bold px-2 py-0.5 rounded-sm hover:bg-amber-400 transition cursor-pointer text-[11px] md:text-xs">PROPOSAL SIMULATOR</a>
                     <p class="hidden sm:block">Click roles to switch portal views:</p>
                 </div>
-                <div class="flex gap-1.5 md:gap-2">
+                <div class="flex flex-wrap gap-1.5 md:gap-2">
                     <a href="{{ route('module.switch', ['role' => 'student']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('student*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Student<span class="hidden sm:inline"> Module</span></a>
                     <a href="{{ route('module.switch', ['role' => 'lecturer']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('lecturer*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Lecturer<span class="hidden sm:inline"> Module</span></a>
+                    <a href="{{ route('module.switch', ['role' => 'supervisor']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('supervisor*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Supervisor<span class="hidden sm:inline"> Module</span></a>
                     <a href="{{ route('module.switch', ['role' => 'admin']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('admin*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Admin<span class="hidden sm:inline"> Module</span></a>
                 </div>
             </div>
@@ -66,24 +67,29 @@
                         @php
                             $currentStudent = request()->is('student*') ? Auth::guard('student')->user() : null;
                             $currentLecturer = request()->is('lecturer*') ? Auth::guard('lecturer')->user() : null;
+                            $currentSupervisor = request()->is('supervisor*') ? Auth::guard('supervisor')->user() : null;
                             $currentAdmin = request()->is('admin*') ? Auth::guard('admin')->user() : null;
+
+                            $supervisorName = null;
+                            $industryName = null;
 
                             if (request()->is('student*') && $currentStudent) {
                                 $displayName = $currentStudent->name;
                                 $roleLabel = 'Logged in as Student';
                                 $supervisorName = optional($currentStudent->lecturer)->name;
+                                $industryName = optional($currentStudent->supervisor)->name;
                             } elseif (request()->is('lecturer*') && $currentLecturer) {
                                 $displayName = $currentLecturer->name;
                                 $roleLabel = 'Faculty Evaluator';
-                                $supervisorName = null;
+                            } elseif (request()->is('supervisor*') && $currentSupervisor) {
+                                $displayName = $currentSupervisor->name;
+                                $roleLabel = 'Industry Supervisor';
                             } elseif (request()->is('admin*') && $currentAdmin) {
                                 $displayName = $currentAdmin->name ?? 'System Administrator';
                                 $roleLabel = 'System Administrator';
-                                $supervisorName = null;
                             } else {
                                 $displayName = 'System User';
                                 $roleLabel = 'Guest';
-                                $supervisorName = null;
                             }
                         @endphp
 
@@ -101,6 +107,18 @@
                                 <div class="rounded-xl bg-white/10 p-3 text-sm text-slate-200">
                                     <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Faculty Evaluator</p>
                                     <p class="mt-1 font-semibold">{{ $supervisorName }}</p>
+                                </div>
+                            @endif
+                            @if(request()->is('student*') && $industryName)
+                                <div class="mt-2 rounded-xl bg-white/10 p-3 text-sm text-slate-200">
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Industry Supervisor</p>
+                                    <p class="mt-1 font-semibold">{{ $industryName }}</p>
+                                </div>
+                            @endif
+                            @if(request()->is('supervisor*') && $currentSupervisor && $currentSupervisor->company_name)
+                                <div class="rounded-xl bg-white/10 p-3 text-sm text-slate-200">
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Company</p>
+                                    <p class="mt-1 font-semibold">{{ $currentSupervisor->company_name }}</p>
                                 </div>
                             @endif
                         </div>
@@ -123,6 +141,13 @@
                                 <a href="/lecturer/messages" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
                                     <i class="fa-solid fa-comments w-5"></i> Messages
                                 </a>
+                            @elseif(request()->is('supervisor*'))
+                                <a href="/supervisor/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
+                                    <i class="fa-solid fa-gauge-high w-5"></i> Supervisor Dashboard
+                                </a>
+                                <a href="/supervisor/password" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
+                                    <i class="fa-solid fa-key w-5"></i> Change Password
+                                </a>
                             @else
                                 <a href="/admin/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
                                     <i class="fa-solid fa-sliders w-5"></i> System Overview
@@ -132,6 +157,9 @@
                                 </a>
                                 <a href="/admin/lecturers" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
                                     <i class="fa-solid fa-user-tie w-5"></i> Manage Lecturers
+                                </a>
+                                <a href="/admin/supervisors" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
+                                    <i class="fa-solid fa-building-user w-5"></i> Manage Supervisors
                                 </a>
                                 <a href="/admin/reports" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
                                     <i class="fa-solid fa-chart-line w-5"></i> Reports
@@ -156,12 +184,28 @@
                                 <i class="fa-solid fa-bars text-lg"></i>
                             </button>
                             <h2 class="text-sm md:text-lg font-bold text-slate-800 tracking-tight truncate">
-                                {{ request()->is('student*') ? 'UITM E-LOGBOOK PORTAL > Student Portal' : (request()->is('lecturer*') ? 'UITM E-LOGBOOK PORTAL > Lecturer Panel' : 'UITM E-LOGBOOK PORTAL > Admin Console') }}
+                                @if(request()->is('student*'))
+                                    UITM E-LOGBOOK PORTAL > Student Portal
+                                @elseif(request()->is('lecturer*'))
+                                    UITM E-LOGBOOK PORTAL > Lecturer Panel
+                                @elseif(request()->is('supervisor*'))
+                                    UITM E-LOGBOOK PORTAL > Supervisor Panel
+                                @else
+                                    UITM E-LOGBOOK PORTAL > Admin Console
+                                @endif
                             </h2>
                         </div>
                         <div class="hidden md:flex items-center gap-4 shrink-0">
                             <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 font-mono rounded-lg border border-slate-200">
-                                {{ request()->is('student*') ? 'Student > Dashboard' : (request()->is('lecturer*') ? 'Lecturer > Review' : 'Admin > Overview') }}
+                                @if(request()->is('student*'))
+                                    Student > Dashboard
+                                @elseif(request()->is('lecturer*'))
+                                    Lecturer > Review
+                                @elseif(request()->is('supervisor*'))
+                                    Supervisor > Validate
+                                @else
+                                    Admin > Overview
+                                @endif
                             </span>
                         </div>
                     </header>

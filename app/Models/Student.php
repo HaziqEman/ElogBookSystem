@@ -33,6 +33,15 @@ class Student extends Authenticatable
         );
     }
 
+    public function supervisor()
+    {
+        return $this->belongsTo(
+            Supervisor::class,
+            'supervisor_id',
+            'supervisor_id'
+        );
+    }
+
     public function logbooks()
     {
         return $this->hasMany(

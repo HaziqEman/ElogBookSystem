@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Admin;
 use App\Models\Lecturer;
 use App\Models\Student;
+use App\Models\Supervisor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -24,39 +27,50 @@ class AuthController extends Controller
         $student = Student::where('email', $email)->first();
         if ($student && Hash::check($password, $student->password)) {
             Auth::guard('student')->login($student);
+            $request->session()->regenerate();
             return redirect('/student/dashboard');
         }
 
         $lecturer = Lecturer::where('email', $email)->first();
         if ($lecturer && Hash::check($password, $lecturer->password)) {
             Auth::guard('lecturer')->login($lecturer);
+            $request->session()->regenerate();
             return redirect('/lecturer/dashboard');
+        }
+
+        $supervisor = Supervisor::where('email', $email)->first();
+        if ($supervisor && Hash::check($password, $supervisor->password)) {
+            Auth::guard('supervisor')->login($supervisor);
+            $request->session()->regenerate();
+            return redirect($supervisor->must_change_password ? '/supervisor/password' : '/supervisor/dashboard');
         }
 
         $admin = Admin::where('email', $email)->first();
         if ($admin && Hash::check($password, $admin->password)) {
             Auth::guard('admin')->login($admin);
+            $request->session()->regenerate();
             return redirect('/admin/dashboard');
         }
 
         return back()->withInput()->with('error', 'Invalid email or password.');
     }
 
-public function logout(Request $request)
-{
-    Auth::guard('student')->logout();
-    Auth::guard('lecturer')->logout();
-    Auth::guard('admin')->logout();
+    public function logout(Request $request)
+    {
+        Auth::guard('student')->logout();
+        Auth::guard('lecturer')->logout();
+        Auth::guard('supervisor')->logout();
+        Auth::guard('admin')->logout();
 
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-    return redirect('/');
-}
+        return redirect('/');
+    }
 
     public function switchModule($role)
     {
-        $allowedRoles = ['student', 'lecturer', 'admin'];
+        $allowedRoles = ['student', 'lecturer', 'supervisor', 'admin'];
 
         if (! in_array($role, $allowedRoles, true)) {
             return redirect('/');
@@ -66,6 +80,7 @@ public function logout(Request $request)
             return match ($role) {
                 'student' => redirect('/student/dashboard'),
                 'lecturer' => redirect('/lecturer/dashboard'),
+                'supervisor' => redirect('/supervisor/dashboard'),
                 'admin' => redirect('/admin/dashboard'),
             };
         }
@@ -103,6 +118,13 @@ public function logout(Request $request)
         }
 
         $data = $request->validate($rules);
+
+        if ($this->emailInUse($data['email'])) {
+            return back()->withInput()->withErrors([
+                'email' => 'This email is already used by another account.',
+            ]);
+        }
+
         $password = Hash::make($data['password']);
 
         try {
@@ -114,6 +136,7 @@ public function logout(Request $request)
                     'faculty' => $data['faculty'],
                 ]);
                 Auth::guard('lecturer')->login($model);
+                $request->session()->regenerate();
                 return redirect('/lecturer/dashboard');
             }
 
@@ -136,6 +159,7 @@ public function logout(Request $request)
                     'lecturer_id' => $lecturerId,
                 ]);
                 Auth::guard('student')->login($model);
+                $request->session()->regenerate();
                 return redirect('/student/dashboard');
             }
         } catch (\Exception $e) {
@@ -143,5 +167,21 @@ public function logout(Request $request)
         }
 
         return back()->withInput()->with('error', 'Unable to register.');
+    }
+
+    /**
+     * Login stops at the first matching table, so one email must never exist in two role tables.
+     */
+    protected function emailInUse(string $email): bool
+    {
+        $email = strtolower(trim($email));
+
+        foreach (['students', 'lecturers', 'admins', 'supervisors'] as $table) {
+            if (Schema::hasTable($table) && DB::table($table)->whereRaw('lower(email) = ?', [$email])->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

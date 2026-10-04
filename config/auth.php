@@ -59,6 +59,11 @@ return [
             'provider' => 'lecturers',
         ],
 
+        'supervisor' => [
+            'driver' => 'session',
+            'provider' => 'supervisors',
+        ],
+
     ],
 
     /*
@@ -98,6 +103,11 @@ return [
         'lecturers' => [
             'driver' => 'eloquent',
             'model' => App\Models\Lecturer::class,
+        ],
+
+        'supervisors' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Supervisor::class,
         ],
 
     ],
