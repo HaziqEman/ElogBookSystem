@@ -19,18 +19,32 @@ class SupervisorController extends Controller
             ->orderBy('name')
             ->get();
 
-        $recent = Logbook::whereHas('student', function ($query) use ($supervisor) {
+        $base = Logbook::whereHas('student', function ($query) use ($supervisor) {
             $query->where('supervisor_id', $supervisor->supervisor_id);
-        })
+        });
+
+        $pending = (clone $base)->where('supervisor_status', 'Pending')->count();
+        $validated = (clone $base)->where('supervisor_status', 'Validated')->count();
+        $revision = (clone $base)->where('supervisor_status', 'Revision Requested')->count();
+
+        $recent = (clone $base)
             ->with('student')
             ->orderByDesc('created_at')
             ->orderByDesc('logbook_id')
-            ->take(10)
+            ->take(15)
             ->get();
 
         $totalEntries = $students->sum('logbooks_count');
 
-        return view('supervisor.dashboard', compact('supervisor', 'students', 'recent', 'totalEntries'));
+        return view('supervisor.dashboard', compact(
+            'supervisor',
+            'students',
+            'recent',
+            'totalEntries',
+            'pending',
+            'validated',
+            'revision'
+        ));
     }
 
     public function showPassword()

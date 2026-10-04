@@ -6,6 +6,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\LecturerReviewController;
 use App\Http\Controllers\SupervisorController;
+use App\Http\Controllers\SupervisorReviewController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminSupervisorController;
 use App\Http\Controllers\LogbookController;
@@ -65,6 +66,9 @@ Route::middleware('auth:supervisor')->group(function () {
 
 Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->group(function () {
     Route::get('/supervisor/dashboard', [SupervisorController::class, 'dashboard']);
+    Route::get('/supervisor/logbook', [SupervisorReviewController::class, 'next']);
+    Route::get('/supervisor/logbook/{id}', [SupervisorReviewController::class, 'show'])->whereNumber('id');
+    Route::post('/supervisor/logbook/{id}/review', [SupervisorReviewController::class, 'store'])->whereNumber('id');
 });
 
 Route::middleware('auth:student,lecturer')->group(function () {

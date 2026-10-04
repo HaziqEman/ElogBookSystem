@@ -18,6 +18,7 @@ class Logbook extends Model
         'description',
         'activity_date',
         'status',
+        'supervisor_status',
     ];
 
     public function student()
