@@ -6,6 +6,7 @@ use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Lecturer;
 use App\Models\Student;
+use App\Models\Supervisor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,23 +14,89 @@ class StudentMessageController extends Controller
 {
     public function index()
     {
-        $student = Auth::guard('student')->user();
-
-        if (! $student) {
-            abort(403);
-        }
-
+        $student = $this->student();
         $lecturer = $student->lecturer;
 
         if (! $lecturer) {
             return redirect('/student/dashboard')->with('error', 'You do not have an assigned lecturer yet.');
         }
 
-        $conversation = Conversation::firstOrCreate([
+        $conversation = $this->lecturerConversation($student, $lecturer);
+
+        return $this->renderChat($student, $conversation, $lecturer, 'lecturer', Lecturer::class, '/student/messages');
+    }
+
+    public function supervisorIndex()
+    {
+        $student = $this->student();
+        $supervisor = $student->supervisor;
+
+        if (! $supervisor) {
+            return redirect('/student/messages')->with('error', 'You do not have a company supervisor assigned yet.');
+        }
+
+        $conversation = $this->supervisorConversation($student, $supervisor);
+
+        return $this->renderChat($student, $conversation, $supervisor, 'supervisor', Supervisor::class, '/student/messages/supervisor');
+    }
+
+    public function store(Request $request)
+    {
+        $student = $this->student();
+        $lecturer = $student->lecturer;
+
+        if (! $lecturer) {
+            return redirect('/student/dashboard')->with('error', 'Your lecturer assignment is missing.');
+        }
+
+        $conversation = $this->lecturerConversation($student, $lecturer);
+
+        return $this->saveMessage($request, $student, $conversation, '/student/messages');
+    }
+
+    public function supervisorStore(Request $request)
+    {
+        $student = $this->student();
+        $supervisor = $student->supervisor;
+
+        if (! $supervisor) {
+            return redirect('/student/messages')->with('error', 'Your company supervisor assignment is missing.');
+        }
+
+        $conversation = $this->supervisorConversation($student, $supervisor);
+
+        return $this->saveMessage($request, $student, $conversation, '/student/messages/supervisor');
+    }
+
+    protected function student(): Student
+    {
+        $student = Auth::guard('student')->user();
+
+        if (! $student) {
+            abort(403);
+        }
+
+        return $student;
+    }
+
+    protected function lecturerConversation(Student $student, Lecturer $lecturer): Conversation
+    {
+        return Conversation::firstOrCreate([
             'student_id' => $student->student_id,
             'lecturer_id' => $lecturer->lecturer_id,
         ]);
+    }
 
+    protected function supervisorConversation(Student $student, Supervisor $supervisor): Conversation
+    {
+        return Conversation::firstOrCreate([
+            'student_id' => $student->student_id,
+            'supervisor_id' => $supervisor->supervisor_id,
+        ]);
+    }
+
+    protected function renderChat(Student $student, Conversation $conversation, $partner, string $partnerRole, string $partnerClass, string $formAction)
+    {
         $messages = $conversation->messages()
             ->with('sender')
             ->orderBy('created_at')
@@ -39,32 +106,22 @@ class StudentMessageController extends Controller
             });
 
         $conversation->messages()
-            ->where('sender_type', Lecturer::class)
+            ->where('sender_type', $partnerClass)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        return view('student.messages.chat', compact('conversation', 'lecturer', 'student', 'messages'));
+        return view('student.messages.chat', compact(
+            'conversation',
+            'partner',
+            'partnerRole',
+            'student',
+            'messages',
+            'formAction'
+        ));
     }
 
-    public function store(Request $request)
+    protected function saveMessage(Request $request, Student $student, Conversation $conversation, string $redirectTo)
     {
-        $student = Auth::guard('student')->user();
-
-        if (! $student) {
-            abort(403);
-        }
-
-        $lecturer = $student->lecturer;
-
-        if (! $lecturer) {
-            return redirect('/student/dashboard')->with('error', 'Your lecturer assignment is missing.');
-        }
-
-        $conversation = Conversation::firstOrCreate([
-            'student_id' => $student->student_id,
-            'lecturer_id' => $lecturer->lecturer_id,
-        ]);
-
         $data = $request->validate([
             'message' => 'required|string|max:1000',
         ]);
@@ -78,7 +135,6 @@ class StudentMessageController extends Controller
         // Broadcast to the conversation channel for real-time updates (exclude sender socket)
         broadcast(new MessageSent($message))->toOthers();
 
-        // If the request is AJAX/JSON (fetch from the chat UI), return JSON to avoid a full page redirect
         if ($request->ajax() || $request->wantsJson()) {
             $payload = [
                 'message_id' => $message->message_id,
@@ -93,6 +149,6 @@ class StudentMessageController extends Controller
             return response()->json(['message' => $payload], 201);
         }
 
-        return redirect('/student/messages')->with('success', 'Message sent successfully.');
+        return redirect($redirectTo)->with('success', 'Message sent successfully.');
     }
 }

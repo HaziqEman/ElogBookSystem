@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withBroadcasting(__DIR__.'/../routes/channels.php', [
-        'middleware' => ['web', 'auth:student,lecturer,admin'],
+        'middleware' => ['web', 'auth:student,lecturer,supervisor,admin'],
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');

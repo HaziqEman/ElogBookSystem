@@ -30,6 +30,9 @@ const isCurrentUserMember = (member) => {
 };
 
 const getOtherParticipantRole = () => {
+	// A page can name its chat partner explicitly (a student talking to a company supervisor).
+	if (window.CHAT_PARTNER_ROLE) return window.CHAT_PARTNER_ROLE;
+
 	const currentUser = window.CURRENT_USER ?? null;
 	if (! currentUser) return null;
 	return currentUser.role === 'student' ? 'lecturer' : 'student';

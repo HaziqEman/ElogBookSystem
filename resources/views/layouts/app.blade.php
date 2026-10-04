@@ -145,6 +145,9 @@
                                 <a href="/supervisor/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
                                     <i class="fa-solid fa-gauge-high w-5"></i> Supervisor Dashboard
                                 </a>
+                                <a href="/supervisor/messages" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
+                                    <i class="fa-solid fa-comments w-5"></i> Messages
+                                </a>
                                 <a href="/supervisor/password" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
                                     <i class="fa-solid fa-key w-5"></i> Change Password
                                 </a>

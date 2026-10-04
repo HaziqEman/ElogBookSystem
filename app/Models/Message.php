@@ -18,12 +18,14 @@ class Message extends Model
         'read_at',
         'deleted_for_student',
         'deleted_for_lecturer',
+        'deleted_for_supervisor',
         'deleted_at',
     ];
 
     protected $casts = [
         'deleted_for_student' => 'boolean',
         'deleted_for_lecturer' => 'boolean',
+        'deleted_for_supervisor' => 'boolean',
         'deleted_at' => 'datetime',
     ];
 

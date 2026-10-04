@@ -13,6 +13,7 @@ class Conversation extends Model
     protected $fillable = [
         'student_id',
         'lecturer_id',
+        'supervisor_id',
     ];
 
     public function student(): BelongsTo
@@ -23,6 +24,11 @@ class Conversation extends Model
     public function lecturer(): BelongsTo
     {
         return $this->belongsTo(Lecturer::class, 'lecturer_id', 'lecturer_id');
+    }
+
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(Supervisor::class, 'supervisor_id', 'supervisor_id');
     }
 
     public function messages(): HasMany

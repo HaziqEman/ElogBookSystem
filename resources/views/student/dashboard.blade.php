@@ -34,10 +34,10 @@
             <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fa-solid fa-paperclip text-xl"></i></div>
             <div><p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Attachments</p><h3 class="text-2xl font-bold mt-0.5">{{ $totalAttachments }} Files</h3></div>
         </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+        <a href="/student/feedback" class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-4 transition hover:border-blue-300">
             <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i class="fa-solid fa-comment-dots text-xl"></i></div>
-            <div><p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Lecturer Reviews</p><h3 class="text-2xl font-bold mt-0.5">{{ $totalReviews }} Received</h3></div>
-        </div>
+            <div><p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Reviews Received</p><h3 class="text-2xl font-bold mt-0.5">{{ $totalReviews }}</h3></div>
+        </a>
         <a href="/student/messages" class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-4 transition hover:border-blue-300">
             <div class="p-3 bg-slate-50 text-slate-700 rounded-xl"><i class="fa-solid fa-comments text-xl"></i></div>
             <div><p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Messages</p><h3 class="text-2xl font-bold mt-0.5">Chat with Lecturer</h3></div>
@@ -80,22 +80,54 @@
             <div class="p-4 bg-slate-50 font-bold text-sm text-slate-700 border-b border-slate-100">Log History Logs</div>
             <div class="overflow-x-auto">
                 <table class="min-w-full text-left border-collapse text-sm">
+                    <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <tr>
+                            <th class="px-4 py-3">Week</th>
+                            <th class="px-4 py-3">Entry</th>
+                            <th class="px-4 py-3">File</th>
+                            <th class="px-4 py-3">Lecturer</th>
+                            <th class="px-4 py-3">Supervisor</th>
+                            <th class="px-4 py-3">Action</th>
+                        </tr>
+                    </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse($logbooks as $logbook)
-                            <tr>
+                            @php
+                                $lec = $logbook->status ?? 'Pending';
+                                $lecBadge = $lec === 'Approved' ? 'bg-emerald-100 text-emerald-800' : ($lec === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800');
+                                $sup = $logbook->supervisor_status ?? 'Pending';
+                                $supBadge = $sup === 'Validated' ? 'bg-emerald-100 text-emerald-800' : ($sup === 'Revision Requested' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800');
+                            @endphp
+                            <tr class="{{ $logbook->needsRevision() ? 'bg-rose-50/40' : '' }}">
                                 <td class="p-4 font-bold whitespace-nowrap">Week {{ $logbook->week_no }}</td>
-                                <td class="p-4 text-slate-600 min-w-[12rem]">{{ $logbook->description }}</td>
+                                <td class="p-4 text-slate-600 min-w-[12rem] break-words">{{ \Illuminate\Support\Str::limit($logbook->description, 160) }}</td>
                                 <td class="p-4">
                                     @if($logbook->attachments->count())
-                                        <a href="/{{ $logbook->attachments[0]->file_path }}" target="_blank" class="text-blue-600 underline">{{ $logbook->attachments[0]->file_name }}</a>
+                                        <a href="/{{ $logbook->attachments[0]->file_path }}" target="_blank" class="text-blue-600 underline break-all">{{ $logbook->attachments[0]->file_name }}</a>
                                     @else
                                         <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600 whitespace-nowrap">No file</span>
                                     @endif
                                 </td>
-                                <td class="p-4"><span class="px-2 py-0.5 text-xs rounded {{ $logbook->status === 'Approved' ? 'bg-emerald-100 text-emerald-800' : ($logbook->status === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">{{ $logbook->status }}</span></td>
+                                <td class="p-4"><span class="px-2 py-0.5 text-xs rounded whitespace-nowrap {{ $lecBadge }}">{{ $lec }}</span></td>
+                                <td class="p-4">
+                                    @if(optional($student)->supervisor_id)
+                                        <span class="px-2 py-0.5 text-xs rounded whitespace-nowrap {{ $supBadge }}">{{ $sup }}</span>
+                                    @else
+                                        <span class="text-xs text-slate-400">Not assigned</span>
+                                    @endif
+                                </td>
+                                <td class="p-4">
+                                    @if($logbook->isEditableByStudent())
+                                        <a href="/student/logbook/edit/{{ $logbook->logbook_id }}" class="inline-flex items-center whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition {{ $logbook->needsRevision() ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}">
+                                            {{ $logbook->needsRevision() ? 'Revise' : 'Edit' }}
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-slate-400">Locked</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="p-4 text-slate-500">No logbook entries yet.</td></tr>
+                            <tr><td colspan="6" class="p-4 text-slate-500">No logbook entries yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -106,7 +138,6 @@
 
 <script>
 (function () {
-    // Guard: never bind twice, even if this script is somehow loaded again.
     if (window.__aiHelpBound) return;
     window.__aiHelpBound = true;
 
@@ -146,7 +177,7 @@
 
         btn.addEventListener('click', async function (e) {
             e.preventDefault();
-            if (busy || btn.disabled) return; // one click = one request
+            if (busy || btn.disabled) return;
 
             busy = true;
             btn.disabled = true;
@@ -197,7 +228,6 @@
             }
         });
 
-        // Prevent double submits of the logbook form.
         if (form && submitBtn) {
             form.addEventListener('submit', function () {
                 submitBtn.disabled = true;

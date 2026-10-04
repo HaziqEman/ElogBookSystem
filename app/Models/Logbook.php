@@ -35,4 +35,15 @@ class Logbook extends Model
     {
         return $this->hasMany(Feedback::class, 'logbook_id');
     }
+
+    public function needsRevision(): bool
+    {
+        return $this->status === 'Rejected' || $this->supervisor_status === 'Revision Requested';
+    }
+
+    public function isEditableByStudent(): bool
+    {
+        return in_array($this->status ?? 'Pending', ['Pending', 'Rejected'], true)
+            || $this->supervisor_status === 'Revision Requested';
+    }
 }

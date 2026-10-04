@@ -12,15 +12,18 @@ Broadcast::channel('private-conversation.{conversationId}', function ($user, $co
         return false;
     }
 
-    // Check student guard
     $student = Auth::guard('student')->user();
-    if ($student && $student->student_id === $conversation->student_id) {
+    if ($student && (int) $student->student_id === (int) $conversation->student_id) {
         return true;
     }
 
-    // Check lecturer guard
     $lecturer = Auth::guard('lecturer')->user();
-    if ($lecturer && $lecturer->lecturer_id === $conversation->lecturer_id) {
+    if ($lecturer && $conversation->lecturer_id && (int) $lecturer->lecturer_id === (int) $conversation->lecturer_id) {
+        return true;
+    }
+
+    $supervisor = Auth::guard('supervisor')->user();
+    if ($supervisor && $conversation->supervisor_id && (int) $supervisor->supervisor_id === (int) $conversation->supervisor_id) {
         return true;
     }
 
@@ -44,7 +47,7 @@ Broadcast::channel('presence-conversation.{conversationId}', function ($user, $c
     }
 
     $lecturer = Auth::guard('lecturer')->user();
-    if ($lecturer && (int) $lecturer->lecturer_id === (int) $conversation->lecturer_id) {
+    if ($lecturer && $conversation->lecturer_id && (int) $lecturer->lecturer_id === (int) $conversation->lecturer_id) {
         return [
             'id' => (int) $lecturer->lecturer_id,
             'name' => $lecturer->name,
@@ -52,16 +55,28 @@ Broadcast::channel('presence-conversation.{conversationId}', function ($user, $c
         ];
     }
 
-    return false;
-});
-
-// Authorize private channel for lecturer-wide notifications (conversation list updates)
-Broadcast::channel('private-lecturer.{lecturerId}', function ($user, $lecturerId) {
-    $lecturer = Auth::guard('lecturer')->user();
-
-    if ($lecturer && $lecturer->lecturer_id == $lecturerId) {
-        return true;
+    $supervisor = Auth::guard('supervisor')->user();
+    if ($supervisor && $conversation->supervisor_id && (int) $supervisor->supervisor_id === (int) $conversation->supervisor_id) {
+        return [
+            'id' => (int) $supervisor->supervisor_id,
+            'name' => $supervisor->name,
+            'role' => 'supervisor',
+        ];
     }
 
     return false;
+});
+
+// Lecturer-wide channel (conversation list updates)
+Broadcast::channel('private-lecturer.{lecturerId}', function ($user, $lecturerId) {
+    $lecturer = Auth::guard('lecturer')->user();
+
+    return (bool) ($lecturer && (int) $lecturer->lecturer_id === (int) $lecturerId);
+});
+
+// Supervisor-wide channel (conversation list updates)
+Broadcast::channel('private-supervisor.{supervisorId}', function ($user, $supervisorId) {
+    $supervisor = Auth::guard('supervisor')->user();
+
+    return (bool) ($supervisor && (int) $supervisor->supervisor_id === (int) $supervisorId);
 });

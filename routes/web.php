@@ -3,10 +3,12 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentLogbookEditController;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\LecturerReviewController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\SupervisorReviewController;
+use App\Http\Controllers\SupervisorMessageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminSupervisorController;
 use App\Http\Controllers\LogbookController;
@@ -40,12 +42,14 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/student/logbooks', [LogbookController::class, 'dashboard']);
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware('throttle:5,1');
-    Route::get('/student/logbook/edit/{id}', [LogbookController::class, 'edit']);
-    Route::post('/student/logbook/update/{id}', [LogbookController::class, 'update']);
+    Route::get('/student/logbook/edit/{id}', [StudentLogbookEditController::class, 'edit'])->whereNumber('id');
+    Route::post('/student/logbook/update/{id}', [StudentLogbookEditController::class, 'update'])->whereNumber('id');
     Route::get('/student/logbook/delete/{id}', [LogbookController::class, 'destroy']);
     Route::get('/student/feedback', [StudentController::class, 'feedback']);
     Route::get('/student/messages', [StudentMessageController::class, 'index'])->name('student.messages.index');
     Route::post('/student/messages', [StudentMessageController::class, 'store'])->name('student.messages.store');
+    Route::get('/student/messages/supervisor', [StudentMessageController::class, 'supervisorIndex'])->name('student.messages.supervisor');
+    Route::post('/student/messages/supervisor', [StudentMessageController::class, 'supervisorStore'])->name('student.messages.supervisor.store');
 });
 
 Route::middleware('auth:lecturer')->group(function () {
@@ -69,9 +73,13 @@ Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->
     Route::get('/supervisor/logbook', [SupervisorReviewController::class, 'next']);
     Route::get('/supervisor/logbook/{id}', [SupervisorReviewController::class, 'show'])->whereNumber('id');
     Route::post('/supervisor/logbook/{id}/review', [SupervisorReviewController::class, 'store'])->whereNumber('id');
+    Route::get('/supervisor/messages', [SupervisorMessageController::class, 'index'])->name('supervisor.messages.index');
+    Route::get('/supervisor/messages/with/{student}', [SupervisorMessageController::class, 'start'])->whereNumber('student')->name('supervisor.messages.start');
+    Route::get('/supervisor/messages/{conversation}', [SupervisorMessageController::class, 'show'])->whereNumber('conversation')->name('supervisor.messages.show');
+    Route::post('/supervisor/messages/{conversation}', [SupervisorMessageController::class, 'store'])->whereNumber('conversation')->name('supervisor.messages.store');
 });
 
-Route::middleware('auth:student,lecturer')->group(function () {
+Route::middleware('auth:student,lecturer,supervisor')->group(function () {
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
 });
