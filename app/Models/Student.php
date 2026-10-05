@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Logbook;
 use App\Models\Lecturer;
+use App\Models\Supervisor;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Student extends Authenticatable
@@ -12,6 +13,7 @@ class Student extends Authenticatable
 
     protected $fillable = [
         'lecturer_id',
+        'supervisor_id',
         'matric_no',
         'name',
         'email',
