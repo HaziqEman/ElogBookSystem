@@ -91,6 +91,38 @@
                                 $displayName = 'System User';
                                 $roleLabel = 'Guest';
                             }
+
+                            // Menu for the current role. "match" lists every page that should light up the link.
+                            if (request()->is('student*')) {
+                                $navItems = [
+                                    ['href' => '/student/dashboard', 'icon' => 'fa-chart-pie', 'label' => 'Dashboard Overview', 'match' => ['student/dashboard', 'student/logbooks', 'student/logbook/*']],
+                                    ['href' => '/student/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['student/messages', 'student/messages/*']],
+                                    ['href' => '/student/feedback', 'icon' => 'fa-comments-dollar', 'label' => 'Supervisor Feedback', 'match' => ['student/feedback', 'student/feedback/*']],
+                                ];
+                            } elseif (request()->is('lecturer*')) {
+                                $navItems = [
+                                    ['href' => '/lecturer/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Lecturer Dashboard', 'match' => ['lecturer/dashboard', 'lecturer/logbook', 'lecturer/logbook/*']],
+                                    ['href' => '/lecturer/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['lecturer/messages', 'lecturer/messages/*']],
+                                ];
+                            } elseif (request()->is('supervisor*')) {
+                                $navItems = [
+                                    ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', 'supervisor/logbook/*']],
+                                    ['href' => '/supervisor/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['supervisor/messages', 'supervisor/messages/*']],
+                                    ['href' => '/supervisor/password', 'icon' => 'fa-key', 'label' => 'Change Password', 'match' => ['supervisor/password']],
+                                ];
+                            } else {
+                                $navItems = [
+                                    ['href' => '/admin/dashboard', 'icon' => 'fa-sliders', 'label' => 'System Overview', 'match' => ['admin/dashboard']],
+                                    ['href' => '/admin/students', 'icon' => 'fa-file-invoice', 'label' => 'Manage Students', 'match' => ['admin/students', 'admin/students/*']],
+                                    ['href' => '/admin/lecturers', 'icon' => 'fa-user-tie', 'label' => 'Manage Lecturers', 'match' => ['admin/lecturers', 'admin/lecturers/*']],
+                                    ['href' => '/admin/supervisors', 'icon' => 'fa-building-user', 'label' => 'Manage Supervisors', 'match' => ['admin/supervisors', 'admin/supervisors/*']],
+                                    ['href' => '/admin/reports', 'icon' => 'fa-chart-line', 'label' => 'Reports', 'match' => ['admin/reports', 'admin/reports/*']],
+                                ];
+                            }
+
+                            $navBase = 'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition';
+                            $navActive = 'bg-blue-800/60 text-white';
+                            $navIdle = 'text-blue-200 hover:bg-white/5 hover:text-white';
                         @endphp
 
                         <div class="p-4 mx-3 my-4 bg-white/5 rounded-xl border border-white/5">
@@ -124,51 +156,15 @@
                         </div>
 
                         <nav class="px-3 space-y-1">
-                            @if(request()->is('student*'))
-                                <a href="/student/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
-                                    <i class="fa-solid fa-chart-pie w-5"></i> Dashboard Overview
+                            @foreach($navItems as $item)
+                                @php $isActive = request()->is(...$item['match']); @endphp
+                                <a href="{{ $item['href'] }}"
+                                   class="{{ $navBase }} {{ $isActive ? $navActive : $navIdle }}"
+                                   @if($isActive) aria-current="page" @endif>
+                                    <i class="fa-solid {{ $item['icon'] }} w-5"></i> {{ $item['label'] }}
                                 </a>
-                                <a href="/student/messages" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-comments w-5"></i> Messages
-                                </a>
-                                <a href="/student/feedback" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-comments-dollar w-5"></i> Supervisor Feedback
-                                </a>
-                            @elseif(request()->is('lecturer*'))
-                                <a href="/lecturer/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
-                                    <i class="fa-solid fa-gauge-high w-5"></i> Lecturer Dashboard
-                                </a>
-                                <a href="/lecturer/messages" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-comments w-5"></i> Messages
-                                </a>
-                            @elseif(request()->is('supervisor*'))
-                                <a href="/supervisor/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
-                                    <i class="fa-solid fa-gauge-high w-5"></i> Supervisor Dashboard
-                                </a>
-                                <a href="/supervisor/messages" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-comments w-5"></i> Messages
-                                </a>
-                                <a href="/supervisor/password" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-key w-5"></i> Change Password
-                                </a>
-                            @else
-                                <a href="/admin/dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition bg-blue-800/60 text-white">
-                                    <i class="fa-solid fa-sliders w-5"></i> System Overview
-                                </a>
-                                <a href="/admin/students" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-file-invoice w-5"></i> Manage Students
-                                </a>
-                                <a href="/admin/lecturers" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-user-tie w-5"></i> Manage Lecturers
-                                </a>
-                                <a href="/admin/supervisors" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-building-user w-5"></i> Manage Supervisors
-                                </a>
-                                <a href="/admin/reports" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
-                                    <i class="fa-solid fa-chart-line w-5"></i> Reports
-                                </a>
-                            @endif
-                            <a href="/logout" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition text-blue-200 hover:bg-white/5 hover:text-white">
+                            @endforeach
+                            <a href="/logout" class="{{ $navBase }} {{ $navIdle }}">
                                 <i class="fa-solid fa-arrow-right-from-bracket w-5"></i> Log Out
                             </a>
                         </nav>
