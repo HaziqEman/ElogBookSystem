@@ -103,8 +103,7 @@
                                 <td class="p-4 text-slate-600 min-w-[12rem] break-words">{{ \Illuminate\Support\Str::limit($logbook->description, 160) }}</td>
                                 <td class="p-4">
                                     @if($logbook->attachments->count())
-                                        <a href="/{{ $logbook->attachments[0]->url }}" target="_blank" class="text-blue-600 underline break-all">{{ $logbook->attachments[0]->file_name }}</a>
-                                    @else
+                                        <a href="{{ $logbook->attachments[0]->url }}" target="_blank" class="text-blue-600 underline break-all">{{ $logbook->attachments[0]->file_name }}</a>                                    @else
                                         <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600 whitespace-nowrap">No file</span>
                                     @endif
                                 </td>
