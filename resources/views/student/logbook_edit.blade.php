@@ -66,7 +66,7 @@
                 @if($logbook->attachments->count())
                     <div class="mb-2 space-y-1">
                         @foreach($logbook->attachments as $attachment)
-                            <a href="/{{ $attachment->file_path }}" target="_blank" class="block break-all text-sm text-blue-600 underline">{{ $attachment->file_name }}</a>
+                            <a href="/{{ $attachment->url }}" target="_blank" class="block break-all text-sm text-blue-600 underline">{{ $attachment->file_name }}</a>
                         @endforeach
                     </div>
                 @endif

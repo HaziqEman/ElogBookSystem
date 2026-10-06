@@ -59,7 +59,7 @@
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Attachment</p>
                 @if($logbook->attachments->count())
                     @foreach($logbook->attachments as $attachment)
-                        <a href="/{{ $attachment->file_path }}" target="_blank" class="mt-1 block break-all text-sm text-blue-600 underline">{{ $attachment->file_name }}</a>
+                        <a href="/{{ $attachment->url }}" target="_blank" class="mt-1 block break-all text-sm text-blue-600 underline">{{ $attachment->file_name }}</a>
                     @endforeach
                 @else
                     <p class="mt-1 text-sm text-slate-500">No file attached.</p>

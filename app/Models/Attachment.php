@@ -19,4 +19,17 @@ class Attachment extends Model
     {
         return $this->belongsTo(Logbook::class, 'logbook_id');
     }
+
+        /**
+     * Cloudinary files store a full https link. Older local files store "uploads/...".
+     */
+    public function getUrlAttribute(): string
+    {
+        $path = (string) $this->file_path;
+
+        return Str::startsWith($path, ['http://', 'https://'])
+            ? $path
+            : '/'.ltrim($path, '/');
+    }
+    
 }

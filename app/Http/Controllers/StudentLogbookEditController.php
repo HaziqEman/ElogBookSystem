@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
+use App\Services\AttachmentStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class StudentLogbookEditController extends Controller
         return view('student.logbook_edit', compact('logbook'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, AttachmentStorage $storage)
     {
         $student = Auth::guard('student')->user();
         $logbook = $student->logbooks()->findOrFail($id);
@@ -38,11 +39,11 @@ class StudentLogbookEditController extends Controller
             'week_no' => 'required|integer',
             'description' => 'required|string',
             'activity_date' => 'required|date',
-            'attachment' => 'nullable|file|max:5120',
+            'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
         ]);
 
         try {
-            DB::transaction(function () use ($request, $logbook, $data) {
+            DB::transaction(function () use ($request, $logbook, $data, $storage) {
                 $logbook->update([
                     'week_no' => $data['week_no'],
                     'title' => 'Week '.$data['week_no'],
@@ -53,14 +54,12 @@ class StudentLogbookEditController extends Controller
                 ]);
 
                 if ($request->hasFile('attachment')) {
-                    $file = $request->file('attachment');
-                    $filename = time().'_'.$file->getClientOriginalName();
-                    $file->move(public_path('uploads'), $filename);
+                    $stored = $storage->store($request->file('attachment'));
 
                     Attachment::create([
                         'logbook_id' => $logbook->logbook_id,
-                        'file_name' => $filename,
-                        'file_path' => 'uploads/'.$filename,
+                        'file_name' => $stored['file_name'],
+                        'file_path' => $stored['file_path'],
                         'upload_date' => now(),
                     ]);
                 }

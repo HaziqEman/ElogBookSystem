@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Logbook;
 use App\Models\Attachment;
 use App\Models\Feedback;
+use App\Services\AttachmentStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -159,41 +161,39 @@ class LogbookController extends Controller
             . "and documented my progress carefully. {$notes}";
     }
 
-    public function store(Request $request)
+    public function store(Request $request, AttachmentStorage $storage)
     {
         $data = $request->validate([
             'week_no' => 'required|integer',
             'description' => 'required|string',
             'activity_date' => 'required|date',
-            'attachment' => 'nullable|file|max:5120',
+            'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
         ]);
 
         try {
             $student = Auth::guard('student')->user();
 
-            $logbook = $student->logbooks()->create([
-                'week_no' => $data['week_no'],
-                'title' => 'Week '.$data['week_no'],
-                'description' => $data['description'],
-                'activity_date' => $data['activity_date'],
-                'status' => 'Pending',
-            ]);
-
-            if ($request->hasFile('attachment')) {
-                $file = $request->file('attachment');
-                $filename = time().'_'.$file->getClientOriginalName();
-                $file->move(
-                    public_path('uploads'),
-                    $filename
-                );
-
-                Attachment::create([
-                    'logbook_id' => $logbook->logbook_id,
-                    'file_name' => $filename,
-                    'file_path' => 'uploads/'.$filename,
-                    'upload_date' => now(),
+            DB::transaction(function () use ($request, $student, $data, $storage) {
+                $logbook = $student->logbooks()->create([
+                    'week_no' => $data['week_no'],
+                    'title' => 'Week '.$data['week_no'],
+                    'description' => $data['description'],
+                    'activity_date' => $data['activity_date'],
+                    'status' => 'Pending',
+                    'supervisor_status' => 'Pending',
                 ]);
-            }
+
+                if ($request->hasFile('attachment')) {
+                    $stored = $storage->store($request->file('attachment'));
+
+                    Attachment::create([
+                        'logbook_id' => $logbook->logbook_id,
+                        'file_name' => $stored['file_name'],
+                        'file_path' => $stored['file_path'],
+                        'upload_date' => now(),
+                    ]);
+                }
+            });
 
             return redirect('/student/dashboard')->with('success', 'Log entry created successfully.');
         } catch (\Throwable $e) {
