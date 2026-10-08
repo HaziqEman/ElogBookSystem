@@ -96,6 +96,8 @@
                             if (request()->is('student*')) {
                                 $navItems = [
                                     ['href' => '/student/dashboard', 'icon' => 'fa-chart-pie', 'label' => 'Dashboard Overview', 'match' => ['student/dashboard', 'student/logbooks', 'student/logbook/*']],
+                                    ['href' => '/student/calendar', 'icon' => 'fa-calendar-days', 'label' => 'Calendar', 'match' => ['student/calendar']],
+                                    ['href' => '/student/attendance', 'icon' => 'fa-user-clock', 'label' => 'Attendance', 'match' => ['student/attendance', 'student/attendance/*']],
                                     ['href' => '/student/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['student/messages', 'student/messages/*']],
                                     ['href' => '/student/feedback', 'icon' => 'fa-comments-dollar', 'label' => 'Supervisor Feedback', 'match' => ['student/feedback', 'student/feedback/*']],
                                 ];

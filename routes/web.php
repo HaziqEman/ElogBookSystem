@@ -3,6 +3,10 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentDashboardController;
+use App\Http\Controllers\StudentAttendanceController;
+use App\Http\Controllers\StudentCalendarController;
+use App\Http\Controllers\StudentTodoController;
 use App\Http\Controllers\StudentLogbookEditController;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\LecturerReviewController;
@@ -38,14 +42,26 @@ Route::get('/logout', [AuthController::class, 'logout']);
 Route::get('/module/{role}', [AuthController::class, 'switchModule'])->name('module.switch');
 
 Route::middleware('auth:student')->group(function () {
-    Route::get('/student/dashboard', [LogbookController::class, 'dashboard']);
-    Route::get('/student/logbooks', [LogbookController::class, 'dashboard']);
+    Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
+    Route::get('/student/logbooks', [StudentDashboardController::class, 'index']);
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware('throttle:5,1');
     Route::get('/student/logbook/edit/{id}', [StudentLogbookEditController::class, 'edit'])->whereNumber('id');
     Route::post('/student/logbook/update/{id}', [StudentLogbookEditController::class, 'update'])->whereNumber('id');
     Route::get('/student/logbook/delete/{id}', [LogbookController::class, 'destroy']);
     Route::get('/student/feedback', [StudentController::class, 'feedback']);
+
+    Route::get('/student/calendar', [StudentCalendarController::class, 'index']);
+
+    Route::get('/student/attendance', [StudentAttendanceController::class, 'index']);
+    Route::post('/student/attendance/clock-in', [StudentAttendanceController::class, 'clockIn']);
+    Route::post('/student/attendance/clock-out', [StudentAttendanceController::class, 'clockOut']);
+    Route::post('/student/attendance/leave', [StudentAttendanceController::class, 'leave']);
+
+    Route::post('/student/todos', [StudentTodoController::class, 'store']);
+    Route::post('/student/todos/{id}/toggle', [StudentTodoController::class, 'toggle'])->whereNumber('id');
+    Route::delete('/student/todos/{id}', [StudentTodoController::class, 'destroy'])->whereNumber('id');
+
     Route::get('/student/messages', [StudentMessageController::class, 'index'])->name('student.messages.index');
     Route::post('/student/messages', [StudentMessageController::class, 'store'])->name('student.messages.store');
     Route::get('/student/messages/supervisor', [StudentMessageController::class, 'supervisorIndex'])->name('student.messages.supervisor');

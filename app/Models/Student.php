@@ -51,4 +51,14 @@ class Student extends Authenticatable
             'student_id'
         );
     }
+
+    public function todos()
+    {
+        return $this->hasMany(Todo::class, 'student_id', 'student_id');
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'student_id', 'student_id');
+    }
 }
