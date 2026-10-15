@@ -21,6 +21,7 @@ use App\Http\Controllers\StudentMessageController;
 use App\Http\Controllers\LecturerMessageController;
 use App\Http\Controllers\MessageDeleteController;
 use App\Http\Middleware\EnsureSupervisorPasswordChanged;
+use App\Http\Middleware\LimitAiHelp;
 
 // Home Page
 Route::get('/', function () {
@@ -42,6 +43,7 @@ Route::get('/logout', [AuthController::class, 'logout']);
 Route::get('/module/{role}', [AuthController::class, 'switchModule'])->name('module.switch');
 
 Route::middleware('auth:student')->group(function () {
+    Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
     Route::get('/student/logbooks', [StudentDashboardController::class, 'index']);
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
@@ -96,6 +98,7 @@ Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->
 });
 
 Route::middleware('auth:student,lecturer,supervisor')->group(function () {
+    Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
 });

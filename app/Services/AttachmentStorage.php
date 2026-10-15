@@ -8,6 +8,9 @@ use Illuminate\Support\Str;
 
 class AttachmentStorage
 {
+    /** Cloudinary stores these as "image" assets (PDF included, so it can make page thumbnails). */
+    private const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
+
     /**
      * Save an uploaded file and return the values stored in the attachments table.
      *
@@ -16,15 +19,22 @@ class AttachmentStorage
     public function store(UploadedFile $file): array
     {
         $originalName = $file->getClientOriginalName();
+        $extension = strtolower($file->getClientOriginalExtension());
 
         if ($this->cloudinaryConfigured()) {
+            $isImageType = in_array($extension, self::IMAGE_TYPES, true);
+            $base = Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) ?: 'file';
+
+            // Image and PDF links get their extension from Cloudinary. Other files (Word) need it in the name.
+            $publicId = $base.'-'.Str::lower(Str::random(6)).($isImageType ? '' : '.'.$extension);
+
             $result = (new Cloudinary(config('cloudinary.url')))
                 ->uploadApi()
                 ->upload($file->getRealPath(), [
                     'folder' => config('cloudinary.folder'),
-                    'resource_type' => 'auto',
-                    'use_filename' => true,
-                    'unique_filename' => true,
+                    'public_id' => $publicId,
+                    'resource_type' => $isImageType ? 'image' : 'raw',
+                    'overwrite' => false,
                 ]);
 
             return [
