@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\Logbook;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +76,14 @@ class SupervisorReviewController extends Controller
 
             return redirect()->back()->withInput()->with('error', 'Could not save the review. Please try again.');
         }
+
+        app(NotificationService::class)->reviewGiven(
+            $logbook,
+            'supervisor',
+            $supervisor->name,
+            $data['decision'],
+            $data['comment'] ?? null
+        );
 
         return redirect('/supervisor/dashboard')->with('success', 'Entry marked as '.$data['decision'].'.');
     }

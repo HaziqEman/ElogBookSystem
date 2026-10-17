@@ -22,6 +22,8 @@ use App\Http\Controllers\LecturerMessageController;
 use App\Http\Controllers\MessageDeleteController;
 use App\Http\Middleware\EnsureSupervisorPasswordChanged;
 use App\Http\Middleware\LimitAiHelp;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\CronController;
 
 // Home Page
 Route::get('/', function () {
@@ -112,3 +114,20 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/reports/export/excel', [App\Http\Controllers\ReportsController::class, 'exportExcel']);
     Route::get('/admin/reports/export/pdf', [App\Http\Controllers\ReportsController::class, 'exportPdf']);
 });
+
+// Notifications for students, lecturers and company supervisors.
+foreach (['student', 'lecturer', 'supervisor'] as $notificationRole) {
+    $guards = $notificationRole === 'supervisor'
+        ? ['auth:supervisor', EnsureSupervisorPasswordChanged::class]
+        : ['auth:'.$notificationRole];
+
+    Route::middleware($guards)->group(function () use ($notificationRole) {
+        Route::get("/{$notificationRole}/notifications", [NotificationController::class, 'index']);
+        Route::get("/{$notificationRole}/notifications/unread-count", [NotificationController::class, 'unreadCount']);
+        Route::get("/{$notificationRole}/notifications/{id}/open", [NotificationController::class, 'open'])->whereNumber('id');
+        Route::post("/{$notificationRole}/notifications/read-all", [NotificationController::class, 'readAll']);
+    });
+}
+
+// Called by an outside scheduler to send the daily reminders (needs the X-Cron-Token header).
+Route::get('/internal/run-reminders', [CronController::class, 'reminders'])->middleware('throttle:10,1');

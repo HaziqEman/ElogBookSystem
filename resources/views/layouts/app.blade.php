@@ -196,8 +196,43 @@
                                 @endif
                             </h2>
                         </div>
-                        <div class="hidden md:flex items-center gap-4 shrink-0">
-                            <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 font-mono rounded-lg border border-slate-200">
+                        <div class="flex items-center gap-3 shrink-0">
+                            @if(request()->is('student*') || request()->is('lecturer*') || request()->is('supervisor*'))
+                                @php $notifRole = request()->segment(1); @endphp
+                                <a href="/{{ $notifRole }}/notifications" id="notif-bell" data-count-url="/{{ $notifRole }}/notifications/unread-count" aria-label="Notifications" class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100">
+                                    <i class="fa-solid fa-bell text-lg"></i>
+                                    <span id="notif-badge" class="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-[18px] text-white">0</span>
+                                </a>
+                                <script>
+                                    (function () {
+                                        var bell = document.getElementById('notif-bell');
+                                        var badge = document.getElementById('notif-badge');
+                                        if (!bell || !badge) return;
+
+                                        function refresh() {
+                                            fetch(bell.getAttribute('data-count-url'), {
+                                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                                credentials: 'same-origin'
+                                            })
+                                                .then(function (r) { return r.ok ? r.json() : null; })
+                                                .then(function (d) {
+                                                    if (!d) return;
+                                                    var n = parseInt(d.count, 10) || 0;
+                                                    badge.textContent = n > 99 ? '99+' : n;
+                                                    badge.classList.toggle('hidden', n === 0);
+                                                })
+                                                .catch(function () {});
+                                        }
+
+                                        refresh();
+                                        setInterval(refresh, 60000);
+                                        document.addEventListener('visibilitychange', function () {
+                                            if (!document.hidden) refresh();
+                                        });
+                                    })();
+                                </script>
+                            @endif
+                            <span class="hidden md:inline-flex text-xs bg-slate-100 text-slate-600 px-3 py-1.5 font-mono rounded-lg border border-slate-200">
                                 @if(request()->is('student*'))
                                     Student > Dashboard
                                 @elseif(request()->is('lecturer*'))

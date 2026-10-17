@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\Logbook;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +38,7 @@ class LecturerReviewController extends Controller
     public function show($id)
     {
         $logbook = $this->ownedQuery()
-            ->with(['student', 'attachments', 'feedbacks.lecturer'])
+            ->with(['student', 'attachments', 'feedbacks.lecturer', 'feedbacks.supervisor'])
             ->findOrFail($id);
 
         return view('lecturer.review', compact('logbook'));
@@ -75,6 +76,14 @@ class LecturerReviewController extends Controller
 
             return redirect()->back()->withInput()->with('error', 'Could not save the review. Please try again.');
         }
+
+        app(NotificationService::class)->reviewGiven(
+            $logbook,
+            'lecturer',
+            $lecturer->name,
+            $data['decision'],
+            $data['comment'] ?? null
+        );
 
         return redirect('/lecturer/dashboard')->with('success', 'Entry marked as '.$data['decision'].'.');
     }

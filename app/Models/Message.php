@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -37,5 +38,13 @@ class Message extends Model
     public function sender(): MorphTo
     {
         return $this->morphTo(__FUNCTION__, 'sender_type', 'sender_id');
+    }
+
+    protected static function booted(): void
+    {
+        // Every new chat message creates (or updates) a notification for the other person.
+        static::created(function (Message $message) {
+            app(NotificationService::class)->messageReceived($message);
+        });
     }
 }
