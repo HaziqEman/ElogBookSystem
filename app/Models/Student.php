@@ -19,11 +19,18 @@ class Student extends Authenticatable
         'email',
         'password',
         'phone_no',
-        'course'
+        'course',
+        'internship_start',
+        'internship_weeks',
+        'working_days',
     ];
 
     protected $hidden = [
         'password'
+    ];
+
+    protected $casts = [
+        'internship_start' => 'date',
     ];
 
     public function lecturer()

@@ -6,6 +6,7 @@ use App\Models\Lecturer;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Services\WeekPlanner;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -62,9 +63,11 @@ class AdminStudentController extends Controller
             $payload += $this->internshipValues($data);
         }
 
-        Student::create($payload);
+        // forceFill writes every field, even if the model's fillable list is out of date.
+        $student = new Student();
+        $student->forceFill($payload)->save();
 
-        return redirect('/admin/students')->with('success', 'Student created.');
+        return redirect('/admin/students')->with('success', 'Student created.'.$this->datesMessage($payload));
     }
 
     public function edit($id)
@@ -106,9 +109,9 @@ class AdminStudentController extends Controller
             $payload += $this->internshipValues($data);
         }
 
-        $student->update($payload);
+        $student->forceFill($payload)->save();
 
-        return redirect('/admin/students')->with('success', 'Student updated.');
+        return redirect('/admin/students')->with('success', 'Student updated.'.$this->datesMessage($payload));
     }
 
     public function destroy($id)
@@ -143,6 +146,17 @@ class AdminStudentController extends Controller
             'internship_weeks' => (int) ($data['internship_weeks'] ?? 14) ?: 14,
             'working_days' => implode(',', $days ?: WeekPlanner::DEFAULT_DAYS),
         ];
+    }
+
+    /** Shows what was saved, so the administrator can see it worked. */
+    protected function datesMessage(array $payload): string
+    {
+        if (empty($payload['internship_start'])) {
+            return ' No internship start date is set yet.';
+        }
+
+        return ' Internship starts '.Carbon::parse($payload['internship_start'])->format('d M Y')
+            .' for '.$payload['internship_weeks'].' weeks.';
     }
 
     /**
