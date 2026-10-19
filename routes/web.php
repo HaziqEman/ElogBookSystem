@@ -24,6 +24,9 @@ use App\Http\Middleware\EnsureSupervisorPasswordChanged;
 use App\Http\Middleware\LimitAiHelp;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CronController;
+use App\Http\Controllers\StudentInternshipController;
+use App\Http\Controllers\AttendanceMcController;
+
 
 // Home Page
 Route::get('/', function () {
@@ -47,7 +50,8 @@ Route::get('/module/{role}', [AuthController::class, 'switchModule'])->name('mod
 Route::middleware('auth:student')->group(function () {
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
-    Route::get('/student/logbooks', [StudentDashboardController::class, 'index']);
+    Route::get('/student/logbooks', [StudentDashboardController::class, 'logbooks']);
+    Route::post('/student/internship', [StudentInternshipController::class, 'update']);    
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware('throttle:5,1');
     Route::get('/student/logbook/edit/{id}', [StudentLogbookEditController::class, 'edit'])->whereNumber('id');
@@ -60,8 +64,9 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/student/attendance', [StudentAttendanceController::class, 'index']);
     Route::post('/student/attendance/clock-in', [StudentAttendanceController::class, 'clockIn']);
     Route::post('/student/attendance/clock-out', [StudentAttendanceController::class, 'clockOut']);
-    Route::post('/student/attendance/leave', [StudentAttendanceController::class, 'leave']);
-
+    Route::post('/student/attendance/day-off', [StudentAttendanceController::class, 'dayOff']);
+    Route::post('/student/attendance/day-off/{id}/cancel', [StudentAttendanceController::class, 'cancelDayOff'])->whereNumber('id');
+    
     Route::post('/student/todos', [StudentTodoController::class, 'store']);
     Route::post('/student/todos/{id}/toggle', [StudentTodoController::class, 'toggle'])->whereNumber('id');
     Route::delete('/student/todos/{id}', [StudentTodoController::class, 'destroy'])->whereNumber('id');
@@ -131,3 +136,8 @@ foreach (['student', 'lecturer', 'supervisor'] as $notificationRole) {
 
 // Called by an outside scheduler to send the daily reminders (needs the X-Cron-Token header).
 Route::get('/internal/run-reminders', [CronController::class, 'reminders'])->middleware('throttle:10,1');
+
+// Private MC certificates: the controller checks who may open each file.
+Route::get('/attendance/{id}/mc', [AttendanceMcController::class, 'show'])
+    ->whereNumber('id')
+    ->middleware('auth:student,lecturer,supervisor,admin');
