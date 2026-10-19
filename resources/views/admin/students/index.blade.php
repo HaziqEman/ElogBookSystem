@@ -5,7 +5,7 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="text-2xl font-bold text-slate-800">Student Management</h2>
-            <p class="mt-2 text-sm text-slate-500">View, edit, and remove student records, and see who reviews each student.</p>
+            <p class="mt-2 text-sm text-slate-500">View, edit and remove student records, reviewers and internship dates.</p>
         </div>
         <a href="/admin/students/create" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
             Add Student
@@ -26,6 +26,7 @@
                         <th class="px-4 py-3 text-left">Course</th>
                         <th class="px-4 py-3 text-left">Lecturer</th>
                         <th class="px-4 py-3 text-left">Company Supervisor</th>
+                        <th class="px-4 py-3 text-left">Internship</th>
                         <th class="px-4 py-3 text-left">Action</th>
                     </tr>
                 </thead>
@@ -45,6 +46,14 @@
                                 @endif
                             </td>
                             <td class="px-4 py-4">
+                                @if($student->internship_start)
+                                    {{ $student->internship_start->format('d M Y') }}
+                                    <span class="block text-xs text-slate-400">{{ $student->internship_weeks ?: 14 }} weeks &middot; {{ implode(', ', array_map(fn ($day) => \App\Services\WeekPlanner::DAY_NAMES[$day], \App\Services\WeekPlanner::parseDays($student->working_days))) }}</span>
+                                @else
+                                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Not set</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-4">
                                 <div class="flex flex-wrap gap-2">
                                     <a href="/admin/students/{{ $student->student_id }}/edit" class="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-amber-600">
                                         Edit
@@ -61,7 +70,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-6 text-center text-slate-500">No students found.</td>
+                            <td colspan="7" class="px-4 py-6 text-center text-slate-500">No students found.</td>
                         </tr>
                     @endforelse
                 </tbody>

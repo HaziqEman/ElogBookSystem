@@ -46,6 +46,8 @@
     $aiColor = $aiLeft <= (int) ceil($aiLimit * 0.2) ? '#C2410C' : '#6D28D9';
     $card = 'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
     $firstMondayKey = $planner->hasStart() ? $planner->firstMonday()->toDateString() : '';
+    $startKey = $planner->hasStart() ? $planner->start()->toDateString() : '';
+    $workingDaysCsv = implode(',', $planner->workingDays());
 @endphp
 
 <div class="space-y-6" style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif">
@@ -336,17 +338,17 @@
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-7 py-5 [&::-webkit-details-marker]:hidden">
             <div>
                 <h2 class="text-xl font-extrabold">New logbook entry</h2>
-                <p class="mt-0.5 text-[13px] text-[#5B6478]">One entry per working day. Write the work, get a draft from AI Help, and attach a file.</p>
+                <p class="mt-0.5 text-[13px] text-[#5B6478]">One entry per working day. Pick the day you worked, write the work, and attach a file if you have one.</p>
             </div>
             <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]"><i class="fa-solid fa-chevron-down text-sm"></i></span>
         </summary>
 
-        <form id="logbook-form" action="/student/logbook/store" method="POST" enctype="multipart/form-data" data-first-monday="{{ $firstMondayKey }}" data-total-weeks="{{ $planner->totalWeeks() }}" class="space-y-3 border-t border-[#EDF0F7] px-7 pb-6 pt-5">
+        <form id="logbook-form" action="/student/logbook/store" method="POST" enctype="multipart/form-data" data-first-monday="{{ $firstMondayKey }}" data-total-weeks="{{ $planner->totalWeeks() }}" data-working-days="{{ $workingDaysCsv }}" data-today="{{ $todayKey }}" class="space-y-3 border-t border-[#EDF0F7] px-7 pb-6 pt-5">
             @csrf
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-[#334155]">Date of Training</label>
-                    <input type="date" name="activity_date" value="{{ old('activity_date') }}" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">
+                    <input type="date" name="activity_date" value="{{ old('activity_date') }}" @if($startKey) min="{{ $startKey }}" @endif max="{{ $todayKey }}" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">
                 </div>
                 @if($planner->hasStart())
                     <div>
@@ -361,7 +363,7 @@
                     </div>
                 @endif
             </div>
-            <p id="duplicate-hint" class="hidden rounded-xl bg-[#FFEDD5] px-3 py-2 text-xs font-semibold text-[#9A3412]">You already have an entry for this day. Edit it from the week list instead.</p>
+            <p id="date-hint" class="hidden rounded-xl bg-[#FFEDD5] px-3 py-2 text-xs font-semibold text-[#9A3412]"></p>
 
             <div>
                 <label class="mb-1 block text-xs font-semibold text-[#334155]">Activity Description</label>
@@ -391,52 +393,25 @@
                     @if($planner->hasStart())
                         Week {{ max(1, min($planner->totalWeeks(), $currentWeek)) }} of {{ $planner->totalWeeks() }} &middot; one entry per working day &middot; each week is sent to your supervisor when it ends
                     @else
-                        Set your internship start date to see your weeks.
+                        Waiting for your administrator to set your internship dates.
                     @endif
                 </div>
             </div>
         </div>
 
-        <details class="mb-4 rounded-2xl border border-[#E3E8F2] bg-[#FCFDFF]" {{ ! $planner->hasStart() || $errors->has('internship_start') || $errors->has('working_days') ? 'open' : '' }}>
-            <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 text-sm font-bold text-[#1F45D6] [&::-webkit-details-marker]:hidden">
-                <span><i class="fa-regular fa-calendar mr-1.5"></i> Working days: {{ $planner->workingDaysLabel() }}{{ $planner->hasStart() ? ' · starts '.$planner->start()->format('d M Y') : '' }}</span>
-                <i class="fa-solid fa-chevron-down text-xs"></i>
-            </summary>
-            <form method="POST" action="/student/internship" class="space-y-3 border-t border-[#E3E8F2] px-4 pb-4 pt-3">
-                @csrf
-                @if($errors->has('internship_start') || $errors->has('internship_weeks') || $errors->has('working_days'))
-                    <ul class="list-disc rounded-xl bg-rose-50 py-2 pl-7 pr-3 text-xs text-rose-700">
-                        @foreach(['internship_start', 'internship_weeks', 'working_days'] as $field)
-                            @foreach($errors->get($field) as $message)
-                                <li>{{ $message }}</li>
-                            @endforeach
-                        @endforeach
-                    </ul>
-                @endif
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="block">
-                        <span class="mb-1 block text-xs font-semibold text-[#334155]">Internship start date</span>
-                        <input type="date" name="internship_start" required value="{{ old('internship_start', $planner->hasStart() ? $planner->start()->toDateString() : '') }}" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">
-                    </label>
-                    <label class="block">
-                        <span class="mb-1 block text-xs font-semibold text-[#334155]">Total weeks</span>
-                        <input type="number" name="internship_weeks" min="1" max="52" required value="{{ old('internship_weeks', $planner->totalWeeks()) }}" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">
-                    </label>
-                </div>
-                <fieldset>
-                    <legend class="mb-1 block text-xs font-semibold text-[#334155]">Working days</legend>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach(\App\Services\WeekPlanner::DAY_NAMES as $number => $name)
-                            <label class="cursor-pointer">
-                                <input type="checkbox" name="working_days[]" value="{{ $number }}" class="peer sr-only" {{ in_array($number, old('working_days', $planner->workingDays()), false) ? 'checked' : '' }}>
-                                <span class="flex min-h-10 min-w-[52px] items-center justify-center rounded-xl border border-[#CBD3E3] bg-white px-3 text-sm font-bold text-[#334155] transition peer-checked:border-[#2F5BFF] peer-checked:bg-[#E8EFFF] peer-checked:text-[#1F45D6] peer-focus-visible:ring-2 peer-focus-visible:ring-[#2F5BFF]/40">{{ $name }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                </fieldset>
-                <button type="submit" class="min-h-11 w-full rounded-xl bg-[#2F5BFF] px-4 text-sm font-bold text-white transition hover:bg-[#1F45D6]">Save settings</button>
-            </form>
-        </details>
+        @if(! $planner->hasStart())
+            <div class="rounded-2xl border border-dashed border-[#C3CCEA] bg-[#F5F7FF] px-5 py-8 text-center text-sm text-[#5B6478]">
+                <i class="fa-regular fa-calendar mb-2 block text-3xl text-[#94A3B8]"></i>
+                Your internship dates have not been set yet. Please ask your administrator to set your start date and working days. Your weeks will appear here once they are set.
+            </div>
+        @else
+            <div class="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-[#E3E8F2] bg-[#FCFDFF] px-4 py-3 text-sm text-[#334155]">
+                <span><i class="fa-regular fa-calendar mr-1.5 text-[#1F45D6]"></i> Starts <strong>{{ $planner->start()->format('d M Y') }}</strong></span>
+                <span><i class="fa-solid fa-calendar-week mr-1.5 text-[#1F45D6]"></i> Working days: <strong>{{ $planner->workingDaysLabel() }}</strong></span>
+                <span>{{ $planner->totalWeeks() }} weeks</span>
+                <span class="text-xs text-[#5B6478]">Set by your administrator</span>
+            </div>
+        @endif
 
         @if($planner->hasStart() && $selected)
             <div class="flex flex-wrap gap-2">
@@ -661,20 +636,51 @@
         }
     }
 
-    // New entry form: week number, duplicate-day warning, submit lock.
+    // New entry form: week number and day checks.
     var form = document.getElementById('logbook-form');
     var dateInput = form ? form.querySelector('input[name="activity_date"]') : null;
     var weekInput = form ? form.querySelector('[name="week_no"]') : null;
     var weekHint = document.getElementById('week-hint');
-    var dupHint = document.getElementById('duplicate-hint');
+    var dateHint = document.getElementById('date-hint');
     var submitBtn = document.getElementById('submit-entry-btn');
     var firstMonday = form ? form.getAttribute('data-first-monday') : '';
     var totalWeeks = form ? parseInt(form.getAttribute('data-total-weeks'), 10) || 14 : 14;
+    var todayKey = form ? form.getAttribute('data-today') : '';
+    var workingDays = form
+        ? (form.getAttribute('data-working-days') || '1,2,3,4,5').split(',').map(function (day) { return parseInt(day, 10); })
+        : [];
     var existing = window.__entryDates || [];
 
     function utc(value) {
         var p = value.split('-');
         return Date.UTC(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+    }
+
+    function problemFor(value) {
+        if (!value) return '';
+
+        if (todayKey && value > todayKey) {
+            return 'You cannot write an entry for a day that has not started yet.';
+        }
+
+        if (firstMonday) {
+            var week = Math.floor((utc(value) - utc(firstMonday)) / 86400000 / 7) + 1;
+            if (week < 1 || week > totalWeeks) {
+                return 'This date is outside your internship weeks.';
+            }
+
+            var weekday = new Date(utc(value)).getUTCDay();
+            var iso = weekday === 0 ? 7 : weekday;
+            if (workingDays.indexOf(iso) === -1) {
+                return 'That day is not one of your working days. Your administrator sets your working days.';
+            }
+        }
+
+        if (existing.indexOf(value) !== -1) {
+            return 'You already have an entry for this day. Edit it from the week list instead.';
+        }
+
+        return '';
     }
 
     function onDate() {
@@ -694,9 +700,12 @@
             }
         }
 
-        var duplicate = !!value && existing.indexOf(value) !== -1;
-        if (dupHint) dupHint.classList.toggle('hidden', !duplicate);
-        if (submitBtn) submitBtn.disabled = duplicate;
+        var problem = problemFor(value);
+        if (dateHint) {
+            dateHint.textContent = problem;
+            dateHint.classList.toggle('hidden', !problem);
+        }
+        if (submitBtn) submitBtn.disabled = !!problem;
     }
 
     if (dateInput) {

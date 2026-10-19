@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lecturer;
 use App\Models\Student;
 use App\Models\Supervisor;
+use App\Services\WeekPlanner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -29,7 +30,7 @@ class AdminStudentController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'matric_no' => 'required|string|max:255|unique:students,matric_no',
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', $this->uniqueEmailRule()],
@@ -38,9 +39,15 @@ class AdminStudentController extends Controller
             'course' => 'nullable|string|max:255',
             'lecturer_id' => 'required|integer|exists:lecturers,lecturer_id',
             'supervisor_id' => 'nullable|integer|exists:supervisors,supervisor_id',
-        ]);
+        ], $this->internshipRules()));
 
-        Student::create([
+        $ready = Schema::hasColumn('students', 'internship_start');
+
+        if (! $ready && filled($data['internship_start'] ?? null)) {
+            return back()->withInput()->with('error', 'The internship date columns do not exist yet. Run the database update first.');
+        }
+
+        $payload = [
             'matric_no' => trim($data['matric_no']),
             'name' => trim($data['name']),
             'email' => trim($data['email']),
@@ -49,7 +56,13 @@ class AdminStudentController extends Controller
             'course' => $data['course'] ?? 'Unknown',
             'lecturer_id' => $data['lecturer_id'],
             'supervisor_id' => $data['supervisor_id'] ?? null,
-        ]);
+        ];
+
+        if ($ready) {
+            $payload += $this->internshipValues($data);
+        }
+
+        Student::create($payload);
 
         return redirect('/admin/students')->with('success', 'Student created.');
     }
@@ -67,21 +80,33 @@ class AdminStudentController extends Controller
     {
         $student = Student::findOrFail($id);
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'phone_no' => 'nullable|string|max:50',
             'course' => 'nullable|string|max:255',
             'lecturer_id' => 'required|integer|exists:lecturers,lecturer_id',
             'supervisor_id' => 'nullable|integer|exists:supervisors,supervisor_id',
-        ]);
+        ], $this->internshipRules()));
 
-        $student->update([
+        $ready = Schema::hasColumn('students', 'internship_start');
+
+        if (! $ready && filled($data['internship_start'] ?? null)) {
+            return back()->withInput()->with('error', 'The internship date columns do not exist yet. Run the database update first.');
+        }
+
+        $payload = [
             'name' => trim($data['name']),
             'phone_no' => $data['phone_no'] ?? $student->phone_no,
             'course' => $data['course'] ?? $student->course,
             'lecturer_id' => $data['lecturer_id'],
             'supervisor_id' => $data['supervisor_id'] ?? null,
-        ]);
+        ];
+
+        if ($ready) {
+            $payload += $this->internshipValues($data);
+        }
+
+        $student->update($payload);
 
         return redirect('/admin/students')->with('success', 'Student updated.');
     }
@@ -91,6 +116,33 @@ class AdminStudentController extends Controller
         Student::findOrFail($id)->delete();
 
         return back();
+    }
+
+    protected function internshipRules(): array
+    {
+        return [
+            'internship_start' => 'nullable|date|after_or_equal:2020-01-01|before_or_equal:2100-12-31',
+            'internship_weeks' => 'nullable|integer|between:1,52',
+            'working_days' => 'nullable|array',
+            'working_days.*' => 'integer|between:1,7',
+        ];
+    }
+
+    /** No working day ticked means the usual Monday to Friday. */
+    protected function internshipValues(array $data): array
+    {
+        $days = collect($data['working_days'] ?? [])
+            ->map(fn ($day) => (int) $day)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return [
+            'internship_start' => $data['internship_start'] ?? null,
+            'internship_weeks' => (int) ($data['internship_weeks'] ?? 14) ?: 14,
+            'working_days' => implode(',', $days ?: WeekPlanner::DEFAULT_DAYS),
+        ];
     }
 
     /**

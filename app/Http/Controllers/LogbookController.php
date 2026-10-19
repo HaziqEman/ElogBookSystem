@@ -2,65 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Logbook;
 use App\Models\Attachment;
-use App\Models\Feedback;
+use App\Models\Attendance;
+use App\Models\Logbook;
 use App\Services\AttachmentStorage;
+use App\Services\WeekPlanner;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class LogbookController extends Controller
 {
-    public function dashboard()
-    {
-        $student = Auth::guard('student')->user();
-
-        $hasLogbooksTable = Schema::hasTable('logbooks');
-        $hasAttachmentsTable = Schema::hasTable('attachments');
-        $hasFeedbackTable = Schema::hasTable('feedback');
-
-        $logbooks = collect();
-        $totalLogs = 0;
-        $totalAttachments = 0;
-        $totalReviews = 0;
-
-        if ($hasLogbooksTable) {
-            $logbooks = Logbook::with('attachments')
-                ->when($student, function ($query) use ($student) {
-                    return $query->where('student_id', $student->student_id);
-                })
-                ->latest()
-                ->take(10)
-                ->get();
-
-            $totalLogs = $student ? Logbook::where('student_id', $student->student_id)->count() : 0;
-        }
-
-        if ($student && $hasAttachmentsTable) {
-            $totalAttachments = Attachment::whereHas('logbook', function ($query) use ($student) {
-                $query->where('student_id', $student->student_id);
-            })->count();
-        }
-
-        if ($student && $hasFeedbackTable) {
-            $totalReviews = Feedback::whereHas('logbook', function ($query) use ($student) {
-                $query->where('student_id', $student->student_id);
-            })->count();
-        }
-
-        return view('student.dashboard', compact(
-            'logbooks',
-            'totalLogs',
-            'totalAttachments',
-            'totalReviews',
-            'student'
-        ));
-    }
-
     public function aiHelp(Request $request)
     {
         $data = $request->validate([
@@ -163,22 +119,65 @@ class LogbookController extends Controller
 
     public function store(Request $request, AttachmentStorage $storage)
     {
+        $student = Auth::guard('student')->user();
+        $today = Carbon::now(Attendance::TIMEZONE)->startOfDay();
+        $planner = new WeekPlanner($student, $today);
+
         $data = $request->validate([
-            'week_no' => 'required|integer',
+            'week_no' => 'nullable|integer|min:1|max:60',
             'description' => 'required|string',
             'activity_date' => 'required|date',
             'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
         ]);
 
-        try {
-            $student = Auth::guard('student')->user();
+        $date = Carbon::parse($data['activity_date'], Attendance::TIMEZONE)->startOfDay();
 
-            DB::transaction(function () use ($request, $student, $data, $storage) {
+        if ($date->gt($today)) {
+            throw ValidationException::withMessages([
+                'activity_date' => 'You cannot write an entry for a day that has not started yet.',
+            ]);
+        }
+
+        if ($planner->hasStart()) {
+            $week = $planner->weekNumberFor($date);
+
+            if ($week < 1 || $week > $planner->totalWeeks()) {
+                throw ValidationException::withMessages([
+                    'activity_date' => 'This date is outside your internship weeks.',
+                ]);
+            }
+
+            if (! $planner->isWorkingDay($date)) {
+                throw ValidationException::withMessages([
+                    'activity_date' => 'That day is not one of your working days. Your administrator sets your working days.',
+                ]);
+            }
+
+            // The week always comes from the date, never from what the browser sent.
+            $data['week_no'] = $week;
+        } elseif (empty($data['week_no'])) {
+            throw ValidationException::withMessages([
+                'week_no' => 'Please enter the week number.',
+            ]);
+        }
+
+        $alreadyWritten = Logbook::where('student_id', $student->student_id)
+            ->where('activity_date', $date->toDateString())
+            ->exists();
+
+        if ($alreadyWritten) {
+            throw ValidationException::withMessages([
+                'activity_date' => 'You already have an entry for this day. Edit it from the week list instead.',
+            ]);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $student, $data, $date, $storage) {
                 $logbook = $student->logbooks()->create([
                     'week_no' => $data['week_no'],
                     'title' => 'Week '.$data['week_no'],
                     'description' => $data['description'],
-                    'activity_date' => $data['activity_date'],
+                    'activity_date' => $date->toDateString(),
                     'status' => 'Pending',
                     'supervisor_status' => 'Pending',
                 ]);
@@ -195,40 +194,12 @@ class LogbookController extends Controller
                 }
             });
 
-            return redirect('/student/dashboard')->with('success', 'Log entry created successfully.');
+            return redirect('/student/dashboard#logbook-week')->with('success', 'Log entry created successfully.');
         } catch (\Throwable $e) {
             Log::error('Logbook store failed: '.$e->getMessage());
 
             return redirect()->back()->withInput()->with('error', 'Failed to create log entry. Please try again.');
         }
-    }
-
-    public function edit($id)
-    {
-        $student = Auth::guard('student')->user();
-        $logbook = $student->logbooks()->findOrFail($id);
-        return view('student.logbook_edit', compact('logbook'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $student = Auth::guard('student')->user();
-        $logbook = $student->logbooks()->findOrFail($id);
-
-        $data = $request->validate([
-            'week_no' => 'required|integer',
-            'description' => 'required|string',
-            'activity_date' => 'required|date',
-        ]);
-
-        $logbook->update([
-            'week_no' => $data['week_no'],
-            'title' => 'Week '.$data['week_no'],
-            'description' => $data['description'],
-            'activity_date' => $data['activity_date'],
-        ]);
-
-        return redirect('/student/logbooks')->with('success', 'Log entry updated.');
     }
 
     public function destroy($id)
