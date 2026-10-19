@@ -9,6 +9,7 @@ use App\Models\Logbook;
 use App\Models\Message;
 use App\Models\Student;
 use App\Models\Todo;
+use App\Services\WeekPlanner;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,13 +23,7 @@ class StudentDashboardController extends Controller
         $student = Auth::guard('student')->user();
         $today = Carbon::now(Attendance::TIMEZONE);
         $todayKey = $today->toDateString();
-
-        $logbooks = Logbook::with('attachments')
-            ->where('student_id', $student->student_id)
-            ->latest()
-            ->orderByDesc('logbook_id')
-            ->take($request->boolean('all') ? 100 : 5)
-            ->get();
+        $planner = new WeekPlanner($student, $today);
 
         $totalLogs = Logbook::where('student_id', $student->student_id)->count();
 
@@ -58,6 +53,7 @@ class StudentDashboardController extends Controller
         $doneTodos = collect();
         $openCount = 0;
         $doneCount = 0;
+        $tasksSoon = 0;
 
         if ($extrasReady) {
             $monthRecords = Attendance::where('student_id', $student->student_id)
@@ -87,7 +83,67 @@ class StudentDashboardController extends Controller
                 ->orderByDesc('updated_at')
                 ->take(5)
                 ->get();
+
+            $tasksSoon = Todo::where('student_id', $student->student_id)
+                ->where('is_done', false)
+                ->whereNotNull('due_date')
+                ->where('due_date', '<=', $today->copy()->addDays(2)->toDateString())
+                ->count();
         }
+
+        // Reminder banner: only on a working day that is not MC, leave or a holiday.
+        $currentWeek = $planner->currentWeek();
+        $workingToday = $planner->isWorkingDay($today->copy()->startOfDay());
+
+        if ($currentWeek !== null && ($currentWeek < 1 || $currentWeek > $planner->totalWeeks())) {
+            $workingToday = false;
+        }
+
+        $dayOffToday = $attendance && $attendance->isDayOff();
+        $remind = $extrasReady && $workingToday && ! $dayOffToday;
+        $hasEntryToday = Logbook::where('student_id', $student->student_id)->where('activity_date', $todayKey)->exists();
+
+        $banner = [
+            'attendance' => $remind && ! ($attendance && $attendance->check_in),
+            'logbook' => $remind && ! $hasEntryToday,
+            'tasks' => $remind ? $tasksSoon : 0,
+        ];
+        $banner['show'] = $banner['attendance'] || $banner['logbook'] || $banner['tasks'] > 0;
+
+        // Logbook by week.
+        $weeks = [];
+        $selected = null;
+
+        if ($planner->hasStart()) {
+            $from = $planner->firstMonday()->toDateString();
+            $to = $planner->weekStart($planner->totalWeeks())->addDays(6)->toDateString();
+
+            $logbooksByDate = Logbook::with('attachments')
+                ->where('student_id', $student->student_id)
+                ->whereBetween('activity_date', [$from, $to])
+                ->orderBy('logbook_id')
+                ->get()
+                ->groupBy(fn ($log) => Carbon::parse($log->activity_date)->toDateString());
+
+            $attendanceByDate = $extrasReady
+                ? Attendance::where('student_id', $student->student_id)
+                    ->whereBetween('attendance_date', [$from, $to])
+                    ->get()
+                    ->keyBy(fn ($record) => $record->attendance_date->toDateString())
+                : collect();
+
+            $weeks = $planner->weeks($logbooksByDate, $attendanceByDate);
+
+            $default = max(1, min($planner->totalWeeks(), $currentWeek ?? 1));
+            $number = max(1, min($planner->totalWeeks(), (int) $request->query('week', $default)));
+            $selected = $weeks[$number - 1] ?? null;
+        }
+
+        $entryDates = Logbook::where('student_id', $student->student_id)
+            ->pluck('activity_date')
+            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+            ->unique()
+            ->values();
 
         // Small calendar for the current month (Monday first).
         $monthStart = $today->copy()->startOfMonth();
@@ -148,7 +204,12 @@ class StudentDashboardController extends Controller
         return view('student.dashboard', compact(
             'student',
             'today',
-            'logbooks',
+            'planner',
+            'currentWeek',
+            'weeks',
+            'selected',
+            'banner',
+            'entryDates',
             'totalLogs',
             'totalAttachments',
             'totalReviews',
@@ -166,5 +227,19 @@ class StudentDashboardController extends Controller
             'aiLimit',
             'aiLeft'
         ));
+    }
+
+    /** Every entry, newest first (the "Open full logbook" page). */
+    public function logbooks()
+    {
+        $student = Auth::guard('student')->user();
+
+        $logbooks = Logbook::with('attachments')
+            ->where('student_id', $student->student_id)
+            ->orderByDesc('activity_date')
+            ->orderByDesc('logbook_id')
+            ->paginate(15);
+
+        return view('student.logbook-all', compact('student', 'logbooks'));
     }
 }
