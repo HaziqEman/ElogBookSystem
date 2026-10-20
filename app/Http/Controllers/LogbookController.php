@@ -6,115 +6,95 @@ use App\Models\Attachment;
 use App\Models\Attendance;
 use App\Models\Logbook;
 use App\Services\AttachmentStorage;
+use App\Services\GeminiDraftService;
 use App\Services\WeekPlanner;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LogbookController extends Controller
 {
-    public function aiHelp(Request $request)
+    public function aiHelp(Request $request, GeminiDraftService $gemini)
     {
+        $student = Auth::guard('student')->user();
+        $today = Carbon::now(Attendance::TIMEZONE)->startOfDay();
+
         $data = $request->validate([
-            'week_no' => 'nullable|integer',
+            'week_no' => 'nullable|integer|min:1|max:60',
             'activity_date' => 'nullable|date',
             'description' => 'nullable|string|max:2000',
+            'role' => 'nullable|string|max:150',
+            'use_file' => 'nullable|boolean',
+            'attachment' => 'nullable|file|max:4096|mimes:jpg,jpeg,png,webp,pdf',
+        ], [
+            'attachment.uploaded' => 'The file could not be uploaded. This server accepts files up to 2 MB, so try a smaller one.',
+            'attachment.mimes' => 'AI Help can only read JPG, PNG, WEBP or PDF files.',
+            'attachment.max' => 'The file is too large for AI Help.',
         ]);
 
-        $apiKey = config('services.gemini.api_key');
-        $model = config('services.gemini.model', 'gemini-2.5-flash');
+        $notes = trim((string) ($data['description'] ?? ''));
+        $file = ($request->boolean('use_file') && $request->hasFile('attachment')) ? $request->file('attachment') : null;
 
-        if (! $apiKey) {
-            Log::notice('Gemini AI fallback used', [
-                'operation' => 'ai_help',
-                'reason' => 'missing_api_key',
+        if ($notes === '' && ! $file) {
+            throw ValidationException::withMessages([
+                'description' => 'Type a few words about what you did, or tick "Let AI Help read this file", so there is something real to write from.',
             ]);
-
-            return $this->fallbackResponse($data, 'Gemini API key is not configured, so a local draft was created instead.');
         }
 
-        $week = data_get($data, 'week_no') ?: 'N/A';
-        $activityDate = data_get($data, 'activity_date') ?: 'N/A';
-        $activity = trim((string) data_get($data, 'description', '')) ?: 'No notes provided';
+        $date = filled($data['activity_date'] ?? null)
+            ? Carbon::parse($data['activity_date'], Attendance::TIMEZONE)->startOfDay()
+            : $today;
 
-        $prompt = "Write ONE internship logbook entry of 100 to 150 words. "
-            . "First person, professional English, one paragraph, no bullet points, no headings. "
-            . "Mention what I did and what I learned. End with a complete sentence.\n"
-            . "Week: {$week}\nDate: {$activityDate}\nNotes: {$activity}\n"
-            . "Return only the paragraph.";
+        $planner = new WeekPlanner($student, $today);
+        $week = $planner->hasStart() ? $planner->weekNumberFor($date) : ($data['week_no'] ?? null);
 
-        try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
-
-            $response = Http::timeout(30)
-                ->withHeaders(['x-goog-api-key' => $apiKey])
-                ->post($url, [
-                    'contents' => [
-                        ['parts' => [['text' => $prompt]]],
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.4,
-                        'maxOutputTokens' => 300,
-                        'thinkingConfig' => ['thinkingBudget' => 0],
-                    ],
-                ]);
-
-            if ($response->failed()) {
-                $status = $response->status();
-
-                Log::warning('Gemini AI request failed', [
-                    'operation' => 'ai_help',
-                    'http_status' => $status,
-                    'error_category' => 'upstream_http_error',
-                ]);
-
-                $message = $status === 429
-                    ? 'AI quota reached for now, so a local draft was created instead.'
-                    : 'Gemini is currently unavailable, so a local draft was created instead.';
-
-                return $this->fallbackResponse($data, $message);
-            }
-
-            $text = trim((string) data_get($response->json(), 'candidates.0.content.parts.0.text', ''));
-
-            if ($text === '') {
-                return $this->fallbackResponse($data, 'Gemini returned no text, so a local draft was created instead.');
-            }
-
-            return response()->json(['text' => $text]);
-        } catch (\Throwable $e) {
-            Log::error('Gemini AI request exception', [
-                'operation' => 'ai_help',
-                'error_category' => 'request_or_response_exception',
-                'exception' => get_class($e),
-            ]);
-
-            return $this->fallbackResponse($data, 'Gemini is currently unavailable, so a local draft was created instead.');
+        if ($week !== null && (int) $week < 1) {
+            $week = null;
         }
-    }
 
-    protected function fallbackResponse(array $data, string $message)
-    {
-        return response()->json([
-            'text' => $this->buildFallbackDraft($data),
-            'fallback' => true,
-            'message' => $message,
-        ]);
-    }
+        // The student's role is saved the first time they type it, so they do not have to repeat it.
+        $typedRole = trim((string) ($data['role'] ?? ''));
+        $role = $typedRole !== '' ? $typedRole : trim((string) ($student->internship_role ?? ''));
 
-    protected function buildFallbackDraft(array $data): string
-    {
-        $week = $data['week_no'] ?? 'N/A';
-        $date = $data['activity_date'] ?? 'the specified date';
-        $notes = trim((string) ($data['description'] ?? '')) ?: 'I completed several tasks related to my internship training.';
+        if ($typedRole !== '' && $typedRole !== (string) $student->internship_role && Schema::hasColumn('students', 'internship_role')) {
+            try {
+                $student->forceFill(['internship_role' => $typedRole])->save();
+            } catch (\Throwable $e) {
+                Log::notice('Could not save internship role: '.$e->getMessage());
+            }
+        }
 
-        return "During week {$week}, on {$date}, I carried out and completed a range of internship tasks and activities. "
-            . "I focused on improving my understanding of the work process, contributed to the assigned responsibilities, "
-            . "and documented my progress carefully. {$notes}";
+        $previous = Logbook::where('student_id', $student->student_id)
+            ->where('activity_date', '<', $date->toDateString())
+            ->orderByDesc('activity_date')
+            ->orderByDesc('logbook_id')
+            ->take(2)
+            ->pluck('description')
+            ->map(fn ($text) => Str::limit(trim((string) $text), 250, '...'))
+            ->all();
+
+        $result = $gemini->draft([
+            'role' => $role,
+            'company' => optional($student->supervisor)->company_name,
+            'notes' => $notes,
+            'week' => $week,
+            'date' => $date,
+            'previous' => $previous,
+        ], $file);
+
+        // The file could not be read and there are no notes to fall back on.
+        if ($result['fallback'] && $notes === '') {
+            return response()->json([
+                'message' => 'AI could not read your file right now. Type a few words about what you did and try again.',
+            ], 503);
+        }
+
+        return response()->json($result);
     }
 
     public function store(Request $request, AttachmentStorage $storage)

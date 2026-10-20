@@ -367,6 +367,10 @@
 
             <div>
                 <label class="mb-1 block text-xs font-semibold text-[#334155]">Activity Description</label>
+                <div>
+                <label for="ai-role" class="mb-1 block text-xs font-semibold text-[#334155]">Your role at the company <span class="font-normal text-[#5B6478]">(AI Help uses it to pick the right wording)</span></label>
+                <input type="text" id="ai-role" maxlength="150" value="{{ old('role', $student->internship_role ?? '') }}" placeholder="e.g. Junior web developer, Accounts assistant" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">
+                </div>  
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <span class="text-[11px] text-[#5B6478]">Need help drafting a polished entry?</span>
                     <button type="button" id="ai-help-btn" class="shrink-0 rounded-lg border border-[#D3E0FF] bg-[#E8EFFF] px-3 py-1.5 text-xs font-bold text-[#1F45D6] transition hover:bg-[#D3E0FF] disabled:cursor-not-allowed disabled:opacity-60">
@@ -378,6 +382,12 @@
             </div>
             <div>
                 <label class="mb-1 block text-xs font-semibold text-[#334155]">Upload Attachment (image, PDF or Word, max 5 MB)</label>
+                    <div id="ai-read-file-box" class="hidden">
+                    <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-[#E3E8F2] bg-[#FCFDFF] p-3 text-xs text-[#334155]">
+                        <input type="checkbox" id="ai-read-file" class="mt-0.5 h-4 w-4">
+                        <span><strong>Let AI Help read this file</strong> (photo or PDF) when it writes the draft. The file is sent to Google's Gemini service, so do not use documents with confidential company information.</span>
+                    </label>
+                    </div>
                 <input type="file" name="attachment" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-[#E8EFFF] file:px-3 file:py-2 file:text-sm file:font-bold file:text-[#1F45D6]">
             </div>
             <button id="submit-entry-btn" type="submit" class="w-full rounded-xl bg-[#2F5BFF] p-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#1F45D6] disabled:cursor-not-allowed disabled:opacity-60">Submit Entry</button>
@@ -752,10 +762,54 @@
         bar.style.background = color;
     }
 
-    var btn = document.getElementById('ai-help-btn');
+        var btn = document.getElementById('ai-help-btn');
     var label = document.getElementById('ai-help-label');
     var field = document.getElementById('description-field');
     var status = document.getElementById('ai-help-status');
+    var roleInput = document.getElementById('ai-role');
+    var fileInput = form ? form.querySelector('input[name="attachment"]') : null;
+    var readBox = document.getElementById('ai-read-file-box');
+    var readCheck = document.getElementById('ai-read-file');
+
+    var AI_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    var AI_MAX_BYTES = 1900000;
+
+    function aiFile() {
+        var file = fileInput && fileInput.files && fileInput.files[0];
+        return file && AI_TYPES.indexOf(file.type) !== -1 ? file : null;
+    }
+
+    if (fileInput && readBox) {
+        fileInput.addEventListener('change', function () {
+            var usable = !!aiFile();
+            readBox.classList.toggle('hidden', !usable);
+            if (!usable && readCheck) readCheck.checked = false;
+        });
+    }
+
+    // Photos are shrunk in the browser so they fit the server's upload limit.
+    function shrinkForAi(file) {
+        return new Promise(function (resolve) {
+            if (file.type === 'application/pdf' || !window.URL) { resolve(file); return; }
+
+            var image = new Image();
+            var url = URL.createObjectURL(file);
+
+            image.onload = function () {
+                URL.revokeObjectURL(url);
+                var scale = Math.min(1, 1280 / Math.max(image.width, image.height));
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.round(image.width * scale);
+                canvas.height = Math.round(image.height * scale);
+                canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(function (blob) {
+                    resolve(blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file);
+                }, 'image/jpeg', 0.8);
+            };
+            image.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+            image.src = url;
+        });
+    }
 
     if (btn && field && status) {
         var busy = false;
@@ -785,26 +839,45 @@
             e.preventDefault();
             if (busy || btn.disabled) return;
 
+            var notes = field.value.trim();
+            var chosen = readCheck && readCheck.checked ? aiFile() : null;
+
+            if (!notes && !chosen) {
+                setStatus('Type a few words about what you did, or tick "Let AI Help read this file", so AI has something real to write from.', '#C2410C');
+                field.focus();
+                return;
+            }
+
             busy = true;
             btn.disabled = true;
             label.textContent = 'Working...';
-            setStatus('Generating a draft...', '#5B6478');
+            setStatus(chosen ? 'Reading your file and writing a draft...' : 'Writing a draft...', '#5B6478');
 
             try {
+                var body = new FormData();
+                body.append('week_no', weekInput ? weekInput.value : '');
+                body.append('activity_date', dateInput ? dateInput.value : '');
+                body.append('description', field.value);
+                body.append('role', roleInput ? roleInput.value : '');
+
+                if (chosen) {
+                    var prepared = await shrinkForAi(chosen);
+                    if (prepared.size > AI_MAX_BYTES) {
+                        throw new Error('This file is too large for AI Help (limit about 2 MB). Try a smaller file or a screenshot.');
+                    }
+                    body.append('use_file', '1');
+                    body.append('attachment', prepared, prepared.name || 'file');
+                }
+
                 var tokenInput = document.querySelector('input[name="_token"]');
 
                 var response = await fetch('/student/logbook/ai-help', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': tokenInput ? tokenInput.value : '',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        week_no: weekInput ? weekInput.value : '',
-                        activity_date: dateInput ? dateInput.value : '',
-                        description: field.value
-                    })
+                    body: body
                 });
 
                 var remaining = response.headers.get('X-AI-Remaining');
@@ -825,7 +898,7 @@
 
                 field.value = data.text;
                 field.focus();
-                setStatus(data.message || 'Draft inserted successfully.', '#10b981');
+                setStatus(data.message || 'Draft inserted. Please check it.', data.fallback ? '#C2410C' : '#10b981');
             } catch (error) {
                 setStatus('Error: ' + (error.message || 'Unable to generate text.'), '#ef4444');
             } finally {
