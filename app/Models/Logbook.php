@@ -36,14 +36,15 @@ class Logbook extends Model
         return $this->hasMany(Feedback::class, 'logbook_id');
     }
 
+    /** Only the company supervisor reviews entries now. */
     public function needsRevision(): bool
     {
-        return $this->status === 'Rejected' || $this->supervisor_status === 'Revision Requested';
+        return $this->supervisor_status === 'Revision Requested';
     }
 
+    /** An entry stays editable until the company supervisor validates it. */
     public function isEditableByStudent(): bool
     {
-        return in_array($this->status ?? 'Pending', ['Pending', 'Rejected'], true)
-            || $this->supervisor_status === 'Revision Requested';
+        return $this->supervisor_status !== 'Validated';
     }
 }

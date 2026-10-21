@@ -95,7 +95,8 @@
                             // Menu for the current role. "match" lists every page that should light up the link.
                             if (request()->is('student*')) {
                                 $navItems = [
-                                    ['href' => '/student/dashboard', 'icon' => 'fa-chart-pie', 'label' => 'Dashboard Overview', 'match' => ['student/dashboard', 'student/logbooks', 'student/logbook/*']],
+                                    ['href' => '/student/dashboard', 'icon' => 'fa-house', 'label' => 'Dashboard', 'match' => ['student/dashboard']],
+                                    ['href' => '/student/logbooks', 'icon' => 'fa-book', 'label' => 'Logbook', 'match' => ['student/logbooks', 'student/logbook/*']],
                                     ['href' => '/student/calendar', 'icon' => 'fa-calendar-days', 'label' => 'Calendar', 'match' => ['student/calendar']],
                                     ['href' => '/student/attendance', 'icon' => 'fa-user-clock', 'label' => 'Attendance', 'match' => ['student/attendance', 'student/attendance/*']],
                                     ['href' => '/student/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['student/messages', 'student/messages/*']],
@@ -103,7 +104,7 @@
                                 ];
                             } elseif (request()->is('lecturer*')) {
                                 $navItems = [
-                                    ['href' => '/lecturer/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Lecturer Dashboard', 'match' => ['lecturer/dashboard', 'lecturer/logbook', 'lecturer/logbook/*']],
+                                    ['href' => '/lecturer/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Dashboard', 'match' => ['lecturer/dashboard', 'lecturer/students/*', 'lecturer/logbook', 'lecturer/logbook/*']],
                                     ['href' => '/lecturer/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['lecturer/messages', 'lecturer/messages/*']],
                                 ];
                             } elseif (request()->is('supervisor*')) {

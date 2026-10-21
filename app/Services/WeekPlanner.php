@@ -196,12 +196,11 @@ class WeekPlanner
             } elseif ($missing > 0) {
                 $status = 'incomplete';
             } else {
-                $allApproved = $entries->every(function ($entry) use ($assigned) {
-                    return ($entry->status ?? 'Pending') === 'Approved'
-                        && (! $assigned || ($entry->supervisor_status ?? 'Pending') === 'Validated');
-                });
+                $allValidated = $assigned
+                    ? $entries->every(fn ($entry) => ($entry->supervisor_status ?? 'Pending') === 'Validated')
+                    : $entries->isEmpty();
 
-                $status = $allApproved ? 'validated' : 'waiting';
+                $status = $allValidated ? 'validated' : 'waiting';
             }
 
             $weeks[] = [
@@ -221,7 +220,6 @@ class WeekPlanner
                 'supervisor' => $assigned
                     ? $this->reviewLabel($entries, 'supervisor_status', 'Validated', 'Revision Requested', $closed)
                     : 'Not assigned',
-                'lecturer' => $this->reviewLabel($entries, 'status', 'Approved', 'Rejected', $closed),
             ];
         }
 

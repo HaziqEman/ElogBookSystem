@@ -9,7 +9,6 @@ use App\Http\Controllers\StudentCalendarController;
 use App\Http\Controllers\StudentTodoController;
 use App\Http\Controllers\StudentLogbookEditController;
 use App\Http\Controllers\LecturerController;
-use App\Http\Controllers\LecturerReviewController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\SupervisorReviewController;
 use App\Http\Controllers\SupervisorMessageController;
@@ -24,8 +23,8 @@ use App\Http\Middleware\EnsureSupervisorPasswordChanged;
 use App\Http\Middleware\LimitAiHelp;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CronController;
-use App\Http\Controllers\StudentInternshipController;
 use App\Http\Controllers\AttendanceMcController;
+use App\Http\Controllers\LecturerStudentController;
 
 
 // Home Page
@@ -51,7 +50,6 @@ Route::middleware('auth:student')->group(function () {
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
     Route::get('/student/logbooks', [StudentDashboardController::class, 'logbooks']);
-    Route::post('/student/internship', [StudentInternshipController::class, 'update']);    
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware('throttle:5,1');
     Route::get('/student/logbook/edit/{id}', [StudentLogbookEditController::class, 'edit'])->whereNumber('id');
@@ -79,9 +77,10 @@ Route::middleware('auth:student')->group(function () {
 
 Route::middleware('auth:lecturer')->group(function () {
     Route::get('/lecturer/dashboard', [LecturerController::class, 'dashboard']);
-    Route::get('/lecturer/logbook', [LecturerReviewController::class, 'next']);
-    Route::get('/lecturer/logbook/{id}', [LecturerReviewController::class, 'show'])->whereNumber('id');
-    Route::post('/lecturer/logbook/{id}/review', [LecturerReviewController::class, 'store'])->whereNumber('id');
+        Route::get('/lecturer/students/{id}', [LecturerStudentController::class, 'show'])->whereNumber('id');
+    Route::get('/lecturer/students/{id}/message', [LecturerStudentController::class, 'message'])->whereNumber('id');
+    Route::redirect('/lecturer/logbook', '/lecturer/dashboard');
+    Route::get('/lecturer/logbook/{id}', [LecturerStudentController::class, 'entry'])->whereNumber('id');
     Route::get('/lecturer/messages', [LecturerMessageController::class, 'index'])->name('lecturer.messages.index');
     Route::get('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'show'])->name('lecturer.messages.show');
     Route::post('/lecturer/messages/{conversation}', [LecturerMessageController::class, 'store'])->name('lecturer.messages.store');
@@ -141,3 +140,6 @@ Route::get('/internal/run-reminders', [CronController::class, 'reminders'])->mid
 Route::get('/attendance/{id}/mc', [AttendanceMcController::class, 'show'])
     ->whereNumber('id')
     ->middleware('auth:student,lecturer,supervisor,admin');
+
+
+    

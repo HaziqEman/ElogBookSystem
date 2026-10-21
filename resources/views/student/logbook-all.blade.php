@@ -56,7 +56,6 @@
                     @else
                         <span class="rounded-full bg-slate-50 px-2.5 py-1 text-slate-400">No file</span>
                     @endif
-                    <span class="rounded-full px-2.5 py-1 font-semibold {{ $pill($logbook->status ?? 'Pending') }}">Lecturer: {{ $logbook->status ?? 'Pending' }}</span>
                     @if($supervisorAssigned)
                         <span class="rounded-full px-2.5 py-1 font-semibold {{ $pill($logbook->supervisor_status ?? 'Pending') }}">Supervisor: {{ $logbook->supervisor_status ?? 'Pending' }}</span>
                     @endif

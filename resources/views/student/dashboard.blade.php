@@ -268,6 +268,7 @@
             <div class="mb-3 flex items-center justify-between">
                 <h2 class="text-base font-extrabold">To-do list</h2>
                 <span class="text-xs font-bold text-[#5B6478]">{{ $openCount }} open</span>
+                            <p class="mb-3 text-[11px] text-[#5B6478]">Your lecturer can see how many tasks you finish, never what they say.</p>
             </div>
 
             @if($extrasReady)
@@ -475,7 +476,6 @@
 
                     <div class="flex flex-wrap gap-2">
                         <span class="rounded-full px-3 py-1 text-xs font-bold {{ $pill($selected['supervisor']) }}">Supervisor: {{ $selected['supervisor'] }}</span>
-                        <span class="rounded-full px-3 py-1 text-xs font-bold {{ $pill($selected['lecturer']) }}">Lecturer: {{ $selected['lecturer'] }}</span>
                     </div>
                 </div>
 
@@ -554,7 +554,6 @@
                                             <a href="/student/logbook/edit/{{ $entry->logbook_id }}" class="flex min-h-8 items-center gap-1.5 rounded-[9px] border border-dashed border-[#9DB4FF] bg-[#F5F7FF] px-3 text-xs font-bold text-[#1F45D6] transition hover:bg-[#E8EFFF]"><i class="fa-solid fa-plus"></i> Add a file</a>
                                         @endif
 
-                                        <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $pill($entry->status ?? 'Pending') }}">Lecturer: {{ $entry->status ?? 'Pending' }}</span>
                                         @if($supervisorAssigned)
                                             <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $pill($entry->supervisor_status ?? 'Pending') }}">Supervisor: {{ $entry->supervisor_status ?? 'Pending' }}</span>
                                         @endif
