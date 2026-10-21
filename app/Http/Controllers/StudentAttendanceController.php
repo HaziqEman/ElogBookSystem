@@ -112,7 +112,7 @@ class StudentAttendanceController extends Controller
         return back()->with('success', 'Clocked in at '.$attendance->checkInLocal().'.');
     }
 
-    public function clockOut()
+        public function clockOut(Request $request)
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
@@ -122,11 +122,11 @@ class StudentAttendanceController extends Controller
             ->first();
 
         if (! $attendance || ! $attendance->check_in) {
-            return back()->with('error', 'Please clock in first.');
+            return $this->clockOutReply($request, $student, 'Please clock in first.', false);
         }
 
         if ($attendance->check_out) {
-            return back()->with('error', 'You already clocked out today at '.$attendance->checkOutLocal().'.');
+            return $this->clockOutReply($request, $student, 'You already clocked out today at '.$attendance->checkOutLocal().'.', false);
         }
 
         try {
@@ -135,10 +135,50 @@ class StudentAttendanceController extends Controller
         } catch (\Throwable $e) {
             Log::error('Clock out failed: '.$e->getMessage());
 
-            return back()->with('error', 'Could not clock you out. Please try again.');
+            return $this->clockOutReply($request, $student, 'Could not clock you out. Please try again.', false);
         }
 
-        return back()->with('success', 'Clocked out at '.$attendance->checkOutLocal().'. Worked '.$attendance->workedLabel().'.');
+        return $this->clockOutReply(
+            $request,
+            $student,
+            'Clocked out at '.$attendance->checkOutLocal().'. Worked '.$attendance->workedLabel().'.',
+            true
+        );
+    }
+
+    /** JSON for the async form, a normal redirect for everything else. */
+    protected function clockOutReply(Request $request, $student, string $message, bool $ok)
+    {
+        if (! $request->wantsJson()) {
+            return back()->with($ok ? 'success' : 'error', $message);
+        }
+
+        if (! $ok) {
+            return response()->json(['message' => $message], 422);
+        }
+
+        $today = Carbon::now(Attendance::TIMEZONE);
+        $todayKey = $today->toDateString();
+
+        $records = Attendance::where('student_id', $student->student_id)
+            ->whereBetween('attendance_date', [
+                $today->copy()->startOfMonth()->toDateString(),
+                $today->copy()->endOfMonth()->toDateString(),
+            ])
+            ->get();
+
+        $html = view('student.partials.attendance-card', [
+            'attendance' => $records->first(fn ($record) => $record->attendance_date->toDateString() === $todayKey),
+            'today' => $today,
+            'monthPresent' => $records->where('status', 'Present')->count(),
+            'monthLeave' => $records->where('status', 'Leave')->count(),
+        ])->render();
+
+        return response()->json([
+            'target' => 'attendance-card',
+            'html' => $html,
+            'message' => $message,
+        ]);
     }
 
     public function dayOff(Request $request)

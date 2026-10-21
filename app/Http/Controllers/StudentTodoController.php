@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
 use App\Models\Todo;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -23,7 +25,7 @@ class StudentTodoController extends Controller
         ]);
 
         if (Todo::where('student_id', $student->student_id)->count() >= 200) {
-            return back()->with('error', 'You have 200 tasks. Please delete some completed ones first.');
+            return $this->fail($request, 'You have 200 tasks. Please delete some completed ones first.');
         }
 
         Todo::create([
@@ -33,28 +35,74 @@ class StudentTodoController extends Controller
             'is_done' => false,
         ]);
 
-        return back();
+        return $this->respond($request, $student, 'Task added.');
     }
 
-    public function toggle($id)
+    public function toggle(Request $request, $id)
     {
-        $todo = Todo::where('student_id', $this->student()->student_id)
+        $student = $this->student();
+
+        $todo = Todo::where('student_id', $student->student_id)
             ->where('todo_id', $id)
             ->firstOrFail();
 
         $todo->is_done = ! $todo->is_done;
         $todo->save();
 
-        return back();
+        return $this->respond($request, $student, $todo->is_done ? 'Task done.' : 'Task moved back to open.');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        Todo::where('student_id', $this->student()->student_id)
+        $student = $this->student();
+
+        Todo::where('student_id', $student->student_id)
             ->where('todo_id', $id)
             ->firstOrFail()
             ->delete();
 
-        return back();
+        return $this->respond($request, $student, 'Task deleted.');
+    }
+
+    /** JSON for the async forms, a normal redirect for everything else. */
+    protected function respond(Request $request, $student, ?string $message)
+    {
+        if (! $request->wantsJson()) {
+            return back();
+        }
+
+        return response()->json([
+            'target' => 'todo-list',
+            'html' => $this->card($student),
+            'message' => $message,
+        ]);
+    }
+
+    protected function fail(Request $request, string $message)
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message], 422);
+        }
+
+        return back()->with('error', $message);
+    }
+
+    protected function card($student): string
+    {
+        $mine = fn () => Todo::where('student_id', $student->student_id);
+
+        return view('student.partials.todo-card', [
+            'extrasReady' => true,
+            'todayKey' => Carbon::now(Attendance::TIMEZONE)->toDateString(),
+            'openCount' => $mine()->where('is_done', false)->count(),
+            'doneCount' => $mine()->where('is_done', true)->count(),
+            'openTodos' => $mine()->where('is_done', false)
+                ->orderByRaw('due_date IS NULL')
+                ->orderBy('due_date')
+                ->orderBy('todo_id')
+                ->take(8)
+                ->get(),
+            'doneTodos' => $mine()->where('is_done', true)->orderByDesc('updated_at')->take(5)->get(),
+        ])->render();
     }
 }
