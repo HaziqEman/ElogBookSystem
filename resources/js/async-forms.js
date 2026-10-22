@@ -1,7 +1,6 @@
 // Forms with a data-async attribute submit without reloading the page.
-// The server may answer with: { message, target, html }
-//   target + html : the element with that id is replaced by the new HTML
-//   message       : shown as a small pop-up
+// After a successful action, every element with data-live is refreshed from the server.
+window.__asyncForms = true;
 
 function toast(message, type) {
     if (!message) return;
@@ -24,22 +23,55 @@ function toast(message, type) {
     item.textContent = message;
     box.appendChild(item);
 
-    setTimeout(function () { item.remove(); }, 4000);
+    setTimeout(function () { item.remove(); }, 4500);
 }
 
-function swapFromHtml(id, html) {
-    var current = document.getElementById(id);
-    if (!current || !html) return false;
+window.asyncToast = toast;
 
-    var next = new DOMParser().parseFromString(html, 'text/html').getElementById(id);
-    if (!next) return false;
+var liveToken = 0;
+var liveNavigated = false;
 
-    current.replaceWith(next);
-    return true;
+// Fetch the page again and swap every [data-live] element that has an id.
+async function refreshLive(url) {
+    var target = url || window.location.href;
+    var token = ++liveToken;
+
+    try {
+        var response = await fetch(target, {
+            headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok || token !== liveToken) return false;
+
+        // A redirect to another page (for example the login page) must not be swapped in.
+        if (new URL(response.url).pathname !== new URL(target, window.location.href).pathname) return false;
+
+        var doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+        var swapped = [];
+
+        document.querySelectorAll('[data-live]').forEach(function (current) {
+            if (!current.id) return;
+
+            var next = doc.getElementById(current.id);
+            if (!next) return;
+
+            current.replaceWith(next);
+            swapped.push(next.id);
+        });
+
+        document.dispatchEvent(new CustomEvent('async:swapped', { detail: { ids: swapped } }));
+
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
+
+window.refreshLive = refreshLive;
 
 document.addEventListener('submit', async function (event) {
-    if (event.defaultPrevented) return;                      // a confirm() was cancelled
+    if (event.defaultPrevented) return;                      // a confirm() or another handler cancelled it
 
     var form = event.target.closest ? event.target.closest('form[data-async]') : null;
     if (!form) return;
@@ -49,18 +81,26 @@ document.addEventListener('submit', async function (event) {
     if (form.dataset.busy) return;
     form.dataset.busy = '1';
 
-    var button = form.querySelector('[type="submit"]');
-    if (button) button.disabled = true;
+    // The clicked submit button (Validate or Revision, for example) is not part of FormData by itself.
+    var submitter = event.submitter || null;
+    var body = new FormData(form);
+
+    if (submitter && submitter.name && !body.has(submitter.name)) {
+        body.append(submitter.name, submitter.value);
+    }
+
+    var buttons = form.querySelectorAll('[type="submit"]');
+    buttons.forEach(function (button) { button.disabled = true; });
 
     try {
         var response = await fetch(form.action, {
             method: 'POST',
-            body: new FormData(form),
+            body: body,
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin'
         });
 
-        // This action is not converted to JSON on the server yet: behave like a normal form.
+        // This action is not converted to JSON on the server: behave like a normal form.
         if (response.redirected) {
             window.location.assign(response.url);
             return;
@@ -75,6 +115,9 @@ document.addEventListener('submit', async function (event) {
 
         if (response.status === 422) {
             form.dispatchEvent(new CustomEvent('async:invalid', { bubbles: true, detail: data }));
+
+            var errors = data.errors ? Object.values(data.errors).flat() : [];
+            toast(errors[0] || data.message || 'Please check what you entered.', 'error');
             return;
         }
 
@@ -83,28 +126,39 @@ document.addEventListener('submit', async function (event) {
         }
 
         form.dispatchEvent(new CustomEvent('async:success', { bubbles: true, detail: data }));
+        toast(data.message, 'success');
+
+        if (form.dataset.refresh !== 'false') {
+            await refreshLive();
+        }
     } catch (error) {
         form.dispatchEvent(new CustomEvent('async:error', { bubbles: true, detail: { message: error.message } }));
+        toast(error.message, 'error');
     } finally {
         delete form.dataset.busy;
-        if (button && document.body.contains(button)) button.disabled = false;
+
+        buttons.forEach(function (button) {
+            if (document.body.contains(button)) button.disabled = false;
+        });
     }
 });
 
-document.addEventListener('async:success', function (event) {
-    var detail = event.detail || {};
+// Links with data-live-nav change the page contents without a reload (the week chips).
+document.addEventListener('click', async function (event) {
+    var link = event.target.closest ? event.target.closest('a[data-live-nav]') : null;
 
-    if (detail.target && detail.html) swapFromHtml(detail.target, detail.html);
-    if (detail.message) toast(detail.message, 'success');
+    if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+
+    event.preventDefault();
+
+    if (await refreshLive(link.href)) {
+        window.history.pushState({ live: true }, '', link.href);
+        liveNavigated = true;
+    } else {
+        window.location.assign(link.href);
+    }
 });
 
-document.addEventListener('async:invalid', function (event) {
-    var detail = event.detail || {};
-    var errors = detail.errors ? Object.values(detail.errors).flat() : [];
-
-    toast(errors[0] || detail.message || 'Please check what you entered.', 'error');
-});
-
-document.addEventListener('async:error', function (event) {
-    toast(event.detail && event.detail.message, 'error');
+window.addEventListener('popstate', function () {
+    if (liveNavigated) refreshLive(window.location.href);
 });

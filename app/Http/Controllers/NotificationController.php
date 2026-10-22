@@ -94,6 +94,9 @@ class NotificationController extends Controller
 
         $this->ownQuery($user)->whereNull('read_at')->update(['read_at' => now()]);
 
-        return back();
-    }
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'All notifications marked as read.']);
+        }
+
+        return back();    }
 }

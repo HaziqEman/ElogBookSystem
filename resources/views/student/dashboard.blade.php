@@ -71,64 +71,66 @@
     @endif
 
     {{-- REMINDER BANNER --}}
-    @if($banner['show'])
-        <section id="reminder-banner" data-dismiss-key="elogbook.banner.{{ $student->student_id }}.{{ $todayKey }}" class="relative rounded-[22px] border border-[#FBCFCB] bg-gradient-to-r from-[#FFE9E7] to-[#FFF3F0] px-5 py-5 md:px-7">
-            <button type="button" id="reminder-close" aria-label="Hide reminders for today" class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-[#5B6478] transition hover:bg-white/70">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-            </button>
-            <div class="flex flex-wrap items-center gap-x-6 gap-y-4 pr-8">
-                <div class="flex min-w-0 flex-[1_1_260px] items-center gap-4">
-                    <span class="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-[#FDBA3B]/30 text-3xl text-[#D97706]"><i class="fa-solid fa-bell"></i></span>
-                    <div>
-                        <span class="rounded-full bg-[#BE123C] px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider text-white">REMINDER</span>
-                        <h2 class="mt-1 text-xl font-extrabold leading-tight">You have pending tasks!</h2>
-                        <p class="mt-0.5 text-[13px] text-[#5B6478]">Don't forget to complete these before they become overdue.</p>
+    <div id="reminder-slot" data-live>
+        @if($banner['show'])
+            <section id="reminder-banner" data-dismiss-key="elogbook.banner.{{ $student->student_id }}.{{ $todayKey }}" class="relative rounded-[22px] border border-[#FBCFCB] bg-gradient-to-r from-[#FFE9E7] to-[#FFF3F0] px-5 py-5 md:px-7">
+                <button type="button" id="reminder-close" aria-label="Hide reminders for today" class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-[#5B6478] transition hover:bg-white/70">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-4 pr-8">
+                    <div class="flex min-w-0 flex-[1_1_260px] items-center gap-4">
+                        <span class="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-[#FDBA3B]/30 text-3xl text-[#D97706]"><i class="fa-solid fa-bell"></i></span>
+                        <div>
+                            <span class="rounded-full bg-[#BE123C] px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider text-white">REMINDER</span>
+                            <h2 class="mt-1 text-xl font-extrabold leading-tight">You have pending tasks!</h2>
+                            <p class="mt-0.5 text-[13px] text-[#5B6478]">Don't forget to complete these before they become overdue.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex min-w-0 flex-[3_1_520px] flex-wrap gap-3">
+                        @if($banner['attendance'])
+                            <div class="flex min-w-[200px] flex-1 flex-col gap-2 rounded-2xl border border-[#F3C4BF] bg-white p-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-[#FFE4E6] text-[#BE123C]"><i class="fa-solid fa-clock text-sm"></i></span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-extrabold">Attendance</p>
+                                        <p class="text-xs text-[#5B6478]">Today's attendance is not yet marked.</p>
+                                    </div>
+                                </div>
+                                <a href="#attendance-card" class="flex min-h-9 items-center justify-center rounded-xl bg-[#BE123C] text-sm font-bold text-white transition hover:bg-[#9F1239]">Mark now</a>
+                            </div>
+                        @endif
+
+                        @if($banner['logbook'])
+                            <div class="flex min-w-[200px] flex-1 flex-col gap-2 rounded-2xl border border-[#FDE68A] bg-white p-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-[#FEF3C7] text-[#B45309]"><i class="fa-solid fa-file-pen text-sm"></i></span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-extrabold">Logbook</p>
+                                        <p class="text-xs text-[#5B6478]">Today's entry ({{ $today->format('D, d M') }}) is not written yet.</p>
+                                    </div>
+                                </div>
+                                <a href="#new-entry" data-write-date="{{ $todayKey }}" class="flex min-h-9 items-center justify-center rounded-xl bg-[#B45309] text-sm font-bold text-white transition hover:bg-[#92400E]">Write entry</a>
+                            </div>
+                        @endif
+
+                        @if($banner['tasks'] > 0)
+                            <div class="flex min-w-[200px] flex-1 flex-col gap-2 rounded-2xl border border-[#C7D2FE] bg-white p-3.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-[#E0E7FF] text-[#3730A3]"><i class="fa-solid fa-list-check text-sm"></i></span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-extrabold">Task</p>
+                                        <p class="text-xs text-[#5B6478]">{{ $banner['tasks'] }} {{ \Illuminate\Support\Str::plural('task', $banner['tasks']) }} due soon or overdue.</p>
+                                    </div>
+                                </div>
+                                <a href="#todo-list" class="flex min-h-9 items-center justify-center rounded-xl bg-[#2F5BFF] text-sm font-bold text-white transition hover:bg-[#1F45D6]">View tasks</a>
+                            </div>
+                        @endif
                     </div>
                 </div>
-
-                <div class="flex min-w-0 flex-[3_1_520px] flex-wrap gap-3">
-                    @if($banner['attendance'])
-                        <div class="flex min-w-[200px] flex-1 flex-col gap-2 rounded-2xl border border-[#F3C4BF] bg-white p-3.5">
-                            <div class="flex items-center gap-2.5">
-                                <span class="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-[#FFE4E6] text-[#BE123C]"><i class="fa-solid fa-clock text-sm"></i></span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-extrabold">Attendance</p>
-                                    <p class="text-xs text-[#5B6478]">Today's attendance is not yet marked.</p>
-                                </div>
-                            </div>
-                            <a href="#attendance-card" class="flex min-h-9 items-center justify-center rounded-xl bg-[#BE123C] text-sm font-bold text-white transition hover:bg-[#9F1239]">Mark now</a>
-                        </div>
-                    @endif
-
-                    @if($banner['logbook'])
-                        <div class="flex min-w-[200px] flex-1 flex-col gap-2 rounded-2xl border border-[#FDE68A] bg-white p-3.5">
-                            <div class="flex items-center gap-2.5">
-                                <span class="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-[#FEF3C7] text-[#B45309]"><i class="fa-solid fa-file-pen text-sm"></i></span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-extrabold">Logbook</p>
-                                    <p class="text-xs text-[#5B6478]">Today's entry ({{ $today->format('D, d M') }}) is not written yet.</p>
-                                </div>
-                            </div>
-                            <a href="#new-entry" data-write-date="{{ $todayKey }}" class="flex min-h-9 items-center justify-center rounded-xl bg-[#B45309] text-sm font-bold text-white transition hover:bg-[#92400E]">Write entry</a>
-                        </div>
-                    @endif
-
-                    @if($banner['tasks'] > 0)
-                        <div class="flex min-w-[200px] flex-1 flex-col gap-2 rounded-2xl border border-[#C7D2FE] bg-white p-3.5">
-                            <div class="flex items-center gap-2.5">
-                                <span class="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-[#E0E7FF] text-[#3730A3]"><i class="fa-solid fa-list-check text-sm"></i></span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-extrabold">Task</p>
-                                    <p class="text-xs text-[#5B6478]">{{ $banner['tasks'] }} {{ \Illuminate\Support\Str::plural('task', $banner['tasks']) }} due soon or overdue.</p>
-                                </div>
-                            </div>
-                            <a href="#todo-list" class="flex min-h-9 items-center justify-center rounded-xl bg-[#2F5BFF] text-sm font-bold text-white transition hover:bg-[#1F45D6]">View tasks</a>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </section>
-    @endif
+            </section>
+        @endif
+    </div>
 
     {{-- HERO --}}
     <section class="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-3xl bg-gradient-to-r from-[#2F5BFF] to-[#4F46E5] px-6 py-7 text-white md:px-9">
@@ -164,7 +166,7 @@
                 </div>
             @endif
 
-            <div class="grid flex-1 grid-cols-2 gap-3.5">
+            <div id="stats-grid" data-live class="grid flex-1 grid-cols-2 gap-3.5">
                 <div class="flex items-center gap-3.5 rounded-[20px] border border-[#D3E0FF] bg-[#E8EFFF] px-[18px] py-4">
                     <span class="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[15px] bg-white text-[#1F45D6]"><i class="fa-solid fa-file-lines"></i></span>
                     <div><div class="text-xs font-semibold text-[#334155]">Total entries</div><div class="text-[28px] font-extrabold leading-tight">{{ $totalLogs }}</div></div>
@@ -225,7 +227,7 @@
 
     {{-- CALENDAR + TO-DO --}}
     <section class="flex flex-wrap items-stretch gap-5">
-        <div class="min-w-0 flex-[3_1_520px] px-[22px] py-5 {{ $card }}">
+        <div id="calendar-card" data-live class="min-w-0 flex-[3_1_520px] px-[22px] py-5 {{ $card }}">
             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-base font-extrabold">My calendar</h2>
                 <div class="flex items-center gap-2.5">
@@ -264,7 +266,7 @@
             </div>
         </div>
 
-    @include('student.partials.todo-card')
+        @include('student.partials.todo-card')
     </section>
 
     {{-- NEW ENTRY (opens from "Write entry" and the quick actions) --}}
@@ -277,7 +279,7 @@
             <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]"><i class="fa-solid fa-chevron-down text-sm"></i></span>
         </summary>
 
-        <form id="logbook-form" action="/student/logbook/store" method="POST" enctype="multipart/form-data" data-first-monday="{{ $firstMondayKey }}" data-total-weeks="{{ $planner->totalWeeks() }}" data-working-days="{{ $workingDaysCsv }}" data-today="{{ $todayKey }}" class="space-y-3 border-t border-[#EDF0F7] px-7 pb-6 pt-5">
+        <form id="logbook-form" action="/student/logbook/store" method="POST" enctype="multipart/form-data" data-async data-first-monday="{{ $firstMondayKey }}" data-total-weeks="{{ $planner->totalWeeks() }}" data-working-days="{{ $workingDaysCsv }}" data-today="{{ $todayKey }}" class="space-y-3 border-t border-[#EDF0F7] px-7 pb-6 pt-5">
             @csrf
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
@@ -300,11 +302,12 @@
             <p id="date-hint" class="hidden rounded-xl bg-[#FFEDD5] px-3 py-2 text-xs font-semibold text-[#9A3412]"></p>
 
             <div>
-                <label class="mb-1 block text-xs font-semibold text-[#334155]">Activity Description</label>
-                <div>
                 <label for="ai-role" class="mb-1 block text-xs font-semibold text-[#334155]">Your role at the company <span class="font-normal text-[#5B6478]">(AI Help uses it to pick the right wording)</span></label>
                 <input type="text" id="ai-role" maxlength="150" value="{{ old('role', $student->internship_role ?? '') }}" placeholder="e.g. Junior web developer, Accounts assistant" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">
-                </div>  
+            </div>
+
+            <div>
+                <label class="mb-1 block text-xs font-semibold text-[#334155]">Activity Description</label>
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <span class="text-[11px] text-[#5B6478]">Need help drafting a polished entry?</span>
                     <button type="button" id="ai-help-btn" class="shrink-0 rounded-lg border border-[#D3E0FF] bg-[#E8EFFF] px-3 py-1.5 text-xs font-bold text-[#1F45D6] transition hover:bg-[#D3E0FF] disabled:cursor-not-allowed disabled:opacity-60">
@@ -316,20 +319,20 @@
             </div>
             <div>
                 <label class="mb-1 block text-xs font-semibold text-[#334155]">Upload Attachment (image, PDF or Word, max 5 MB)</label>
-                    <div id="ai-read-file-box" class="hidden">
-                    <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-[#E3E8F2] bg-[#FCFDFF] p-3 text-xs text-[#334155]">
-                        <input type="checkbox" id="ai-read-file" class="mt-0.5 h-4 w-4">
-                        <span><strong>Let AI Help read this file</strong> (photo or PDF) when it writes the draft. The file is sent to Google's Gemini service, so do not use documents with confidential company information.</span>
-                    </label>
-                    </div>
                 <input type="file" name="attachment" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-[#E8EFFF] file:px-3 file:py-2 file:text-sm file:font-bold file:text-[#1F45D6]">
+            </div>
+            <div id="ai-read-file-box" class="hidden">
+                <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-[#E3E8F2] bg-[#FCFDFF] p-3 text-xs text-[#334155]">
+                    <input type="checkbox" id="ai-read-file" class="mt-0.5 h-4 w-4">
+                    <span><strong>Let AI Help read this file</strong> (photo or PDF) when it writes the draft. The file is sent to Google's Gemini service, so do not use documents with confidential company information.</span>
+                </label>
             </div>
             <button id="submit-entry-btn" type="submit" class="w-full rounded-xl bg-[#2F5BFF] p-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#1F45D6] disabled:cursor-not-allowed disabled:opacity-60">Submit Entry</button>
         </form>
     </details>
 
     {{-- LOGBOOK BY WEEK --}}
-    <section id="logbook-week" class="px-7 py-6 {{ $card }}">
+    <section id="logbook-week" data-live class="px-7 py-6 {{ $card }}">
         <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-xl font-extrabold">Logbook by week</h2>
@@ -360,7 +363,7 @@
         @if($planner->hasStart() && $selected)
             <div class="flex flex-wrap gap-2">
                 @foreach($weeks as $week)
-                    <a href="/student/dashboard?week={{ $week['number'] }}#logbook-week" title="{{ $statusText[$week['status']] }}" class="flex min-h-[42px] min-w-[52px] items-center justify-center rounded-xl px-3 text-sm font-extrabold transition {{ $chipClass[$week['status']] }} {{ $week['number'] === $selected['number'] ? 'ring-2 ring-[#2F5BFF] ring-offset-2' : '' }}">W{{ $week['number'] }}</a>
+                    <a href="/student/dashboard?week={{ $week['number'] }}#logbook-week" data-live-nav title="{{ $statusText[$week['status']] }}" class="flex min-h-[42px] min-w-[52px] items-center justify-center rounded-xl px-3 text-sm font-extrabold transition {{ $chipClass[$week['status']] }} {{ $week['number'] === $selected['number'] ? 'ring-2 ring-[#2F5BFF] ring-offset-2' : '' }}">W{{ $week['number'] }}</a>
                 @endforeach
             </div>
             <div class="mb-5 mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5B6478]">
@@ -465,9 +468,9 @@
                                             @endif
                                         </div>
                                         @if($entry->isEditableByStudent())
-                                            <a href="/student/logbook/edit/{{ $entry->logbook_id }}" aria-label="{{ $entry->needsRevision() ? 'Revise entry' : 'Edit entry' }}" title="{{ $entry->needsRevision() ? 'Revise entry' : 'Edit entry' }}" class="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border transition {{ $entry->needsRevision() ? 'border-[#BE123C] bg-[#BE123C] text-white hover:bg-[#9F1239]' : 'border-[#E3E8F2] bg-white text-[#334155] hover:bg-[#F3F5FC]' }}"><i class="fa-solid fa-pen text-sm"></i></a>
+                                            <a href="/student/logbook/edit/{{ $entry->logbook_id }}" data-edit-entry aria-label="{{ $entry->needsRevision() ? 'Revise entry' : 'Edit entry' }}" title="{{ $entry->needsRevision() ? 'Revise entry' : 'Edit entry' }}" class="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border transition {{ $entry->needsRevision() ? 'border-[#BE123C] bg-[#BE123C] text-white hover:bg-[#9F1239]' : 'border-[#E3E8F2] bg-white text-[#334155] hover:bg-[#F3F5FC]' }}"><i class="fa-solid fa-pen text-sm"></i></a>
                                         @else
-                                            <span title="Approved, so it is locked" class="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-[#E3E8F2] bg-[#F7F9FD] text-[#94A3B8]"><i class="fa-solid fa-lock text-sm"></i></span>
+                                            <span title="Validated by your supervisor, so it is locked" class="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-[#E3E8F2] bg-[#F7F9FD] text-[#94A3B8]"><i class="fa-solid fa-lock text-sm"></i></span>
                                         @endif
                                     </div>
 
@@ -484,7 +487,7 @@
                                                 <span class="text-xs text-[#5B6478]">+{{ $moreFiles }} more</span>
                                             @endif
                                         @elseif($entry->isEditableByStudent())
-                                            <a href="/student/logbook/edit/{{ $entry->logbook_id }}" class="flex min-h-8 items-center gap-1.5 rounded-[9px] border border-dashed border-[#9DB4FF] bg-[#F5F7FF] px-3 text-xs font-bold text-[#1F45D6] transition hover:bg-[#E8EFFF]"><i class="fa-solid fa-plus"></i> Add a file</a>
+                                            <a href="/student/logbook/edit/{{ $entry->logbook_id }}" data-edit-entry class="flex min-h-8 items-center gap-1.5 rounded-[9px] border border-dashed border-[#9DB4FF] bg-[#F5F7FF] px-3 text-xs font-bold text-[#1F45D6] transition hover:bg-[#E8EFFF]"><i class="fa-solid fa-plus"></i> Add a file</a>
                                         @endif
 
                                         @if($supervisorAssigned)
@@ -553,9 +556,18 @@
     </section>
 </div>
 
-<script>
-    window.__entryDates = @json($entryDates);
-</script>
+{{-- Edit entry pop-up --}}
+<div id="edit-modal" class="fixed inset-0 z-[90] hidden items-start justify-center overflow-y-auto bg-slate-900/50 p-4" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <div class="my-8 w-full max-w-2xl rounded-[22px] bg-white p-5 shadow-xl md:p-6">
+        <div class="mb-3 flex items-center justify-between gap-3">
+            <h2 id="edit-modal-title" class="text-lg font-extrabold">Edit logbook entry</h2>
+            <button type="button" id="edit-modal-close" aria-label="Close" class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="edit-modal-body"></div>
+    </div>
+</div>
+
+<div id="entry-dates" data-live data-dates="{{ json_encode($entryDates->values()->all()) }}" class="hidden"></div>
 
 <script>
 (function () {
@@ -564,34 +576,40 @@
 
     var COOLDOWN_SECONDS = 10;
 
+    function byId(id) { return document.getElementById(id); }
+
     // Reminder banner: hidden for the rest of the day when closed.
-    var banner = document.getElementById('reminder-banner');
-    if (banner) {
-        var bannerKey = banner.getAttribute('data-dismiss-key');
-        try { if (localStorage.getItem(bannerKey)) banner.classList.add('hidden'); } catch (e) {}
-        var closeBtn = document.getElementById('reminder-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', function () {
-                banner.classList.add('hidden');
-                try { localStorage.setItem(bannerKey, '1'); } catch (e) {}
-            });
-        }
+    function applyBannerDismiss() {
+        var banner = byId('reminder-banner');
+        if (!banner) return;
+
+        try {
+            if (localStorage.getItem(banner.getAttribute('data-dismiss-key'))) banner.classList.add('hidden');
+        } catch (e) {}
     }
 
+    applyBannerDismiss();
+    document.addEventListener('async:swapped', applyBannerDismiss);
+
     // New entry form: week number and day checks.
-    var form = document.getElementById('logbook-form');
+    var form = byId('logbook-form');
     var dateInput = form ? form.querySelector('input[name="activity_date"]') : null;
     var weekInput = form ? form.querySelector('[name="week_no"]') : null;
-    var weekHint = document.getElementById('week-hint');
-    var dateHint = document.getElementById('date-hint');
-    var submitBtn = document.getElementById('submit-entry-btn');
+    var weekHint = byId('week-hint');
+    var dateHint = byId('date-hint');
+    var submitBtn = byId('submit-entry-btn');
     var firstMonday = form ? form.getAttribute('data-first-monday') : '';
     var totalWeeks = form ? parseInt(form.getAttribute('data-total-weeks'), 10) || 14 : 14;
     var todayKey = form ? form.getAttribute('data-today') : '';
     var workingDays = form
         ? (form.getAttribute('data-working-days') || '1,2,3,4,5').split(',').map(function (day) { return parseInt(day, 10); })
         : [];
-    var existing = window.__entryDates || [];
+
+    function entryDates() {
+        var holder = byId('entry-dates');
+
+        try { return JSON.parse((holder && holder.getAttribute('data-dates')) || '[]'); } catch (e) { return []; }
+    }
 
     function utc(value) {
         var p = value.split('-');
@@ -618,7 +636,7 @@
             }
         }
 
-        if (existing.indexOf(value) !== -1) {
+        if (entryDates().indexOf(value) !== -1) {
             return 'You already have an entry for this day. Edit it from the week list instead.';
         }
 
@@ -643,10 +661,12 @@
         }
 
         var problem = problemFor(value);
+
         if (dateHint) {
             dateHint.textContent = problem;
             dateHint.classList.toggle('hidden', !problem);
         }
+
         if (submitBtn) submitBtn.disabled = !!problem;
     }
 
@@ -655,33 +675,154 @@
         onDate();
     }
 
+    window.addEventListener('pageshow', onDate);
+
     function openEntry(focusName, date) {
-        var panel = document.getElementById('new-entry');
+        var panel = byId('new-entry');
         if (!panel) return;
+
         panel.open = true;
+
         if (date && dateInput) {
             dateInput.value = date;
             onDate();
         }
+
         panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
         if (focusName) {
-            var target = panel.querySelector('[name="' + focusName + '"]') || document.getElementById(focusName + '-field');
+            var target = panel.querySelector('[name="' + focusName + '"]') || byId(focusName + '-field');
             if (target) setTimeout(function () { target.focus(); }, 350);
         }
     }
 
-    document.querySelectorAll('a[href="#new-entry"]').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
-            openEntry(link.getAttribute('data-focus'), link.getAttribute('data-write-date'));
-        });
-    });
     if (location.hash === '#new-entry') openEntry();
+
+    // Edit entry pop-up.
+    var modal = byId('edit-modal');
+    var modalBody = byId('edit-modal-body');
+
+    function closeEditModal() {
+        if (!modal) return;
+
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (modalBody) modalBody.innerHTML = '';
+    }
+
+    async function openEditModal(href) {
+        if (!modal || !modalBody) {
+            window.location.assign(href);
+            return;
+        }
+
+        try {
+            var response = await fetch(href, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                credentials: 'same-origin'
+            });
+
+            if (response.redirected) {
+                window.location.assign(href);
+                return;
+            }
+
+            if (!response.ok) {
+                var message = 'This entry cannot be edited.';
+
+                try { message = (await response.json()).message || message; } catch (e) {}
+                if (window.asyncToast) window.asyncToast(message, 'error');
+
+                return;
+            }
+
+            modalBody.innerHTML = await response.text();
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            var first = modalBody.querySelector('textarea, input:not([type="hidden"])');
+            if (first) first.focus();
+        } catch (e) {
+            window.location.assign(href);
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (!target || !target.closest) return;
+
+        var close = target.closest('#reminder-close');
+
+        if (close) {
+            var banner = byId('reminder-banner');
+
+            if (banner) {
+                banner.classList.add('hidden');
+                try { localStorage.setItem(banner.getAttribute('data-dismiss-key'), '1'); } catch (e) {}
+            }
+
+            return;
+        }
+
+        var write = target.closest('a[href="#new-entry"]');
+
+        if (write) {
+            event.preventDefault();
+            openEntry(write.getAttribute('data-focus'), write.getAttribute('data-write-date'));
+            return;
+        }
+
+        var edit = target.closest('a[data-edit-entry]');
+
+        if (edit) {
+            event.preventDefault();
+            openEditModal(edit.href);
+            return;
+        }
+
+        if (target.id === 'edit-modal' || target.closest('#edit-modal-close') || target.closest('#edit-cancel')) {
+            event.preventDefault();
+            closeEditModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') closeEditModal();
+    });
+
+    // After the new entry is saved: clear the form and close the panel.
+    document.addEventListener('async:success', function (event) {
+        var source = event.target;
+
+        if (form && source === form) {
+            form.reset();
+
+            var panel = byId('new-entry');
+            if (panel) panel.open = false;
+
+            var statusEl = byId('ai-help-status');
+            if (statusEl) statusEl.textContent = '';
+
+            var readBox = byId('ai-read-file-box');
+            if (readBox) readBox.classList.add('hidden');
+
+            setTimeout(onDate, 0);
+        }
+
+        if (source && source.closest && source.closest('#edit-modal')) closeEditModal();
+    });
+
+    function recheck(event) {
+        if (form && event.target === form) setTimeout(onDate, 0);
+    }
+
+    document.addEventListener('async:invalid', recheck);
+    document.addEventListener('async:error', recheck);
 
     // AI Help
     function updateMeter(left) {
-        var leftEl = document.getElementById('ai-left');
-        var bar = document.getElementById('ai-bar');
+        var leftEl = byId('ai-left');
+        var bar = byId('ai-bar');
         if (!leftEl || !bar || isNaN(left)) return;
 
         var limit = parseInt(leftEl.getAttribute('data-limit'), 10) || 10;
@@ -694,20 +835,21 @@
         bar.style.background = color;
     }
 
-        var btn = document.getElementById('ai-help-btn');
-    var label = document.getElementById('ai-help-label');
-    var field = document.getElementById('description-field');
-    var status = document.getElementById('ai-help-status');
-    var roleInput = document.getElementById('ai-role');
+    var btn = byId('ai-help-btn');
+    var label = byId('ai-help-label');
+    var field = byId('description-field');
+    var status = byId('ai-help-status');
+    var roleInput = byId('ai-role');
     var fileInput = form ? form.querySelector('input[name="attachment"]') : null;
-    var readBox = document.getElementById('ai-read-file-box');
-    var readCheck = document.getElementById('ai-read-file');
+    var readBox = byId('ai-read-file-box');
+    var readCheck = byId('ai-read-file');
 
     var AI_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     var AI_MAX_BYTES = 1900000;
 
     function aiFile() {
         var file = fileInput && fileInput.files && fileInput.files[0];
+
         return file && AI_TYPES.indexOf(file.type) !== -1 ? file : null;
     }
 
@@ -729,15 +871,18 @@
 
             image.onload = function () {
                 URL.revokeObjectURL(url);
+
                 var scale = Math.min(1, 1280 / Math.max(image.width, image.height));
                 var canvas = document.createElement('canvas');
                 canvas.width = Math.round(image.width * scale);
                 canvas.height = Math.round(image.height * scale);
                 canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+
                 canvas.toBlob(function (blob) {
                     resolve(blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file);
                 }, 'image/jpeg', 0.8);
             };
+
             image.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
             image.src = url;
         });
@@ -746,17 +891,19 @@
     if (btn && field && status) {
         var busy = false;
 
-        function setStatus(text, color) {
+        var setStatus = function (text, color) {
             status.textContent = text;
             status.style.color = color;
-        }
+        };
 
-        function startCooldown() {
+        var startCooldown = function () {
             var left = COOLDOWN_SECONDS;
             btn.disabled = true;
             label.textContent = 'Wait ' + left + 's';
+
             var timer = setInterval(function () {
                 left -= 1;
+
                 if (left <= 0) {
                     clearInterval(timer);
                     btn.disabled = false;
@@ -765,7 +912,7 @@
                     label.textContent = 'Wait ' + left + 's';
                 }
             }, 1000);
-        }
+        };
 
         btn.addEventListener('click', async function (e) {
             e.preventDefault();
@@ -794,9 +941,11 @@
 
                 if (chosen) {
                     var prepared = await shrinkForAi(chosen);
+
                     if (prepared.size > AI_MAX_BYTES) {
                         throw new Error('This file is too large for AI Help (limit about 2 MB). Try a smaller file or a screenshot.');
                     }
+
                     body.append('use_file', '1');
                     body.append('attachment', prepared, prepared.name || 'file');
                 }
@@ -837,17 +986,6 @@
                 busy = false;
                 startCooldown();
             }
-        });
-    }
-
-    if (form && submitBtn) {
-        form.addEventListener('submit', function () {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-        });
-        window.addEventListener('pageshow', function () {
-            submitBtn.textContent = 'Submit Entry';
-            onDate();
         });
     }
 })();

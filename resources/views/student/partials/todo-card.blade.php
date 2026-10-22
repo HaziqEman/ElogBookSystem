@@ -2,8 +2,7 @@
     $card = 'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
 @endphp
 
-<div id="todo-list" class="min-w-0 flex-[2_1_340px] px-[22px] py-5 {{ $card }}">
-    <div class="mb-3 flex items-center justify-between">
+<div id="todo-list" data-live class="min-w-0 flex-[2_1_340px] px-[22px] py-5 {{ $card }}">    <div class="mb-3 flex items-center justify-between">
         <h2 class="text-base font-extrabold">To-do list</h2>
         <span class="text-xs font-bold text-[#5B6478]">{{ $openCount }} open</span>
     </div>

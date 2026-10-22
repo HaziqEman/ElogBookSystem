@@ -174,12 +174,18 @@ class LogbookController extends Controller
                 }
             });
 
-            return redirect('/student/dashboard#logbook-week')->with('success', 'Log entry created successfully.');
-        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Log entry created successfully.']);
+            }
+
+            return redirect('/student/dashboard#logbook-week')->with('success', 'Log entry created successfully.');        } catch (\Throwable $e) {
             Log::error('Logbook store failed: '.$e->getMessage());
 
-            return redirect()->back()->withInput()->with('error', 'Failed to create log entry. Please try again.');
-        }
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Failed to create log entry. Please try again.'], 500);
+            }
+
+            return redirect()->back()->withInput()->with('error', 'Failed to create log entry. Please try again.');        }
     }
 
     public function destroy($id)

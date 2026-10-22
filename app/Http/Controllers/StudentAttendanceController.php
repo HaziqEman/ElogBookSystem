@@ -23,6 +23,16 @@ class StudentAttendanceController extends Controller
         return Auth::guard('student')->user();
     }
 
+    /** JSON for the async forms, a normal redirect for everything else. */
+    protected function reply(Request $request, bool $ok, string $message, int $failStatus = 422)
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message], $ok ? 200 : $failStatus);
+        }
+
+        return back()->with($ok ? 'success' : 'error', $message);
+    }
+
     public function index()
     {
         $student = $this->student();
@@ -77,11 +87,11 @@ class StudentAttendanceController extends Controller
             ]);
 
             if ($attendance->exists && $attendance->isDayOff()) {
-                return back()->with('error', 'Today is marked as '.$attendance->dayOffLabel().'. Press Change first if you want to clock in.');
+                return $this->reply($request, false, 'Today is marked as '.$attendance->dayOffLabel().'. Press Change first if you want to clock in.');
             }
 
             if ($attendance->check_in) {
-                return back()->with('error', 'You already clocked in today at '.$attendance->checkInLocal().'.');
+                return $this->reply($request, false, 'You already clocked in today at '.$attendance->checkInLocal().'.');
             }
 
             $shared = ($data['location_status'] ?? null) === 'shared'
@@ -106,13 +116,13 @@ class StudentAttendanceController extends Controller
         } catch (\Throwable $e) {
             Log::error('Clock in failed: '.$e->getMessage());
 
-            return back()->with('error', 'Could not clock you in. Please try again.');
+            return $this->reply($request, false, 'Could not clock you in. Please try again.', 500);
         }
 
-        return back()->with('success', 'Clocked in at '.$attendance->checkInLocal().'.');
+        return $this->reply($request, true, 'Clocked in at '.$attendance->checkInLocal().'.');
     }
 
-        public function clockOut(Request $request)
+    public function clockOut(Request $request)
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
@@ -122,11 +132,11 @@ class StudentAttendanceController extends Controller
             ->first();
 
         if (! $attendance || ! $attendance->check_in) {
-            return $this->clockOutReply($request, $student, 'Please clock in first.', false);
+            return $this->reply($request, false, 'Please clock in first.');
         }
 
         if ($attendance->check_out) {
-            return $this->clockOutReply($request, $student, 'You already clocked out today at '.$attendance->checkOutLocal().'.', false);
+            return $this->reply($request, false, 'You already clocked out today at '.$attendance->checkOutLocal().'.');
         }
 
         try {
@@ -135,50 +145,10 @@ class StudentAttendanceController extends Controller
         } catch (\Throwable $e) {
             Log::error('Clock out failed: '.$e->getMessage());
 
-            return $this->clockOutReply($request, $student, 'Could not clock you out. Please try again.', false);
+            return $this->reply($request, false, 'Could not clock you out. Please try again.', 500);
         }
 
-        return $this->clockOutReply(
-            $request,
-            $student,
-            'Clocked out at '.$attendance->checkOutLocal().'. Worked '.$attendance->workedLabel().'.',
-            true
-        );
-    }
-
-    /** JSON for the async form, a normal redirect for everything else. */
-    protected function clockOutReply(Request $request, $student, string $message, bool $ok)
-    {
-        if (! $request->wantsJson()) {
-            return back()->with($ok ? 'success' : 'error', $message);
-        }
-
-        if (! $ok) {
-            return response()->json(['message' => $message], 422);
-        }
-
-        $today = Carbon::now(Attendance::TIMEZONE);
-        $todayKey = $today->toDateString();
-
-        $records = Attendance::where('student_id', $student->student_id)
-            ->whereBetween('attendance_date', [
-                $today->copy()->startOfMonth()->toDateString(),
-                $today->copy()->endOfMonth()->toDateString(),
-            ])
-            ->get();
-
-        $html = view('student.partials.attendance-card', [
-            'attendance' => $records->first(fn ($record) => $record->attendance_date->toDateString() === $todayKey),
-            'today' => $today,
-            'monthPresent' => $records->where('status', 'Present')->count(),
-            'monthLeave' => $records->where('status', 'Leave')->count(),
-        ])->render();
-
-        return response()->json([
-            'target' => 'attendance-card',
-            'html' => $html,
-            'message' => $message,
-        ]);
+        return $this->reply($request, true, 'Clocked out at '.$attendance->checkOutLocal().'. Worked '.$attendance->workedLabel().'.');
     }
 
     public function dayOff(Request $request)
@@ -262,13 +232,13 @@ class StudentAttendanceController extends Controller
         } catch (\Throwable $e) {
             Log::error('Save day off failed: '.$e->getMessage());
 
-            return back()->withInput()->with('error', 'Could not save this day off. Please try again.');
+            return $this->reply($request, false, 'Could not save this day off. Please try again.', 500);
         }
 
-        return back()->with('success', $data['day_off_type'].' saved for '.Carbon::parse($data['leave_date'])->format('d M Y').'.');
+        return $this->reply($request, true, $data['day_off_type'].' saved for '.Carbon::parse($data['leave_date'])->format('d M Y').'.');
     }
 
-    public function cancelDayOff($id)
+    public function cancelDayOff(Request $request, $id)
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
@@ -279,13 +249,13 @@ class StudentAttendanceController extends Controller
             ->firstOrFail();
 
         if ($attendance->attendance_date->toDateString() < $today) {
-            return back()->with('error', 'Days that have already passed cannot be changed.');
+            return $this->reply($request, false, 'Days that have already passed cannot be changed.');
         }
 
         // The certificate row is removed together with the record (ON DELETE CASCADE).
         $attendance->delete();
 
-        return back()->with('success', 'The day off was removed.');
+        return $this->reply($request, true, 'The day off was removed.');
     }
 
     /** Turn a position into a place name using OpenStreetMap. Failure just means no name. */

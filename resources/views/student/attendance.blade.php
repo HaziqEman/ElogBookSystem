@@ -31,7 +31,7 @@
         </div>
 
         <div class="space-y-6 lg:col-span-2">
-            <div class="grid grid-cols-3 gap-3">
+            <div id="attendance-stats" data-live class="grid grid-cols-3 gap-3">
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
                     <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Present</p>
                     <p class="mt-1 text-2xl font-bold text-emerald-600">{{ $monthPresent }}</p>
@@ -49,7 +49,7 @@
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+            <div id="attendance-history" data-live class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
                 <div class="border-b border-slate-100 bg-slate-50 px-5 py-4 text-sm font-bold text-slate-700">History (latest 60 days)</div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-sm">

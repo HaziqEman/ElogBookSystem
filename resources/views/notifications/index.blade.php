@@ -12,20 +12,20 @@
 @endphp
 
 <div class="mx-auto max-w-3xl space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-xs md:p-6">
+    <div id="notif-header" data-live class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-xs md:p-6">
         <div>
             <h2 class="text-2xl font-bold text-slate-800">Notifications</h2>
             <p class="mt-1 text-sm text-slate-500">{{ $unread > 0 ? $unread.' unread' : 'You are all caught up.' }}</p>
         </div>
         @if($unread > 0)
-            <form method="POST" action="/{{ $role }}/notifications/read-all">
+            <form data-async  method="POST" action="/{{ $role }}/notifications/read-all">
                 @csrf
                 <button type="submit" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Mark all as read</button>
             </form>
         @endif
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+    <div id="notif-list" data-live class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
         @forelse($notifications as $notification)
             @php
                 $isUnread = $notification->read_at === null;

@@ -74,8 +74,11 @@ class SupervisorReviewController extends Controller
         } catch (\Throwable $e) {
             Log::error('Supervisor review failed: '.$e->getMessage());
 
-            return redirect()->back()->withInput()->with('error', 'Could not save the review. Please try again.');
-        }
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Could not save the review. Please try again.'], 500);
+            }
+
+            return redirect()->back()->withInput()->with('error', 'Could not save the review. Please try again.');        }
 
         app(NotificationService::class)->reviewGiven(
             $logbook,
@@ -85,6 +88,9 @@ class SupervisorReviewController extends Controller
             $data['comment'] ?? null
         );
 
-        return redirect('/supervisor/dashboard')->with('success', 'Entry marked as '.$data['decision'].'.');
-    }
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Entry marked as '.$data['decision'].'.']);
+        }
+
+        return redirect('/supervisor/dashboard')->with('success', 'Entry marked as '.$data['decision'].'.');    }
 }

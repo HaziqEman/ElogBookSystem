@@ -32,7 +32,7 @@
     @endphp
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
-        <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs space-y-4">
+        <div id="review-main" data-live class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs space-y-4">
             <div class="flex flex-wrap items-center gap-2">
                 <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">Week {{ $logbook->week_no }}</span>
                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $mineBadge }}">Your status: {{ $mine }}</span>
@@ -92,7 +92,7 @@
 
         <div class="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs">
             <h3 class="text-base font-bold text-slate-800">Your review</h3>
-            <form id="review-form" action="/supervisor/logbook/{{ $logbook->logbook_id }}/review" method="POST" class="mt-4 space-y-3">
+            <form data-async id="review-form" action="/supervisor/logbook/{{ $logbook->logbook_id }}/review" method="POST" class="mt-4 space-y-3">
                 @csrf
                 <div>
                     <label for="comment" class="block text-xs font-semibold text-slate-600 mb-1">Comment</label>
@@ -131,6 +131,16 @@
     window.addEventListener('pageshow', function () {
         form.querySelectorAll('.review-btn').forEach(function (b) { b.disabled = false; });
     });
+
+    // After a review is saved, clear the comment box. The status and feedback list refresh by themselves.
+    document.addEventListener('async:success', function (event) {
+        if (event.target && event.target.id === 'review-form') {
+            var box = document.getElementById('comment');
+            if (box) box.value = '';
+        }
+    });
+
+
 })();
 </script>
 @endsection

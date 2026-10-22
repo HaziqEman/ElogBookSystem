@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 class StudentLogbookEditController extends Controller
 {
-    public function edit($id)
+    private const LOCKED = 'This entry has been validated by your supervisor and can no longer be edited.';
+
+    public function edit(Request $request, $id)
     {
         $student = Auth::guard('student')->user();
 
@@ -20,7 +22,16 @@ class StudentLogbookEditController extends Controller
             ->findOrFail($id);
 
         if (! $logbook->isEditableByStudent()) {
-            return redirect('/student/dashboard')->with('error', 'This entry has been approved and can no longer be edited.');
+            if ($request->ajax()) {
+                return response()->json(['message' => self::LOCKED], 403);
+            }
+
+            return redirect('/student/dashboard')->with('error', self::LOCKED);
+        }
+
+        // The pop-up on the dashboard asks for just the form.
+        if ($request->ajax()) {
+            return response(view('student.partials.logbook-edit-form', compact('logbook'))->render());
         }
 
         return view('student.logbook_edit', compact('logbook'));
@@ -32,7 +43,7 @@ class StudentLogbookEditController extends Controller
         $logbook = $student->logbooks()->findOrFail($id);
 
         if (! $logbook->isEditableByStudent()) {
-            return redirect('/student/dashboard')->with('error', 'This entry has been approved and can no longer be edited.');
+            return $this->reply($request, false, self::LOCKED, 403);
         }
 
         $data = $request->validate([
@@ -67,9 +78,20 @@ class StudentLogbookEditController extends Controller
         } catch (\Throwable $e) {
             Log::error('Logbook update failed: '.$e->getMessage());
 
-            return redirect()->back()->withInput()->with('error', 'Could not save your changes. Please try again.');
+            return $this->reply($request, false, 'Could not save your changes. Please try again.', 500);
         }
 
-        return redirect('/student/dashboard')->with('success', 'Entry updated and sent back for review.');
+        return $this->reply($request, true, 'Entry updated and sent back for review.');
+    }
+
+    protected function reply(Request $request, bool $ok, string $message, int $failStatus = 422)
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message], $ok ? 200 : $failStatus);
+        }
+
+        return $ok
+            ? redirect('/student/dashboard')->with('success', $message)
+            : redirect()->back()->withInput()->with('error', $message);
     }
 }
