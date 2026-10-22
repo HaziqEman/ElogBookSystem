@@ -15,7 +15,7 @@
     $canChange = $dayOff && $attendance->attendance_date->toDateString() >= $today->toDateString();
 @endphp
 
-<div id="attendance-card" class="px-[22px] py-5 {{ $cardClass }}">
+<div id="attendance-card" data-live class="px-[22px] py-5 {{ $cardClass }}">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="flex items-center gap-2.5">
             <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]">
@@ -53,9 +53,9 @@
                 @endif
             </div>
             @if($canChange)
-                <form method="POST" action="/student/attendance/day-off/{{ $attendance->attendance_id }}/cancel" onsubmit="return confirm('Remove this day off so you can clock in?');">
+                <form method="POST" action="/student/attendance/day-off/{{ $attendance->attendance_id }}/cancel" data-async onsubmit="return confirm('Remove this day off so you can clock in?');">
                     @csrf
-                    <button type="submit" class="min-h-10 rounded-xl border border-[#CBD3E3] bg-white px-4 text-sm font-bold text-[#1E293B] transition hover:bg-[#F3F5FC]">Change</button>
+                    <button type="submit" class="min-h-10 rounded-xl border border-[#CBD3E3] bg-white px-4 text-sm font-bold text-[#1E293B] transition hover:bg-[#F3F5FC] disabled:opacity-60">Change</button>
                 </form>
             @endif
         </div>
@@ -85,7 +85,7 @@
                 @if($hasOut)
                     <button type="button" disabled class="min-h-12 w-full cursor-not-allowed rounded-[14px] bg-[#64748B] px-4 text-[15px] font-bold text-white">Done for today</button>
                 @else
-                    <form method="POST" action="/student/attendance/clock-out" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+                    <form method="POST" action="/student/attendance/clock-out" data-async>
                         @csrf
                         <button type="submit" class="min-h-12 w-full rounded-[14px] bg-[#334155] px-4 text-[15px] font-bold text-white transition hover:bg-[#1E293B] disabled:opacity-60">Clock out</button>
                     </form>
@@ -119,7 +119,7 @@
         @endif
 
     @else
-        <form id="clock-in-form" method="POST" action="/student/attendance/clock-in" class="mt-4 space-y-3">
+        <form id="clock-in-form" method="POST" action="/student/attendance/clock-in" data-async class="mt-4 space-y-3">
             @csrf
             <input type="hidden" name="location_status" value="unavailable">
             <input type="hidden" name="latitude" value="">
@@ -147,7 +147,7 @@
                 <i class="fa-solid fa-chevron-down text-xs"></i>
             </summary>
 
-            <form id="day-off-form" method="POST" action="/student/attendance/day-off" enctype="multipart/form-data" class="space-y-3 border-t border-[#E3E8F2] px-4 pb-4 pt-3">
+            <form id="day-off-form" method="POST" action="/student/attendance/day-off" enctype="multipart/form-data" data-async class="space-y-3 border-t border-[#E3E8F2] px-4 pb-4 pt-3">
                 @csrf
                 @if($errors->any())
                     <ul class="list-disc rounded-xl bg-rose-50 py-2 pl-7 pr-3 text-xs text-rose-700">
@@ -194,106 +194,132 @@
     if (window.__attendanceCardBound) return;
     window.__attendanceCardBound = true;
 
-    // Clock in: ask for the position first, then submit. Refusing never blocks clocking in.
-    var form = document.getElementById('clock-in-form');
-    if (form) {
-        var button = document.getElementById('clock-in-btn');
+    // Clock in: ask for the position first, then send the form through the async helper.
+    // This listener runs in the capture phase, so it can pause the first submit.
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+
+        if (!form || form.id !== 'clock-in-form' || form.dataset.located) return;
+
+        event.preventDefault();
+
+        var button = form.querySelector('#clock-in-btn');
         var statusText = document.getElementById('geo-status');
-        var armed = false;
 
         function setField(name, value) {
             var field = form.querySelector('[name="' + name + '"]');
             if (field) field.value = value;
         }
 
-        function finish(state) {
+        function send(state) {
             setField('location_status', state);
-            armed = true;
-            form.submit();
+            form.dataset.located = '1';
+
+            if (form.requestSubmit) {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
         }
 
-        form.addEventListener('submit', function (e) {
-            if (armed) return;
-            e.preventDefault();
-
+        if (button) {
             button.disabled = true;
             button.textContent = 'Detecting your location...';
+        }
 
-            if (!navigator.geolocation) {
-                statusText.textContent = 'This browser cannot share a location, so it will be recorded as not shared.';
-                finish('unavailable');
-                return;
-            }
+        if (!navigator.geolocation) {
+            if (statusText) statusText.textContent = 'This browser cannot share a location, so it will be recorded as not shared.';
+            send('unavailable');
+            return;
+        }
 
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    setField('latitude', position.coords.latitude);
-                    setField('longitude', position.coords.longitude);
-                    setField('accuracy', position.coords.accuracy);
-                    finish('shared');
-                },
-                function (error) {
-                    finish(error && error.code === 1 ? 'denied' : 'unavailable');
-                },
-                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-            );
-        });
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                setField('latitude', position.coords.latitude);
+                setField('longitude', position.coords.longitude);
+                setField('accuracy', position.coords.accuracy);
+                send('shared');
+            },
+            function (error) {
+                send(error && error.code === 1 ? 'denied' : 'unavailable');
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+    }, true);
 
-        window.addEventListener('pageshow', function () {
-            armed = false;
-            button.disabled = false;
-            button.textContent = 'Clock in';
-        });
+    // If the server refused the clock in, let the student try again.
+    function resetClockIn(event) {
+        var form = event.target;
+
+        if (!form || form.id !== 'clock-in-form') return;
+
+        delete form.dataset.located;
+
+        var button = form.querySelector('#clock-in-btn');
+        if (button) button.textContent = 'Clock in';
     }
 
-    // Day off form: MC needs a certificate, the other types need a reason.
-    var typeSelect = document.getElementById('day-off-type');
-    if (typeSelect) {
+    document.addEventListener('async:error', resetClockIn);
+    document.addEventListener('async:invalid', resetClockIn);
+
+    // MC form: MC needs a certificate, the other types need a reason.
+    function syncDayOff() {
+        var typeSelect = document.getElementById('day-off-type');
+        if (!typeSelect) return;
+
+        var isMc = typeSelect.value === 'MC';
         var note = document.getElementById('day-off-note');
         var noteLabel = document.getElementById('day-off-note-label');
         var fileBox = document.getElementById('day-off-file-box');
         var fileInput = document.getElementById('day-off-file');
 
-        function syncType() {
-            var isMc = typeSelect.value === 'MC';
-            fileBox.classList.toggle('hidden', !isMc);
-            fileInput.required = isMc;
-            note.required = !isMc;
-            noteLabel.textContent = isMc ? 'Reason (optional)' : 'Reason';
-        }
-
-        typeSelect.addEventListener('change', syncType);
-        syncType();
-
-        // Phone photos are large, so shrink them in the browser before uploading.
-        fileInput.addEventListener('change', function () {
-            var file = fileInput.files && fileInput.files[0];
-            if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || !window.DataTransfer) return;
-
-            var image = new Image();
-            var url = URL.createObjectURL(file);
-
-            image.onload = function () {
-                URL.revokeObjectURL(url);
-
-                var scale = Math.min(1, 1600 / Math.max(image.width, image.height));
-                if (scale === 1 && file.size < 1500000) return;
-
-                var canvas = document.createElement('canvas');
-                canvas.width = Math.round(image.width * scale);
-                canvas.height = Math.round(image.height * scale);
-                canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-
-                canvas.toBlob(function (blob) {
-                    if (!blob) return;
-                    var transfer = new DataTransfer();
-                    transfer.items.add(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
-                    fileInput.files = transfer.files;
-                }, 'image/jpeg', 0.82);
-            };
-            image.onerror = function () { URL.revokeObjectURL(url); };
-            image.src = url;
-        });
+        if (fileBox) fileBox.classList.toggle('hidden', !isMc);
+        if (fileInput) fileInput.required = isMc;
+        if (note) note.required = !isMc;
+        if (noteLabel) noteLabel.textContent = isMc ? 'Reason (optional)' : 'Reason';
     }
+
+    // Phone photos are large, so shrink them in the browser before uploading.
+    function shrinkPhoto(input) {
+        var file = input.files && input.files[0];
+
+        if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || !window.DataTransfer) return;
+
+        var image = new Image();
+        var url = URL.createObjectURL(file);
+
+        image.onload = function () {
+            URL.revokeObjectURL(url);
+
+            var scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+            if (scale === 1 && file.size < 1500000) return;
+
+            var canvas = document.createElement('canvas');
+            canvas.width = Math.round(image.width * scale);
+            canvas.height = Math.round(image.height * scale);
+            canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(function (blob) {
+                if (!blob) return;
+
+                var transfer = new DataTransfer();
+                transfer.items.add(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+                input.files = transfer.files;
+            }, 'image/jpeg', 0.82);
+        };
+
+        image.onerror = function () { URL.revokeObjectURL(url); };
+        image.src = url;
+    }
+
+    document.addEventListener('change', function (event) {
+        if (!event.target) return;
+
+        if (event.target.id === 'day-off-type') syncDayOff();
+        if (event.target.id === 'day-off-file') shrinkPhoto(event.target);
+    });
+
+    document.addEventListener('async:swapped', syncDayOff);
+    syncDayOff();
 })();
 </script>
