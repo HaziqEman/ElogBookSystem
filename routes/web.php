@@ -117,8 +117,8 @@ Route::middleware('auth:student,lecturer,supervisor')->group(function () {
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
-    Route::get('/student/reminders', [StudentReminderController::class, 'index']);
-    Route::post('/student/working-days', [StudentScheduleController::class, 'update']);
+    // Route::get('/student/reminders', [StudentReminderController::class, 'index']);
+    // Route::post('/student/working-days', [StudentScheduleController::class, 'update']);
     Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'store'])
     ->whereNumber('conversation')->middleware('throttle:60,1')->name('chat.store');
 Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])
