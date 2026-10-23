@@ -6,10 +6,9 @@
 
 const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😅','😉','🙂','🙃','😢','😭','😡','👍','👎','👏','🙏','💪','🙌','👌','✌️','🔥','🎉','✅','❌','⭐','💯','❤️','💙','📎','📄','📷','📅','⏰','🕒','📌','💡','👋','🤝','😴','🤒','🙈','🥲','😇','🤗'];
 
-function initChat() {
-	/* ---------- layout (shared by chat + list-only pages) ---------- */
+/* ---------- layout (shared by chat + list-only pages) ---------- */
 function fitRoot(root) {
-	const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+	const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;   // shrinks when the mobile keyboard opens
 	const wide = window.innerWidth >= 768;
 	const gap = wide ? 32 : 16;
 	root.style.height = `${Math.max(wide ? 640 : 480, vh - root.getBoundingClientRect().top - gap)}px`;
@@ -18,10 +17,10 @@ function setupFit(root) {
 	const f = () => fitRoot(root);
 	window.addEventListener('resize', f);
 	window.visualViewport?.addEventListener('resize', f);
-	f(); setTimeout(f, 250);
+	f(); setTimeout(f, 250);   // again after fonts / icons settle
 }
 
-/* ---------- left conversation list ---------- */
+/* ---------- left conversation list (lecturer / supervisor / student tabs) ---------- */
 function initList(root) {
 	const side = root.querySelector('.cm-side');
 	if (! side) return;
@@ -36,7 +35,8 @@ function initList(root) {
 		if (same(d, y)) return 'Yesterday';
 		return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 	};
-	side.querySelectorAll('[data-iso]').forEach((e) => { e.textContent = short(e.dataset.iso); });
+	const paint = () => side.querySelectorAll('[data-iso]').forEach((e) => { e.textContent = short(e.dataset.iso); });
+	paint();
 
 	const search = side.querySelector('.cm-search input');
 	search?.addEventListener('input', () => {
@@ -57,7 +57,7 @@ function initList(root) {
 		const tm = c.querySelector('.cm-ct-time'); if (tm) { tm.dataset.iso = m.created_at_iso || new Date().toISOString(); tm.textContent = short(tm.dataset.iso); }
 		if (m.conversation_id) {
 			c.dataset.conversationId = m.conversation_id;
-			if (L?.openBase) c.href = `${L.openBase}/${m.conversation_id}`;
+			if (L?.openBase) c.href = `${L.openBase}/${m.conversation_id}`;   // supervisor: first message creates the conversation
 		}
 		if (countUnread) {
 			let b = c.querySelector('.cm-badge');
@@ -67,6 +67,7 @@ function initList(root) {
 		box?.prepend(c);
 	};
 
+	// someone wrote to me
 	if (L?.channel && window.Echo) {
 		window.Echo.private(L.channel).listen('MessageSent', (e) => {
 			const m = e.message;
@@ -78,6 +79,7 @@ function initList(root) {
 		});
 	}
 
+	// I sent something in the open chat
 	window.addEventListener('chat:bump', (e) => {
 		const m = { ...e.detail, _mine: true };
 		const c = side.querySelector(`.cm-contact[data-conversation-id="${m.conversation_id}"]`);
@@ -117,8 +119,8 @@ function initChat() {
 		activeAudio: null,
 	};
 
-	const isMine = (m) => m.sender_type === me.type && Number(m.sender_id) === Number(me.id);
 	const isImg = (m) => m.type === 'image' || (m.attachment && (String(m.attachment.mime || '').startsWith('image/') || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(m.attachment.name || '')));
+	const isMine = (m) => m.sender_type === me.type && Number(m.sender_id) === Number(me.id);
 	const esc = (s) => String(s ?? '');
 	const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 
@@ -577,8 +579,6 @@ function initChat() {
 
 	/* ---------- layout / PWA behaviour ---------- */
 	window.visualViewport?.addEventListener('resize', () => { if (nearBottom()) scrollBottom(); });
-	
-
 
 	const net = () => { $('cm-offline').hidden = navigator.onLine; };
 	window.addEventListener('offline', net);
@@ -594,6 +594,7 @@ function initChat() {
 	$('cm-empty').hidden = state.msgs.size > 0;
 	net(); refreshButtons(); scrollBottom();
 	setTimeout(scrollBottom, 300);
+	markRead();
 }
 
 // app.js imports this file before it creates window.Echo, so start on the next tick (after app.js finished running).
