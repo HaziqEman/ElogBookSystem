@@ -77,8 +77,8 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/student/messages/supervisor', [StudentMessageController::class, 'supervisorIndex'])->name('student.messages.supervisor');
     Route::post('/student/messages/supervisor', [StudentMessageController::class, 'supervisorStore'])->name('student.messages.supervisor.store');
 
-    Route::get('/student/reminders', [StudentReminderController::class, 'index']);
-    Route::post('/student/working-days', [StudentScheduleController::class, 'update']);
+    Route::get('/student/dashboard/reminders', [StudentReminderController::class, 'index']);
+    Route::post('/student/dashboard/working-days', [StudentScheduleController::class, 'update']);
 });
 
 Route::middleware('auth:lecturer')->group(function () {
