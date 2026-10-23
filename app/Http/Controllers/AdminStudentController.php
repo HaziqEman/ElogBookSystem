@@ -46,6 +46,7 @@ class AdminStudentController extends Controller
 
         if (! $ready && filled($data['internship_start'] ?? null)) {
             return back()->withInput()->with('error', 'The internship date columns do not exist yet. Run the database update first.');
+            
         }
 
         $payload = [
@@ -58,6 +59,10 @@ class AdminStudentController extends Controller
             'lecturer_id' => $data['lecturer_id'],
             'supervisor_id' => $data['supervisor_id'] ?? null,
         ];
+
+        if (Schema::hasColumn('students', 'working_schedule')) {
+            $payload['working_schedule'] = json_encode([['from' => '1970-01-01', 'days' => $payload['working_days']]]);
+        }
 
         if ($ready) {
             $payload += $this->internshipValues($data);
@@ -104,6 +109,12 @@ class AdminStudentController extends Controller
             'lecturer_id' => $data['lecturer_id'],
             'supervisor_id' => $data['supervisor_id'] ?? null,
         ];
+
+        $sameDays = $payload['working_days'] === implode(',', WeekPlanner::parseDays($student->working_days));
+
+        if (! $sameDays && Schema::hasColumn('students', 'working_schedule')) {
+            $payload['working_schedule'] = json_encode([['from' => '1970-01-01', 'days' => $payload['working_days']]]);
+        }
 
         if ($ready) {
             $payload += $this->internshipValues($data);

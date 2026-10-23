@@ -50,10 +50,15 @@ class StudentTodoController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        Todo::where('student_id', $this->student()->student_id)
+        $todo = Todo::where('student_id', $this->student()->student_id)
             ->where('todo_id', $id)
-            ->firstOrFail()
-            ->delete();
+            ->firstOrFail();
+
+        if (! empty($todo->supervisor_id)) {
+            return $this->reply($request, false, 'This task was assigned by your supervisor, so only they can remove it.', 403);
+        }
+
+        $todo->delete();
 
         return $this->reply($request, true, 'Task deleted.');
     }

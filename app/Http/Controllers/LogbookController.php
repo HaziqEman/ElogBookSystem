@@ -127,11 +127,11 @@ class LogbookController extends Controller
                 ]);
             }
 
-            if (! $planner->isWorkingDay($date)) {
-                throw ValidationException::withMessages([
-                    'activity_date' => 'That day is not one of your working days. Your administrator sets your working days.',
-                ]);
-            }
+            // if (! $planner->isWorkingDay($date)) {
+            //     throw ValidationException::withMessages([
+            //         'activity_date' => 'That day is not one of your working days. Your administrator sets your working days.',
+            //     ]);
+            // }
 
             // The week always comes from the date, never from what the browser sent.
             $data['week_no'] = $week;

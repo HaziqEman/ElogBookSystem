@@ -70,7 +70,7 @@
         </div>
     @endif
 
-    {{-- REMINDER BANNER --}}
+    <!-- {{-- REMINDER BANNER --}}
     <div id="reminder-slot" data-live>
         @if($banner['show'])
             <section id="reminder-banner" data-dismiss-key="elogbook.banner.{{ $student->student_id }}.{{ $todayKey }}" class="relative rounded-[22px] border border-[#FBCFCB] bg-gradient-to-r from-[#FFE9E7] to-[#FFF3F0] px-5 py-5 md:px-7">
@@ -130,7 +130,7 @@
                 </div>
             </section>
         @endif
-    </div>
+    </div> -->
 
     {{-- HERO --}}
     <section class="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-3xl bg-gradient-to-r from-[#2F5BFF] to-[#4F46E5] px-6 py-7 text-white md:px-9">
@@ -352,12 +352,30 @@
                 Your internship dates have not been set yet. Please ask your administrator to set your start date and working days. Your weeks will appear here once they are set.
             </div>
         @else
-            <div class="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-[#E3E8F2] bg-[#FCFDFF] px-4 py-3 text-sm text-[#334155]">
-                <span><i class="fa-regular fa-calendar mr-1.5 text-[#1F45D6]"></i> Starts <strong>{{ $planner->start()->format('d M Y') }}</strong></span>
-                <span><i class="fa-solid fa-calendar-week mr-1.5 text-[#1F45D6]"></i> Working days: <strong>{{ $planner->workingDaysLabel() }}</strong></span>
-                <span>{{ $planner->totalWeeks() }} weeks</span>
-                <span class="text-xs text-[#5B6478]">Set by your administrator</span>
-            </div>
+                    <div class="mb-4 rounded-2xl border border-[#E3E8F2] bg-[#FCFDFF] px-4 py-3 text-sm text-[#334155]">
+                        <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+                            <span><i class="fa-regular fa-calendar mr-1.5 text-[#1F45D6]"></i> Starts <strong>{{ $planner->start()->format('d M Y') }}</strong></span>
+                            <span><i class="fa-solid fa-calendar-week mr-1.5 text-[#1F45D6]"></i> Working days: <strong>{{ $planner->workingDaysLabel() }}</strong></span>
+                            <span>{{ $planner->totalWeeks() }} weeks</span>
+                            <span class="text-xs text-[#5B6478]">Start date and weeks are set by your administrator</span>
+                        </div>
+                        <details class="mt-2">
+                            <summary class="cursor-pointer text-xs font-bold text-[#1F45D6]">Change my working days</summary>
+                            <form method="POST" action="/student/working-days" data-async class="mt-3 space-y-3">
+                                @csrf
+                                <p class="text-xs text-[#5B6478]">Tick the days you really work each week, for example weekends. The change applies from today, and days that already passed keep their old schedule. Worked an extra day? Just write an entry for it and it is saved as an extra day.</p>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach(\App\Services\WeekPlanner::DAY_NAMES as $number => $name)
+                                        <label class="cursor-pointer">
+                                            <input type="checkbox" name="working_days[]" value="{{ $number }}" class="peer sr-only" {{ in_array($number, $planner->workingDays(), true) ? 'checked' : '' }}>
+                                            <span class="flex min-h-10 min-w-[52px] items-center justify-center rounded-xl border border-[#CBD3E3] bg-white px-3 text-sm font-bold text-[#334155] transition peer-checked:border-[#2F5BFF] peer-checked:bg-[#E8EFFF] peer-checked:text-[#1F45D6] peer-focus-visible:ring-2 peer-focus-visible:ring-[#2F5BFF]/40">{{ $name }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <button type="submit" class="min-h-11 rounded-xl bg-[#2F5BFF] px-5 text-sm font-bold text-white transition hover:bg-[#1F45D6] disabled:opacity-60">Save working days</button>
+                            </form>
+                        </details>
+                    </div>
         @endif
 
         @if($planner->hasStart() && $selected)
@@ -465,6 +483,9 @@
                                             <span class="rounded-full bg-[#D1FAE5] px-2.5 py-1 text-xs font-bold text-[#065F46]">Done</span>
                                             @if($day['wfh'])
                                                 <span class="rounded-full bg-[#E8EFFF] px-2.5 py-1 text-xs font-bold text-[#1F45D6]"><i class="fa-solid fa-house"></i> Work from home</span>
+                                            @endif
+                                            @if($day['extra'])
+                                                <span class="rounded-full bg-[#FEF3C7] px-2.5 py-1 text-xs font-bold text-[#7C2D12]">Extra day</span>
                                             @endif
                                         </div>
                                         @if($entry->isEditableByStudent())
@@ -578,20 +599,21 @@
 
     function byId(id) { return document.getElementById(id); }
 
-    // Reminder banner: hidden for the rest of the day when closed.
-    function applyBannerDismiss() {
-        var banner = byId('reminder-banner');
-        if (!banner) return;
+    // // Reminder banner: hidden for the rest of the day when closed.
+    // function applyBannerDismiss() {
+    //     var banner = byId('reminder-banner');
+    //     if (!banner) return;
 
-        try {
-            if (localStorage.getItem(banner.getAttribute('data-dismiss-key'))) banner.classList.add('hidden');
-        } catch (e) {}
-    }
+    //     try {
+    //         if (localStorage.getItem(banner.getAttribute('data-dismiss-key'))) banner.classList.add('hidden');
+    //     } catch (e) {}
+    // }
 
-    applyBannerDismiss();
-    document.addEventListener('async:swapped', applyBannerDismiss);
+    // applyBannerDismiss();
+    // document.addEventListener('async:swapped', applyBannerDismiss);
 
     // New entry form: week number and day checks.
+   
     var form = byId('logbook-form');
     var dateInput = form ? form.querySelector('input[name="activity_date"]') : null;
     var weekInput = form ? form.querySelector('[name="week_no"]') : null;
@@ -629,11 +651,12 @@
                 return 'This date is outside your internship weeks.';
             }
 
-            var weekday = new Date(utc(value)).getUTCDay();
-            var iso = weekday === 0 ? 7 : weekday;
-            if (workingDays.indexOf(iso) === -1) {
-                return 'That day is not one of your working days. Your administrator sets your working days.';
-            }
+            // var weekday = new Date(utc(value)).getUTCDay();
+            // var iso = weekday === 0 ? 7 : weekday;
+            // if (workingDays.indexOf(iso) === -1) {
+            //     return 'That day is not one of your working days. Your administrator sets your working days.';
+            // }
+        
         }
 
         if (entryDates().indexOf(value) !== -1) {
@@ -650,15 +673,22 @@
         if (firstMonday && weekInput && weekHint) {
             if (value) {
                 var week = Math.floor((utc(value) - utc(firstMonday)) / 86400000 / 7) + 1;
+
                 weekInput.value = week;
+
+                var weekday = new Date(utc(value)).getUTCDay();
+                var iso = weekday === 0 ? 7 : weekday;
+                var extraDay = workingDays.indexOf(iso) === -1;
+
                 weekHint.textContent = (week >= 1 && week <= totalWeeks)
-                    ? 'This entry belongs to Week ' + week + '.'
+                    ? 'This entry belongs to Week ' + week + (extraDay ? ' (an extra day outside your usual schedule)' : '') + '.'
                     : 'This date is outside your ' + totalWeeks + ' internship weeks.';
             } else {
                 weekInput.value = '';
                 weekHint.textContent = 'Pick a date and the week is worked out for you.';
             }
         }
+    }
 
         var problem = problemFor(value);
 
@@ -678,6 +708,7 @@
     window.addEventListener('pageshow', onDate);
 
     function openEntry(focusName, date) {
+        window.openNewEntry = openEntry;
         var panel = byId('new-entry');
         if (!panel) return;
 
@@ -696,8 +727,7 @@
         }
     }
 
-    if (location.hash === '#new-entry') openEntry();
-
+    if (location.hash === '#new-entry') openEntry(null, new URLSearchParams(location.search).get('write'));
     // Edit entry pop-up.
     var modal = byId('edit-modal');
     var modalBody = byId('edit-modal-body');
@@ -751,18 +781,18 @@
         var target = event.target;
         if (!target || !target.closest) return;
 
-        var close = target.closest('#reminder-close');
+        // var close = target.closest('#reminder-close');
 
-        if (close) {
-            var banner = byId('reminder-banner');
+        // if (close) {
+        //     var banner = byId('reminder-banner');
 
-            if (banner) {
-                banner.classList.add('hidden');
-                try { localStorage.setItem(banner.getAttribute('data-dismiss-key'), '1'); } catch (e) {}
-            }
+        //     if (banner) {
+        //         banner.classList.add('hidden');
+        //         try { localStorage.setItem(banner.getAttribute('data-dismiss-key'), '1'); } catch (e) {}
+        //     }
 
-            return;
-        }
+        //     return;
+        // }
 
         var write = target.closest('a[href="#new-entry"]');
 

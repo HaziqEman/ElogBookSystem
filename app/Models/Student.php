@@ -23,6 +23,7 @@ class Student extends Authenticatable
         'internship_start',
         'internship_weeks',
         'working_days',
+        'working_schedule',
     ];
 
     protected $hidden = [

@@ -25,6 +25,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CronController;
 use App\Http\Controllers\AttendanceMcController;
 use App\Http\Controllers\LecturerStudentController;
+use App\Http\Controllers\StudentReminderController;
+use App\Http\Controllers\StudentScheduleController;
+use App\Http\Controllers\SupervisorTaskController;
 
 
 // Home Page
@@ -73,11 +76,14 @@ Route::middleware('auth:student')->group(function () {
     Route::post('/student/messages', [StudentMessageController::class, 'store'])->name('student.messages.store');
     Route::get('/student/messages/supervisor', [StudentMessageController::class, 'supervisorIndex'])->name('student.messages.supervisor');
     Route::post('/student/messages/supervisor', [StudentMessageController::class, 'supervisorStore'])->name('student.messages.supervisor.store');
+
+    Route::get('/student/reminders', [StudentReminderController::class, 'index']);
+    Route::post('/student/working-days', [StudentScheduleController::class, 'update']);
 });
 
 Route::middleware('auth:lecturer')->group(function () {
     Route::get('/lecturer/dashboard', [LecturerController::class, 'dashboard']);
-        Route::get('/lecturer/students/{id}', [LecturerStudentController::class, 'show'])->whereNumber('id');
+    Route::get('/lecturer/students/{id}', [LecturerStudentController::class, 'show'])->whereNumber('id');
     Route::get('/lecturer/students/{id}/message', [LecturerStudentController::class, 'message'])->whereNumber('id');
     Route::redirect('/lecturer/logbook', '/lecturer/dashboard');
     Route::get('/lecturer/logbook/{id}', [LecturerStudentController::class, 'entry'])->whereNumber('id');
@@ -101,12 +107,18 @@ Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->
     Route::get('/supervisor/messages/with/{student}', [SupervisorMessageController::class, 'start'])->whereNumber('student')->name('supervisor.messages.start');
     Route::get('/supervisor/messages/{conversation}', [SupervisorMessageController::class, 'show'])->whereNumber('conversation')->name('supervisor.messages.show');
     Route::post('/supervisor/messages/{conversation}', [SupervisorMessageController::class, 'store'])->whereNumber('conversation')->name('supervisor.messages.store');
+    Route::get('/supervisor/tasks', [SupervisorTaskController::class, 'index']);
+    Route::post('/supervisor/tasks', [SupervisorTaskController::class, 'store']);
+    Route::put('/supervisor/tasks/{id}', [SupervisorTaskController::class, 'update'])->whereNumber('id');
+    Route::delete('/supervisor/tasks/{id}', [SupervisorTaskController::class, 'destroy'])->whereNumber('id');
 });
 
 Route::middleware('auth:student,lecturer,supervisor')->group(function () {
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
+    Route::get('/student/reminders', [StudentReminderController::class, 'index']);
+    Route::post('/student/working-days', [StudentScheduleController::class, 'update']);
 });
 
 Route::middleware('auth:admin')->group(function () {

@@ -13,7 +13,8 @@ class WeekPlanner
 
     public const DAY_NAMES = [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'];
 
-    protected array $workingDays;
+    /** @var array<int, array{from: string, days: array<int, int>}> */
+    protected array $schedule;
 
     protected int $totalWeeks;
 
@@ -21,7 +22,7 @@ class WeekPlanner
 
     public function __construct(protected Student $student, protected Carbon $today)
     {
-        $this->workingDays = self::parseDays($student->working_days);
+        $this->schedule = self::parseSchedule($student->working_schedule ?? null, $student->working_days ?? null);
         $this->totalWeeks = max(1, (int) ($student->internship_weeks ?: 14));
 
         $raw = $student->internship_start;
@@ -46,14 +47,64 @@ class WeekPlanner
         return $days ?: self::DEFAULT_DAYS;
     }
 
+    /**
+     * The saved schedule history: a list of {from: date, days: "1,2,3"}.
+     * Without a history, the plain working_days value is used from the beginning.
+     */
+    public static function parseSchedule(?string $json, ?string $fallbackDays): array
+    {
+        $list = [];
+        $decoded = json_decode((string) $json, true);
+
+        if (is_array($decoded)) {
+            foreach ($decoded as $item) {
+                $from = is_array($item) ? (string) ($item['from'] ?? '') : '';
+
+                if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+                    continue;
+                }
+
+                $list[] = ['from' => $from, 'days' => self::parseDays((string) ($item['days'] ?? ''))];
+            }
+        }
+
+        if (! $list) {
+            $list[] = ['from' => '1970-01-01', 'days' => self::parseDays($fallbackDays)];
+        }
+
+        usort($list, fn ($a, $b) => strcmp($a['from'], $b['from']));
+
+        return $list;
+    }
+
+    public function schedule(): array
+    {
+        return $this->schedule;
+    }
+
+    /** The working weekdays that apply on a given date (Y-m-d). */
+    public function daysOn(string $dateKey): array
+    {
+        $days = $this->schedule[0]['days'];
+
+        foreach ($this->schedule as $entry) {
+            if ($entry['from'] <= $dateKey) {
+                $days = $entry['days'];
+            }
+        }
+
+        return $days;
+    }
+
+    /** The schedule that applies today. */
     public function workingDays(): array
     {
-        return $this->workingDays;
+        return $this->daysOn($this->today->toDateString());
     }
 
     public function workingDaysLabel(): string
     {
-        $days = $this->workingDays;
+        $days = $this->workingDays();
         $first = $days[0];
         $last = end($days);
 
@@ -85,14 +136,16 @@ class WeekPlanner
         return $this->start ? $this->start->copy()->startOfWeek(Carbon::MONDAY) : null;
     }
 
-    /** A working day is one of the chosen weekdays, on or after the start date. */
+    /** A working day is a weekday in the schedule of that date, on or after the start date. */
     public function isWorkingDay(Carbon $date): bool
     {
-        if (! in_array($date->isoWeekday(), $this->workingDays, true)) {
+        $key = $date->toDateString();
+
+        if (! in_array($date->isoWeekday(), $this->daysOn($key), true)) {
             return false;
         }
 
-        return $this->start === null || $date->toDateString() >= $this->start->toDateString();
+        return $this->start === null || $key >= $this->start->toDateString();
     }
 
     public function weekStart(int $number): Carbon
@@ -131,6 +184,7 @@ class WeekPlanner
         }
 
         $todayKey = $this->today->toDateString();
+        $startKey = $this->start->toDateString();
         $assigned = (bool) $this->student->supervisor_id;
         $weeks = [];
 
@@ -142,13 +196,17 @@ class WeekPlanner
 
             for ($i = 0; $i < 7; $i++) {
                 $date = $weekStart->copy()->addDays($i);
+                $key = $date->toDateString();
+                $entries = $logbooksByDate->get($key, collect());
+                $working = $this->isWorkingDay($date);
 
-                if (! $this->isWorkingDay($date)) {
+                // An entry on a day outside the schedule is kept and shown as an extra (overtime) day.
+                $extra = ! $working && $entries->isNotEmpty() && $key >= $startKey;
+
+                if (! $working && ! $extra) {
                     continue;
                 }
 
-                $key = $date->toDateString();
-                $entries = $logbooksByDate->get($key, collect());
                 $attendance = $attendanceByDate->get($key);
                 $dayOff = $attendance && $attendance->isDayOff();
 
@@ -168,19 +226,23 @@ class WeekPlanner
                     'date' => $date,
                     'key' => $key,
                     'state' => $state,
+                    'extra' => $extra,
                     'entries' => $entries,
                     'entry' => $entries->last(),
                     'attendance' => $attendance,
                     'wfh' => $attendance && $attendance->work_mode === 'Home',
                 ];
 
-                $lastWorking = $date;
+                if ($working) {
+                    $lastWorking = $date;
+                }
             }
 
             $entries = collect($days)->flatMap(fn ($day) => $day['entries'])->values();
-            $required = count(array_filter($days, fn ($day) => $day['state'] !== 'dayoff'));
-            $done = count(array_filter($days, fn ($day) => $day['state'] === 'done'));
-            $missing = count(array_filter($days, fn ($day) => $day['state'] === 'missing'));
+            $core = array_filter($days, fn ($day) => ! $day['extra']);
+            $required = count(array_filter($core, fn ($day) => $day['state'] !== 'dayoff'));
+            $done = count(array_filter($core, fn ($day) => $day['state'] === 'done'));
+            $missing = count(array_filter($core, fn ($day) => $day['state'] === 'missing'));
 
             $isCurrent = $todayKey >= $weekStart->toDateString() && $todayKey <= $weekEnd->toDateString();
             $locked = $weekStart->toDateString() > $todayKey;
