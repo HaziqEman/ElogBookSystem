@@ -15,17 +15,10 @@ class MessageSent implements ShouldBroadcastNow
 
     public function __construct($message)
     {
-        // Normalize payload so frontend doesn't need another DB request
-        $this->message = [
-            'message_id' => $message->message_id,
-            'conversation_id' => $message->conversation_id,
-            'sender_type' => $message->sender_type,
-            'sender_id' => $message->sender_id,
-            'sender_name' => $message->sender?->name ?? null,
-            'message' => $message->message,
-            'created_at' => optional($message->created_at)->format('d M Y H:i'),
-            'lecturer_id' => $message->conversation?->lecturer_id ?? null,
-            'supervisor_id' => $message->conversation?->supervisor_id ?? null,
+        // Same payload the page uses. Files are NOT sent through Pusher, only their Cloudinary URL.
+        $this->message = $message->toChatPayload() + [
+            'lecturer_id'    => $message->conversation?->lecturer_id ?? null,
+            'supervisor_id'  => $message->conversation?->supervisor_id ?? null,
         ];
     }
 

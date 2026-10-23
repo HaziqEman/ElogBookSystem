@@ -25,6 +25,7 @@ class MessageDeleteController extends Controller
         }
 
         $message->update([$actor['flag'] => true]);
+        app(\App\Services\ChatUploader::class)->destroy($message); 
 
         return response()->json(['success' => true]);
     }

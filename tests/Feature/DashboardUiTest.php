@@ -203,7 +203,10 @@ class DashboardUiTest extends TestCase
         ]);
 
         $this->actingAs($lecturer, 'lecturer')
-            ->post('/lecturer/approve/'.$logbook->logbook_id, ['comment' => 'Looks good'])
+            ->post('/lecturer/logbook/'.$logbook->logbook_id.'/review', [
+                'decision' => 'Approved',
+                'comment' => 'Looks good',
+            ])
             ->assertRedirect('/lecturer/dashboard');
 
         $this->assertDatabaseHas('logbooks', ['logbook_id' => $logbook->logbook_id, 'status' => 'Approved']);

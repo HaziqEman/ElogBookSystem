@@ -124,8 +124,7 @@ class NotificationService
             }
 
             $senderName = optional($message->sender)->name ?? 'Someone';
-            $preview = Str::limit(trim((string) $message->message), 80);
-
+            $preview = Str::limit($message->preview(), 80);
             if ($message->sender_type === Student::class) {
                 $recipient = $conversation->lecturer ?: $conversation->supervisor;
 

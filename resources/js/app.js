@@ -1,6 +1,7 @@
 import './async-forms';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import './chat';
 
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
@@ -23,7 +24,12 @@ window.Echo = new Echo({
 	}
 });
 
-// If a conversation is present on the window, subscribe to its private channel
+/*
+ * Realtime glue. This file only subscribes to Pusher and re-emits browser events.
+ * All chat rendering lives in chat.js (listens to: chat:message, chat:deleted, chat:read, chat:presence, chat:reconnected).
+ */
+const emit = (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail }));
+
 const isCurrentUserMember = (member) => {
 	const currentUser = window.CURRENT_USER ?? null;
 	if (! currentUser || ! member) return false;
@@ -31,20 +37,10 @@ const isCurrentUserMember = (member) => {
 };
 
 const getOtherParticipantRole = () => {
-	// A page can name its chat partner explicitly (a student talking to a company supervisor).
 	if (window.CHAT_PARTNER_ROLE) return window.CHAT_PARTNER_ROLE;
-
 	const currentUser = window.CURRENT_USER ?? null;
 	if (! currentUser) return null;
 	return currentUser.role === 'student' ? 'lecturer' : 'student';
-};
-
-const updatePresenceStatus = (online) => {
-	const statusElement = document.getElementById('participant-status');
-	if (! statusElement) return;
-	statusElement.textContent = online ? '🟢 Online' : '⚪ Offline';
-	statusElement.classList.toggle('text-emerald-600', online);
-	statusElement.classList.toggle('text-slate-500', !online);
 };
 
 const otherParticipantIsOnline = (members) => {
@@ -53,108 +49,46 @@ const otherParticipantIsOnline = (members) => {
 	return members.some((member) => ! isCurrentUserMember(member) && member.role === otherRole);
 };
 
-const appendIncomingMessage = (payload) => {
-	const list = document.getElementById('messages-list');
-	if (! list) return;
-
-	const currentUser = window.CURRENT_USER ?? null;
-	const div = document.createElement('div');
-	const isCurrentUserSender = currentUser && currentUser.type === payload.sender_type && Number(currentUser.id) === Number(payload.sender_id);
-	div.dataset.messageId = payload.message_id;
-	div.className = `rounded-2xl p-4 ${isCurrentUserSender ? 'bg-blue-50 self-end' : 'bg-slate-100'}`;
-
-	const header = document.createElement('div');
-	header.className = 'flex items-center justify-between gap-3 text-xs text-slate-500 mb-2';
-	const sender = document.createElement('span');
-	sender.textContent = payload.sender_name ?? 'Unknown';
-	const timestamp = document.createElement('span');
-	timestamp.textContent = payload.created_at ?? '';
-	header.append(sender, timestamp);
-
-	const messageBody = document.createElement('div');
-	messageBody.className = 'text-sm text-slate-800';
-	messageBody.textContent = payload.message ?? '';
-	div.append(header, messageBody);
-	list.appendChild(div);
-	list.scrollTop = list.scrollHeight;
-};
-
-const markMessageDeleted = (messageId) => {
-	const item = document.querySelector(`[data-message-id='${messageId}']`);
-	if (! item) return;
-
-	const body = item.querySelector('.text-sm.text-slate-800');
-	if (body) {
-		const deletedMessage = document.createElement('em');
-		deletedMessage.textContent = 'This message was deleted';
-		body.replaceChildren(deletedMessage);
-	}
-
-	const button = item.querySelector('.delete-message-button');
-	if (button) {
-		button.remove();
-	}
-};
-
-let activeConversationId = null;
-
 const leaveRealtimeChannels = () => {
-	const conversationIdAvailable = window.CONVERSATION_ID ?? null;
-	if (! conversationIdAvailable) {
-		return;
-	}
-
-	window.Echo.leave(`private-conversation.${conversationIdAvailable}`);
-	window.Echo.leave(`presence-conversation.${conversationIdAvailable}`);
+	const id = window.CONVERSATION_ID ?? null;
+	if (! id) return;
+	window.Echo.leave(`private-conversation.${id}`);
+	window.Echo.leave(`presence-conversation.${id}`);
 };
 
 const initRealtimeChannels = () => {
-	const conversationIdAvailable = window.CONVERSATION_ID ?? null;
+	const id = window.CONVERSATION_ID ?? null;
+	if (! id) return;
 
-	if (! conversationIdAvailable) {
-		return;
-	}
+	const channel = window.Echo.private(`private-conversation.${id}`);
 
-	activeConversationId = conversationIdAvailable;
+	channel.listen('MessageSent', (e) => emit('chat:message', e.message));
+	channel.listen('MessageDeleted', (e) => emit('chat:deleted', e.message));
+	channel.listen('MessagesRead', (e) => emit('chat:read', e.read));
 
-	const channel = window.Echo.private(`private-conversation.${conversationIdAvailable}`);
-
-	channel.listen('MessageSent', (e) => {
-		const payload = e.message;
-		const currentUser = window.CURRENT_USER ?? null;
-
-		if (currentUser && currentUser.type === payload.sender_type && Number(currentUser.id) === Number(payload.sender_id)) {
-			return;
-		}
-
-		appendIncomingMessage(payload);
-	});
-
-	channel.listen('MessageDeleted', (e) => {
-		markMessageDeleted(e.message.message_id);
-	});
-
-	window.Echo.join(`presence-conversation.${conversationIdAvailable}`)
-		.here((members) => {
-			updatePresenceStatus(otherParticipantIsOnline(members));
-		})
+	window.Echo.join(`presence-conversation.${id}`)
+		.here((members) => emit('chat:presence', { online: otherParticipantIsOnline(members) }))
 		.joining((member) => {
-			if (! isCurrentUserMember(member) && member.role === getOtherParticipantRole()) {
-				updatePresenceStatus(true);
-			}
+			if (! isCurrentUserMember(member) && member.role === getOtherParticipantRole()) emit('chat:presence', { online: true });
 		})
 		.leaving((member) => {
-			if (! isCurrentUserMember(member) && member.role === getOtherParticipantRole()) {
-				updatePresenceStatus(false);
-			}
+			if (! isCurrentUserMember(member) && member.role === getOtherParticipantRole()) emit('chat:presence', { online: false });
 		});
 
-	const logoutLink = document.querySelector('a[href="/logout"]');
-	if (logoutLink) {
-		logoutLink.addEventListener('click', () => {
-			leaveRealtimeChannels();
+	// A PWA that was in the background loses its socket and can miss events:
+	// when the connection comes back, ask the server for what we missed.
+	const connection = window.Echo.connector?.pusher?.connection;
+	if (connection) {
+		let first = true;
+		connection.bind('connected', () => {
+			if (first) { first = false; return; }
+			emit('chat:reconnected');
 		});
+		connection.bind('state_change', (s) => emit('chat:connection', { state: s.current }));
 	}
+
+	const logoutLink = document.querySelector('a[href="/logout"]');
+	if (logoutLink) logoutLink.addEventListener('click', leaveRealtimeChannels);
 };
 
 if (document.readyState === 'loading') {

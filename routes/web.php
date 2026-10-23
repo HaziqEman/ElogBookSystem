@@ -119,6 +119,12 @@ Route::middleware('auth:student,lecturer,supervisor')->group(function () {
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
     Route::get('/student/reminders', [StudentReminderController::class, 'index']);
     Route::post('/student/working-days', [StudentScheduleController::class, 'update']);
+    Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'store'])
+    ->whereNumber('conversation')->middleware('throttle:60,1')->name('chat.store');
+Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])
+    ->whereNumber('conversation')->name('chat.since');
+Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatController::class, 'read'])
+    ->whereNumber('conversation')->name('chat.read');
 });
 
 Route::middleware('auth:admin')->group(function () {
