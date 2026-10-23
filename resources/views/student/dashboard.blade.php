@@ -339,8 +339,6 @@
                 <div class="mt-0.5 text-[13px] text-[#5B6478]">
                     @if($planner->hasStart())
                         Week {{ max(1, min($planner->totalWeeks(), $currentWeek)) }} of {{ $planner->totalWeeks() }} &middot; one entry per working day &middot; each week is sent to your supervisor when it ends
-                    @else
-                        Waiting for your administrator to set your internship dates.
                     @endif
                 </div>
             </div>
@@ -385,12 +383,30 @@
                 @endforeach
             </div>
             <div class="mb-5 mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#5B6478]">
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#34D399]"></span>Validated</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#818CF8]"></span>Waiting for review</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#FB923C]"></span>Revision needed</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#2F5BFF]"></span>Current week</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#FB7185]"></span>Entries missing</span>
-                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-[#CBD5E1]"></span>Not open yet</span>
+            <form id="schedule-bar" method="POST" action="/student/working-days" data-async data-saved="{{ implode(',', $planner->workingDays()) }}" class="mb-5 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] px-4 py-3">
+                @csrf
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
+                    <div class="min-w-[170px]">
+                        <p class="text-xs font-extrabold uppercase tracking-wider text-[#5B6478]"><i class="fa-regular fa-calendar mr-1 text-[#1F45D6]"></i> My working days</p>
+                        <p class="text-xs text-[#5B6478]">Starts {{ $planner->start()->format('d M Y') }} &middot; {{ $planner->totalWeeks() }} weeks</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5" role="group" aria-label="Working days">
+                        @foreach(\App\Services\WeekPlanner::DAY_NAMES as $number => $name)
+                            <label class="cursor-pointer" title="{{ $number >= 6 ? ($number === 6 ? 'Saturday' : 'Sunday').' counts as day '.$number.' of your week' : '' }}">
+                                <input type="checkbox" name="working_days[]" value="{{ $number }}" class="peer sr-only" {{ in_array($number, $planner->workingDays(), true) ? 'checked' : '' }}>
+                                <span class="flex min-h-9 min-w-[46px] items-center justify-center rounded-xl border border-[#CBD3E3] bg-white px-2.5 text-[13px] font-bold text-[#334155] transition hover:border-[#9DB4FF] peer-checked:border-[#2F5BFF] peer-checked:bg-[#E8EFFF] peer-checked:text-[#1F45D6] peer-focus-visible:ring-2 peer-focus-visible:ring-[#2F5BFF]/40">{{ $name }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+
+                    <div class="ml-auto flex items-center gap-3">
+                        <span id="schedule-count" class="text-xs font-semibold text-[#334155]">{{ count($planner->workingDays()) }} {{ count($planner->workingDays()) === 1 ? 'day' : 'days' }} a week</span>
+                        <button id="schedule-save" type="submit" disabled class="min-h-9 rounded-xl bg-[#2F5BFF] px-4 text-sm font-bold text-white transition hover:bg-[#1F45D6] disabled:cursor-not-allowed disabled:opacity-40">Save</button>
+                    </div>
+                </div>
+                <p class="mt-2 text-[11px] leading-relaxed text-[#5B6478]">Tap a day to add or remove it. Saturday and Sunday count as day 6 and day 7, so your week shows 6 or 7 days. Changes start today, and days that already passed keep their old schedule.</p>
+            </form>
             </div>
 
             @if($selected['status'] === 'locked')
@@ -454,7 +470,9 @@
                             <div class="w-14 flex-none pt-1 text-center">
                                 <div class="text-xs font-extrabold tracking-wider text-[#5B6478]">{{ strtoupper($date->format('D')) }}</div>
                                 <div class="text-[28px] font-extrabold leading-none">{{ $date->format('d') }}</div>
-                                <div class="text-xs text-[#5B6478]">{{ $date->format('M') }}</div>
+                                @if($date->isoWeekday() >= 6)
+                                    <div class="mx-auto mt-1 w-fit rounded bg-[#FEF3C7] px-1.5 text-[10px] font-extrabold text-[#7C2D12]">Day {{ $date->isoWeekday() }}</div>
+                                @endif
                             </div>
 
                             @if($day['state'] === 'done')
@@ -1018,6 +1036,35 @@
             }
         });
     }
+
+        // Working days bar: Save is only enabled when the selection really changed.
+    function syncSchedule() {
+        var bar = byId('schedule-bar');
+        if (!bar) return;
+
+        var saved = (bar.getAttribute('data-saved') || '').split(',').filter(Boolean).sort().join(',');
+        var picked = Array.prototype.slice.call(bar.querySelectorAll('input[name="working_days[]"]:checked'))
+            .map(function (box) { return box.value; });
+        var current = picked.slice().sort().join(',');
+        var save = byId('schedule-save');
+        var count = byId('schedule-count');
+
+        if (save) save.disabled = picked.length === 0 || current === saved;
+
+        if (count) {
+            count.textContent = picked.length === 0
+                ? 'Pick at least one day'
+                : picked.length + (picked.length === 1 ? ' day a week' : ' days a week') + (current === saved ? '' : ' (not saved)');
+            count.classList.toggle('text-[#BE123C]', picked.length === 0);
+        }
+    }
+
+    document.addEventListener('change', function (event) {
+        if (event.target && event.target.closest && event.target.closest('#schedule-bar')) syncSchedule();
+    });
+
+    document.addEventListener('async:swapped', syncSchedule);
+    syncSchedule();
 })();
 </script>
 @endsection

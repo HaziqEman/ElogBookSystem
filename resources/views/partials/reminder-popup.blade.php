@@ -1,6 +1,6 @@
 @php $reminderStudentId = \Illuminate\Support\Facades\Auth::guard('student')->id(); @endphp
 
-<div id="reminder-popup" data-student="{{ $reminderStudentId }}" class="mb-5 hidden" role="region" aria-label="Reminders" aria-live="polite"></div>
+<div id="reminder-popup" data-student="{{ $reminderStudentId }}" class="mb-6 hidden" role="region" aria-label="Reminders" aria-live="polite"></div>
 
 <style>
     @keyframes reminderIn { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
@@ -23,16 +23,22 @@
     var lastSignature = '';
     var timer = null;
 
-    var ICONS = {
-        attendance: 'fa-clock', clockout: 'fa-right-from-bracket', logbook: 'fa-file-pen',
-        missing: 'fa-file-circle-exclamation', revision: 'fa-rotate-left', overdue: 'fa-triangle-exclamation',
-        today: 'fa-hourglass-half', soon: 'fa-list-check', assigned: 'fa-building-user'
+    // Each kind of reminder uses one of these card styles.
+    var STYLES = {
+        attendance: { label: 'Attendance', icon: 'fa-clock', card: 'border-[#F3C4BF]', chip: 'bg-[#FFE4E6] text-[#BE123C]', button: 'bg-[#BE123C] hover:bg-[#9F1239]' },
+        logbook: { label: 'Logbook', icon: 'fa-file-pen', card: 'border-[#FDE68A]', chip: 'bg-[#FEF3C7] text-[#B45309]', button: 'bg-[#B45309] hover:bg-[#92400E]' },
+        revision: { label: 'Revision', icon: 'fa-rotate-left', card: 'border-[#FED7AA]', chip: 'bg-[#FFEDD5] text-[#9A3412]', button: 'bg-[#C2410C] hover:bg-[#9A3412]' },
+        overdue: { label: 'Overdue task', icon: 'fa-triangle-exclamation', card: 'border-[#F3C4BF]', chip: 'bg-[#FFE4E6] text-[#BE123C]', button: 'bg-[#BE123C] hover:bg-[#9F1239]' },
+        task: { label: 'Task', icon: 'fa-list-check', card: 'border-[#C7D2FE]', chip: 'bg-[#E0E7FF] text-[#3730A3]', button: 'bg-[#2F5BFF] hover:bg-[#1F45D6]' },
+        assigned: { label: 'New task', icon: 'fa-building-user', card: 'border-[#C7D2FE]', chip: 'bg-[#E0E7FF] text-[#3730A3]', button: 'bg-[#2F5BFF] hover:bg-[#1F45D6]' }
     };
 
-    var LEVELS = {
-        high: { row: 'border-rose-200 bg-rose-50', icon: 'bg-rose-100 text-rose-700', button: 'bg-rose-600 hover:bg-rose-700 text-white' },
-        medium: { row: 'border-amber-200 bg-amber-50', icon: 'bg-amber-100 text-amber-700', button: 'bg-amber-600 hover:bg-amber-700 text-white' },
-        info: { row: 'border-blue-200 bg-blue-50', icon: 'bg-blue-100 text-blue-700', button: 'bg-blue-600 hover:bg-blue-700 text-white' }
+    var KIND_STYLE = {
+        attendance: 'attendance', clockout: 'attendance',
+        logbook: 'logbook', missing: 'logbook',
+        revision: 'revision',
+        overdue: 'overdue', today: 'task', soon: 'task',
+        assigned: 'assigned'
     };
 
     // Dismissed reminders: { key: 'forever' | 'YYYY-MM-DD' }. A changed situation has a new key, so it shows again.
@@ -75,36 +81,35 @@
         return node;
     }
 
-    function row(item) {
-        var level = LEVELS[item.level] || LEVELS.info;
-        var wrap = el('div', 'flex flex-wrap items-center gap-3 rounded-2xl border p-3 ' + level.row);
+    function card(item) {
+        var style = STYLES[KIND_STYLE[item.kind]] || STYLES.task;
+        var wrap = el('div', 'relative flex min-w-[200px] flex-1 flex-col gap-2 rounded-2xl border bg-white p-3.5 ' + style.card);
 
-        var icon = el('span', 'flex h-9 w-9 flex-none items-center justify-center rounded-xl ' + level.icon);
-        icon.appendChild(el('i', 'fa-solid ' + (ICONS[item.kind] || 'fa-bell')));
-        wrap.appendChild(icon);
+        var head = el('div', 'flex items-center gap-2.5 pr-5');
+        var chip = el('span', 'flex h-8 w-8 flex-none items-center justify-center rounded-[10px] ' + style.chip);
+        chip.appendChild(el('i', 'fa-solid text-sm ' + style.icon));
+        head.appendChild(chip);
 
-        var text = el('div', 'min-w-0 flex-[1_1_220px]');
-        text.appendChild(el('p', 'break-words text-sm font-extrabold text-[#0F1B4D]', item.title));
-        if (item.text) text.appendChild(el('p', 'break-words text-xs text-[#5B6478]', item.text));
-        wrap.appendChild(text);
+        var text = el('div', 'min-w-0');
+        text.appendChild(el('p', 'text-sm font-extrabold', style.label));
+        text.appendChild(el('p', 'break-words text-xs font-semibold text-[#334155]', item.title));
+        if (item.text) text.appendChild(el('p', 'mt-0.5 line-clamp-2 break-words text-[11px] text-[#5B6478]', item.text));
+        head.appendChild(text);
+        wrap.appendChild(head);
 
-        var actions = el('div', 'flex items-center gap-1.5');
+        var close = el('button', 'absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-md text-[#94A3B8] transition hover:bg-slate-100 hover:text-[#5B6478]');
+        close.type = 'button';
+        close.setAttribute('aria-label', 'Hide this reminder');
+        close.setAttribute('data-dismiss', item.key);
+        close.appendChild(el('i', 'fa-solid fa-xmark text-xs'));
+        wrap.appendChild(close);
 
         if (item.url && item.action) {
-            var link = el('a', 'flex min-h-9 items-center rounded-xl px-3 text-sm font-bold transition ' + level.button, item.action);
+            var link = el('a', 'mt-auto flex min-h-9 items-center justify-center rounded-xl px-3 text-sm font-bold text-white transition ' + style.button, item.action);
             link.href = item.url;
             link.setAttribute('data-reminder-action', item.key);
-            actions.appendChild(link);
+            wrap.appendChild(link);
         }
-
-        var close = el('button', 'flex h-9 w-9 items-center justify-center rounded-lg text-[#5B6478] transition hover:bg-white/70');
-        close.type = 'button';
-        close.setAttribute('aria-label', 'Dismiss this reminder');
-        close.setAttribute('data-dismiss', item.key);
-        close.appendChild(el('i', 'fa-solid fa-xmark'));
-        actions.appendChild(close);
-
-        wrap.appendChild(actions);
 
         return wrap;
     }
@@ -121,39 +126,51 @@
 
         var signature = visible.map(function (item) { return item.key; }).join('|');
         var shown = expanded ? visible : visible.slice(0, 3);
+        var behind = visible.some(function (item) { return item.kind === 'overdue' || item.kind === 'missing'; });
 
-        var card = el('section', 'overflow-hidden rounded-[22px] border border-[#FBCFCB] bg-gradient-to-r from-[#FFE9E7] to-[#FFF3F0] shadow-[0_6px_18px_rgba(15,27,77,0.08)]');
-        if (signature !== lastSignature) card.className += ' reminder-in';
+        var section = el('section', 'relative rounded-[22px] border border-[#FBCFCB] bg-gradient-to-r from-[#FFE9E7] to-[#FFF3F0] px-5 py-5 shadow-[0_6px_18px_rgba(15,27,77,0.06)] md:px-7');
+        if (signature !== lastSignature) section.className += ' reminder-in';
         lastSignature = signature;
 
-        var head = el('div', 'flex flex-wrap items-center justify-between gap-2 px-4 py-3');
-        var title = el('div', 'flex flex-wrap items-center gap-2');
-        var bell = el('span', 'flex h-8 w-8 items-center justify-center rounded-full bg-[#FDBA3B]/30 text-[#D97706]');
+        var closeAll = el('button', 'absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-[#5B6478] transition hover:bg-white/70');
+        closeAll.type = 'button';
+        closeAll.setAttribute('aria-label', 'Hide all reminders for now');
+        closeAll.setAttribute('title', 'Hide all reminders for now');
+        closeAll.setAttribute('data-dismiss-all', '1');
+        closeAll.appendChild(el('i', 'fa-solid fa-xmark'));
+        section.appendChild(closeAll);
+
+        var layout = el('div', 'flex flex-wrap items-center gap-x-6 gap-y-4 pr-8');
+
+        var left = el('div', 'flex min-w-0 flex-[1_1_260px] items-center gap-4');
+        var bell = el('span', 'flex h-14 w-14 flex-none items-center justify-center rounded-full bg-[#FDBA3B]/30 text-3xl text-[#D97706]');
         bell.appendChild(el('i', 'fa-solid fa-bell'));
-        title.appendChild(bell);
-        title.appendChild(el('span', 'rounded-full bg-[#BE123C] px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider text-white', 'REMINDER'));
-        title.appendChild(el('span', 'text-sm font-extrabold text-[#0F1B4D]', visible.length === 1 ? '1 thing needs your attention' : visible.length + ' things need your attention'));
-        head.appendChild(title);
+        left.appendChild(bell);
 
-        var all = el('button', 'rounded-lg px-3 py-1.5 text-xs font-bold text-[#5B6478] transition hover:bg-white/70', 'Dismiss all');
-        all.type = 'button';
-        all.setAttribute('data-dismiss-all', '1');
-        head.appendChild(all);
-        card.appendChild(head);
+        var heading = el('div');
+        heading.appendChild(el('span', 'rounded-full bg-[#BE123C] px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider text-white', 'REMINDER'));
+        heading.appendChild(el('h2', 'mt-1 text-xl font-extrabold leading-tight text-[#0F1B4D]', 'You have pending tasks!'));
+        heading.appendChild(el('p', 'mt-0.5 text-[13px] text-[#5B6478]', behind
+            ? 'Some of these are already overdue. Please catch up as soon as you can.'
+            : "Don't forget to complete these before they're overdue."));
+        left.appendChild(heading);
+        layout.appendChild(left);
 
-        var list = el('div', 'space-y-2 px-3 pb-3');
-        shown.forEach(function (item) { list.appendChild(row(item)); });
-        card.appendChild(list);
+        var cards = el('div', 'flex min-w-0 flex-[3_1_520px] flex-wrap gap-3');
+        shown.forEach(function (item) { cards.appendChild(card(item)); });
+        layout.appendChild(cards);
+
+        section.appendChild(layout);
 
         if (visible.length > 3) {
-            var more = el('button', 'mb-3 ml-4 text-xs font-bold text-[#1F45D6] hover:underline', expanded ? 'Show less' : 'Show ' + (visible.length - 3) + ' more');
+            var more = el('button', 'mt-3 text-xs font-bold text-[#1F45D6] hover:underline', expanded ? 'Show less' : 'Show ' + (visible.length - 3) + ' more');
             more.type = 'button';
             more.setAttribute('data-toggle-more', '1');
-            card.appendChild(more);
+            section.appendChild(more);
         }
 
         box.textContent = '';
-        box.appendChild(card);
+        box.appendChild(section);
         box.classList.remove('hidden');
     }
 
@@ -229,7 +246,7 @@
         }
     });
 
-    // When a reminder is checked: on load, on coming back to the tab, every 5 minutes, and after any action.
+    // When reminders are checked: on load, on coming back to the tab, every 5 minutes, and after any action.
     document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
     window.addEventListener('focus', soon);
     window.addEventListener('pageshow', soon);
