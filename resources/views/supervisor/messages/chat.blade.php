@@ -14,7 +14,9 @@
             'initials' => strtoupper(mb_substr($student->name, 0, 2)),
             'tone' => 'blue',
         ],
-        'contacts' => [],
+        'contacts' => $contacts,
+        'list' => ['channel' => 'private-supervisor.'.$supervisor->supervisor_id, 'partnerType' => \App\Models\Student::class, 'openBase' => '/supervisor/messages'],
+        'empty' => 'No students assigned yet.',
         'back' => ['href' => '/supervisor/messages', 'label' => 'All conversations'],
         'messages' => $messages->map(fn ($m) => $m->toChatPayload())->values()->all(),
     ];

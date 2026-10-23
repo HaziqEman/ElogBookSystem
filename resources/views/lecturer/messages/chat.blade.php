@@ -14,7 +14,9 @@
             'initials' => strtoupper(mb_substr($student->name, 0, 2)),
             'tone' => 'blue',
         ],
-        'contacts' => [],
+        'contacts' => $contacts,
+        'list' => ['channel' => 'private-lecturer.'.$lecturer->lecturer_id, 'partnerType' => \App\Models\Student::class, 'openBase' => null],
+        'empty' => 'No students assigned yet.',
         'back' => ['href' => '/lecturer/messages', 'label' => 'All conversations'],
         'messages' => $conversation->messages->map(fn ($m) => $m->toChatPayload())->values()->all(),
     ];

@@ -23,6 +23,7 @@
         ],
         'note' => 'You can only chat with your assigned lecturer and company supervisor.',
         'back' => null,
+        'tabs' => true,
         'messages' => $messages->map(fn ($m) => $m->toChatPayload())->values()->all(),
     ];
 @endphp

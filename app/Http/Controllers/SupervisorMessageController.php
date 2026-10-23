@@ -6,6 +6,7 @@ use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Student;
 use App\Models\Supervisor;
+use App\Services\ChatContacts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,18 +27,9 @@ class SupervisorMessageController extends Controller
     {
         $supervisor = $this->supervisor();
 
-        $students = Student::where('supervisor_id', $supervisor->supervisor_id)
-            ->orderBy('name')
-            ->get();
+        $contacts = app(ChatContacts::class)->forSupervisor($supervisor);
 
-        $conversations = Conversation::where('supervisor_id', $supervisor->supervisor_id)
-            ->withCount(['messages as unread_count' => function ($query) {
-                $query->where('sender_type', Student::class)->whereNull('read_at');
-            }])
-            ->get()
-            ->keyBy('student_id');
-
-        return view('supervisor.messages.index', compact('supervisor', 'students', 'conversations'));
+        return view('supervisor.messages.index', compact('supervisor', 'contacts'));
     }
 
     public function start($studentId)
@@ -78,7 +70,9 @@ class SupervisorMessageController extends Controller
                 return $message->deleted_for_supervisor && ! $message->deleted_at;
             });
 
-        return view('supervisor.messages.chat', compact('conversation', 'supervisor', 'messages'));
+        $contacts = app(ChatContacts::class)->forSupervisor($supervisor, (int) $conversation->conversation_id);
+
+        return view('supervisor.messages.chat', compact('conversation', 'supervisor', 'messages', 'contacts'));
     }
 
     public function store(Request $request, $conversationId)

@@ -6,6 +6,7 @@ use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Lecturer;
 use App\Models\Student;
+use App\Services\ChatContacts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,12 +20,9 @@ class LecturerMessageController extends Controller
             abort(403);
         }
 
-        $conversations = Conversation::with('student')
-            ->where('lecturer_id', $lecturer->lecturer_id)
-            ->orderByDesc('updated_at')
-            ->get();
+        $contacts = app(ChatContacts::class)->forLecturer($lecturer);
 
-        return view('lecturer.messages.index', compact('conversations', 'lecturer'));
+        return view('lecturer.messages.index', compact('contacts', 'lecturer'));
     }
 
     public function show($conversationId)
@@ -53,7 +51,9 @@ class LecturerMessageController extends Controller
             return $message->deleted_for_lecturer && ! $message->deleted_at;
         }));
 
-        return view('lecturer.messages.chat', compact('conversation', 'lecturer'));
+        $contacts = app(ChatContacts::class)->forLecturer($lecturer, (int) $conversation->conversation_id);
+
+        return view('lecturer.messages.chat', compact('conversation', 'lecturer', 'contacts'));
     }
 
     public function store(Request $request, $conversationId)

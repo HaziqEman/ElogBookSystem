@@ -15,6 +15,8 @@ class ChatUploader
 {
     public const MAX_KB = 10240; // 10 MB (Cloudinary free plan limit per file)
 
+    public const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+
     public const AUDIO_EXT = ['webm', 'weba', 'ogg', 'oga', 'm4a', 'mp4', 'mp3', 'wav', 'aac'];
 
     public const ALLOWED = 'jpg,jpeg,png,gif,webp,heic,heif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,mp3,m4a,aac,wav,ogg,oga,webm,weba,mp4';
@@ -32,7 +34,8 @@ class ChatUploader
 
         if ($voice && in_array($ext, self::AUDIO_EXT, true)) {
             $type = 'audio';
-        } elseif (str_starts_with((string) $mime, 'image/')) {
+        } elseif (in_array($ext, self::IMAGE_EXT, true) || str_starts_with((string) $mime, 'image/')) {
+            // extension is checked too: on some servers the mime guess comes back empty
             $type = 'image';
         } elseif (str_starts_with((string) $mime, 'audio/')) {
             $type = 'audio';

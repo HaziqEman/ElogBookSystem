@@ -7,9 +7,91 @@
 const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😅','😉','🙂','🙃','😢','😭','😡','👍','👎','👏','🙏','💪','🙌','👌','✌️','🔥','🎉','✅','❌','⭐','💯','❤️','💙','📎','📄','📷','📅','⏰','🕒','📌','💡','👋','🤝','😴','🤒','🙈','🥲','😇','🤗'];
 
 function initChat() {
-	const cfg = window.CHAT;
+	/* ---------- layout (shared by chat + list-only pages) ---------- */
+function fitRoot(root) {
+	const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+	const wide = window.innerWidth >= 768;
+	const gap = wide ? 32 : 16;
+	root.style.height = `${Math.max(wide ? 640 : 480, vh - root.getBoundingClientRect().top - gap)}px`;
+}
+function setupFit(root) {
+	const f = () => fitRoot(root);
+	window.addEventListener('resize', f);
+	window.visualViewport?.addEventListener('resize', f);
+	f(); setTimeout(f, 250);
+}
+
+/* ---------- left conversation list ---------- */
+function initList(root) {
+	const side = root.querySelector('.cm-side');
+	if (! side) return;
+	const L = window.CHAT_LIST || null;
+	const box = side.querySelector('.cm-contacts');
+
+	const short = (iso) => {
+		if (! iso) return '';
+		const d = new Date(iso); const now = new Date(); const y = new Date(); y.setDate(now.getDate() - 1);
+		const same = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+		if (same(d, now)) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+		if (same(d, y)) return 'Yesterday';
+		return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+	};
+	side.querySelectorAll('[data-iso]').forEach((e) => { e.textContent = short(e.dataset.iso); });
+
+	const search = side.querySelector('.cm-search input');
+	search?.addEventListener('input', () => {
+		const q = search.value.trim().toLowerCase();
+		side.querySelectorAll('.cm-contact').forEach((c) => { c.hidden = !! q && ! (c.dataset.name || '').toLowerCase().includes(q); });
+	});
+
+	const previewOf = (m) => {
+		if (m.deleted) return 'This message was deleted';
+		if (m.message) return m.message;
+		if (m.type === 'image') return '📷 Photo';
+		if (m.type === 'audio') return '🎤 Voice message';
+		return `📎 ${m.attachment?.name || 'File'}`;
+	};
+
+	const bump = (c, m, countUnread) => {
+		const pv = c.querySelector('.cm-pv'); if (pv) pv.textContent = (m._mine ? 'You: ' : '') + previewOf(m);
+		const tm = c.querySelector('.cm-ct-time'); if (tm) { tm.dataset.iso = m.created_at_iso || new Date().toISOString(); tm.textContent = short(tm.dataset.iso); }
+		if (m.conversation_id) {
+			c.dataset.conversationId = m.conversation_id;
+			if (L?.openBase) c.href = `${L.openBase}/${m.conversation_id}`;
+		}
+		if (countUnread) {
+			let b = c.querySelector('.cm-badge');
+			if (! b) { b = document.createElement('span'); b.className = 'cm-badge'; b.textContent = '0'; c.querySelector('.cm-row2')?.appendChild(b); }
+			b.textContent = String((parseInt(b.textContent, 10) || 0) + 1);
+		}
+		box?.prepend(c);
+	};
+
+	if (L?.channel && window.Echo) {
+		window.Echo.private(L.channel).listen('MessageSent', (e) => {
+			const m = e.message;
+			if (! m || m.sender_type !== L.partnerType) return;
+			const c = side.querySelector(`.cm-contact[data-student-id="${m.sender_id}"]`);
+			if (! c) return;
+			const open = String(m.conversation_id) === String(window.CONVERSATION_ID || '');
+			bump(c, m, ! open);
+		});
+	}
+
+	window.addEventListener('chat:bump', (e) => {
+		const m = { ...e.detail, _mine: true };
+		const c = side.querySelector(`.cm-contact[data-conversation-id="${m.conversation_id}"]`);
+		if (c) bump(c, m, false);
+	});
+}
+
+function initChat() {
 	const root = document.getElementById('cm-root');
-	if (! cfg || ! root) return;
+	if (! root) return;
+	setupFit(root);
+	initList(root);
+	const cfg = window.CHAT;
+	if (! cfg) return;   // list-only page (no conversation selected)
 
 	const me = cfg.me;
 	const urls = cfg.urls;
@@ -36,6 +118,7 @@ function initChat() {
 	};
 
 	const isMine = (m) => m.sender_type === me.type && Number(m.sender_id) === Number(me.id);
+	const isImg = (m) => m.type === 'image' || (m.attachment && (String(m.attachment.mime || '').startsWith('image/') || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(m.attachment.name || '')));
 	const esc = (s) => String(s ?? '');
 	const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 
@@ -123,7 +206,7 @@ function initChat() {
 			bubble.classList.add('cm-deleted');
 			bubble.appendChild(el('span', 'cm-del-text', '<i class="fa-solid fa-ban"></i> This message was deleted'));
 		} else {
-			if (a && m.type === 'image') {
+			if (a && isImg(m)) {
 				const img = el('img', 'cm-img'); img.src = a.url; img.alt = a.name || 'Photo'; img.loading = 'lazy';
 				img.addEventListener('click', () => openLightbox(a));
 				bubble.appendChild(img);
@@ -247,6 +330,7 @@ function initChat() {
 			old ? old.replaceWith(node) : list.appendChild(node);
 			state.nodes.set(rid, node);
 			scrollBottom();
+			window.dispatchEvent(new CustomEvent('chat:bump', { detail: real }));
 		} catch (err) {
 			state.msgs.set(id, { ...state.msgs.get(id), pending: false, failed: true });
 			rebuild(id);
@@ -492,13 +576,9 @@ function initChat() {
 	document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeLb(); closeSheet(); closeMenus(); } });
 
 	/* ---------- layout / PWA behaviour ---------- */
-	const fit = () => {
-		const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;   // shrinks when the mobile keyboard opens
-		const gap = window.innerWidth >= 768 ? 40 : 20;
-		root.style.height = `${Math.max(420, vh - root.getBoundingClientRect().top - gap)}px`;
-	};
-	window.addEventListener('resize', fit);
-	window.visualViewport?.addEventListener('resize', () => { fit(); if (nearBottom()) scrollBottom(); });
+	window.visualViewport?.addEventListener('resize', () => { if (nearBottom()) scrollBottom(); });
+	
+
 
 	const net = () => { $('cm-offline').hidden = navigator.onLine; };
 	window.addEventListener('offline', net);
@@ -512,9 +592,8 @@ function initChat() {
 	/* ---------- boot ---------- */
 	(cfg.messages || []).forEach((m) => addMessage(m, { silent: true }));
 	$('cm-empty').hidden = state.msgs.size > 0;
-	fit(); net(); refreshButtons(); scrollBottom();
-	setTimeout(() => { fit(); scrollBottom(); }, 250);   // after fonts/icons settle
-	markRead();
+	net(); refreshButtons(); scrollBottom();
+	setTimeout(scrollBottom, 300);
 }
 
 // app.js imports this file before it creates window.Echo, so start on the next tick (after app.js finished running).

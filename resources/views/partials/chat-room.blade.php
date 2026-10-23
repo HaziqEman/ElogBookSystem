@@ -4,7 +4,9 @@
         'conversation_id' => int,
         'me'       => ['type' => FQCN, 'role' => 'student|lecturer|supervisor', 'id' => int, 'name' => string],
         'partner'  => ['role' => string, 'title' => string, 'name' => string, 'sub' => string|null, 'initials' => 'LE', 'tone' => 'blue|green'],
-        'contacts' => [ ['title','name','initials','tone','href','active','disabled'] ]  (empty = no left list)
+        'contacts' => [ ['title','name','initials','tone','href','active','disabled', optional: 'preview','time_iso','unread','student_id','conversation_id'] ]
+        'tabs'     => bool (student view), 'list' => ['channel','partnerType','openBase'] (live list updates), 'placeholder' => string
+        conversation_id = null -> only the list is shown (lecturer / supervisor index page)
         'back'     => ['href' => ..., 'label' => ...] | null,
         'messages' => array of Message::toChatPayload(),
         'deleteBase' => '/conversations/{id}/messages',
@@ -14,8 +16,9 @@
 @php
     $c = $chat;
     $contacts = $c['contacts'] ?? [];
-    $cid = $c['conversation_id'];
-    $js = [
+    $cid = $c['conversation_id'] ?? null;          // null = list only, no chat selected
+    $tabs = $c['tabs'] ?? false;                  // student: two tabs on mobile instead of a back arrow
+    $js = $cid ? [
         'conversationId' => $cid,
         'me' => $c['me'],
         'partner' => $c['partner'],
@@ -27,16 +30,16 @@
             'read' => url("/conversations/{$cid}/read"),
             'deleteBase' => url("/conversations/{$cid}/messages"),
         ],
-    ];
+    ] : null;
 @endphp
 
 <style>
     .cm-root{--cm-blue:#2563eb;--cm-blue-d:#1d4ed8;--cm-ink:#0f172a;--cm-mute:#64748b;--cm-line:#e2e8f0;--cm-bg:#f1f5fd;
         display:flex;background:#fff;border:1px solid var(--cm-line);border-radius:20px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06);
-        font-size:14px;color:var(--cm-ink);position:relative;min-height:420px}
+        font-size:14px;color:var(--cm-ink);position:relative;min-height:480px}
     .cm-root *{box-sizing:border-box}
-    .cm-root button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
-    .cm-root a{color:inherit}
+    :where(.cm-root) button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+    :where(.cm-root) a{color:inherit}
     .cm-root [hidden]{display:none!important}
     .cm-drop::after{content:"Drop files to attach";position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(37,99,235,.12);border:2px dashed var(--cm-blue);border-radius:20px;font-weight:700;color:var(--cm-blue)}
 
@@ -53,6 +56,20 @@
     .cm-avatar{width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:15px}
     .cm-tone-blue{background:#2563eb}.cm-tone-green{background:#0f9d7a}
     .cm-row .cm-avatar{width:32px;height:32px;font-size:11px;align-self:flex-end}
+
+    .cm-contacts{display:flex;flex-direction:column;gap:4px}
+    .cm-search{position:relative}
+    .cm-search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px}
+    .cm-search input{width:100%;height:42px;border:1px solid var(--cm-line);border-radius:14px;padding:0 14px 0 38px;font:inherit;outline:0;background:#f8fafc}
+    .cm-search input:focus{border-color:#93b4fb;background:#fff}
+    .cm-contact .cm-row1,.cm-contact .cm-row2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .cm-contact .cm-row2{margin-top:2px}
+    .cm-contact .cm-pv{flex:1;min-width:0;color:var(--cm-mute);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cm-contact .cm-ct-time{font-size:11.5px;color:var(--cm-mute);flex:none}
+    .cm-contact.has-unread b,.cm-contact.has-unread .cm-pv{color:var(--cm-ink);font-weight:700}
+    .cm-badge{min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+    .cm-side-empty{padding:24px 10px;text-align:center;color:var(--cm-mute)}
+    .cm-ph{flex:1;display:flex;align-items:center;justify-content:center;background:var(--cm-bg);padding:24px}
 
     /* main */
     .cm-main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
@@ -98,7 +115,7 @@
     .cm-img{display:block;max-width:100%;max-height:300px;border-radius:12px;margin:2px 0 4px;cursor:zoom-in;background:#e2e8f0;min-width:140px}
     .cm-file{display:flex;align-items:center;gap:10px;text-decoration:none;padding:8px;margin:2px 0 4px;border-radius:12px;background:rgba(255,255,255,.95);color:var(--cm-ink);min-width:210px}
     .cm-file-ic{width:38px;height:38px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
-    .cm-file-info{min-width:0}.cm-file-info b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+    .cm-file-info{min-width:0}.cm-file-info b{color:var(--cm-ink);display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
     .cm-file-info small{color:var(--cm-mute);font-size:11.5px}
     .cm-audio{display:flex;align-items:center;gap:10px;min-width:210px;padding:2px 0}
     .cm-play{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.95);color:var(--cm-blue)!important;font-size:12px}
@@ -157,29 +174,54 @@
     .cm-toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:70;max-width:90vw}
 
     /* responsive */
-    @media (min-width:900px){.cm-side{display:flex}.cm-switch{display:none}}
-    @media (max-width:899px){.cm-head{flex-wrap:wrap}.cm-switch{width:100%;order:5}.cm-bubble{max-width:86%}.cm-root{border-radius:16px}}
+    @media (min-width:900px){.cm-side{display:flex}.cm-switch{display:none}.cm-has-side .cm-back{display:none}}
+    @media (max-width:899px){.cm-index .cm-side{display:flex;width:100%;border-right:0}.cm-index .cm-main,.cm-index .cm-ph{display:none}.cm-head{flex-wrap:wrap}.cm-switch{width:100%;order:5}.cm-bubble{max-width:86%}.cm-root{border-radius:16px}}
 </style>
 
-<div id="cm-root" class="cm-root">
+<div id="cm-root" class="cm-root {{ ! $cid ? 'cm-index' : '' }} {{ count($contacts) && ! $tabs ? 'cm-has-side' : '' }}">
     @if(count($contacts))
         <aside class="cm-side" aria-label="Conversations">
-            @foreach($contacts as $ct)
-                <a href="{{ $ct['href'] }}" class="cm-contact {{ $ct['active'] ? 'active' : '' }} {{ ($ct['disabled'] ?? false) ? 'disabled' : '' }}">
-                    <span class="cm-avatar cm-tone-{{ $ct['tone'] }}">{{ $ct['initials'] }}</span>
-                    <span class="cm-ct">
-                        <b>{{ $ct['title'] }}</b>
-                        <small>{{ $ct['name'] ?: 'Not assigned yet' }}</small>
-                    </span>
-                    <i class="fa-solid fa-chevron-right" style="color:#94a3b8;font-size:12px"></i>
-                </a>
-            @endforeach
+            @if(! $tabs)
+                <label class="cm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Search students..." aria-label="Search"></label>
+            @endif
+            <div class="cm-contacts">
+                @foreach($contacts as $ct)
+                    @php $rich = array_key_exists('preview', $ct); @endphp
+                    <a href="{{ $ct['href'] }}"
+                       class="cm-contact {{ $ct['active'] ? 'active' : '' }} {{ ($ct['disabled'] ?? false) ? 'disabled' : '' }} {{ ($ct['unread'] ?? 0) > 0 ? 'has-unread' : '' }}"
+                       data-name="{{ $ct['title'] }}"
+                       @if(isset($ct['student_id'])) data-student-id="{{ $ct['student_id'] }}" @endif
+                       @if(! empty($ct['conversation_id'])) data-conversation-id="{{ $ct['conversation_id'] }}" @endif>
+                        <span class="cm-avatar cm-tone-{{ $ct['tone'] }}">{{ $ct['initials'] }}</span>
+                        <span class="cm-ct">
+                            @if($rich)
+                                <span class="cm-row1"><b>{{ $ct['title'] }}</b><span class="cm-ct-time" data-iso="{{ $ct['time_iso'] ?? '' }}"></span></span>
+                                <span class="cm-row2">
+                                    <span class="cm-pv">{{ $ct['preview'] !== '' ? $ct['preview'] : 'No messages yet' }}</span>
+                                    @if(($ct['unread'] ?? 0) > 0)<span class="cm-badge">{{ $ct['unread'] }}</span>@endif
+                                </span>
+                            @else
+                                <b>{{ $ct['title'] }}</b>
+                                <small>{{ $ct['name'] ?: 'Not assigned yet' }}</small>
+                            @endif
+                        </span>
+                        @if(! $rich)<i class="fa-solid fa-chevron-right" style="color:#94a3b8;font-size:12px"></i>@endif
+                    </a>
+                @endforeach
+            </div>
             @if(!empty($c['note']))
                 <div class="cm-note"><i class="fa-solid fa-circle-info" style="margin-top:2px"></i><span>{{ $c['note'] }}</span></div>
             @endif
         </aside>
+    @else
+        <aside class="cm-side"><div class="cm-side-empty">{{ $c['empty'] ?? 'No conversations yet.' }}</div></aside>
     @endif
 
+    @if(! $cid)
+        <section class="cm-ph">
+            <div class="cm-empty"><i class="fa-regular fa-comments"></i>{{ $c['placeholder'] ?? 'Select a conversation to start chatting.' }}</div>
+        </section>
+    @else
     <section class="cm-main">
         <header class="cm-head">
             @if(!empty($c['back']))
@@ -192,7 +234,7 @@
                 <span id="cm-status" class="cm-st"><i></i><span id="cm-status-text">Offline</span></span>
                 <span id="cm-typing" hidden></span>
             </div>
-            @if(count($contacts))
+            @if($tabs && count($contacts))
                 <nav class="cm-switch" aria-label="Switch chat">
                     @foreach($contacts as $ct)
                         <a href="{{ $ct['href'] }}" class="{{ $ct['active'] ? 'active' : '' }}">{{ $ct['title'] }}</a>
@@ -263,12 +305,16 @@
     </div>
 
     <div id="cm-toast" class="cm-toast" hidden></div>
+    @endif
 </div>
 
 <script>
+    @if($cid)
     window.CHAT = {{ \Illuminate\Support\Js::from($js) }};
     // names app.js already uses for presence / channels
     window.CONVERSATION_ID = {{ (int) $cid }};
     window.CHAT_PARTNER_ROLE = @json($c['partner']['role']);
     window.CURRENT_USER = @json($c['me']);
+    @endif
+    window.CHAT_LIST = @json($c['list'] ?? null);
 </script>
