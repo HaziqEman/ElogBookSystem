@@ -175,7 +175,7 @@
     }
 
     function load() {
-        fetch('/student/reminders', {
+        fetch('/student/dashboard/reminders', {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             cache: 'no-store'

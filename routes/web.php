@@ -54,7 +54,6 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
     Route::get('/student/logbooks', [StudentDashboardController::class, 'logbooks']);
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
-    Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware('throttle:5,1');
     Route::get('/student/logbook/edit/{id}', [StudentLogbookEditController::class, 'edit'])->whereNumber('id');
     Route::post('/student/logbook/update/{id}', [StudentLogbookEditController::class, 'update'])->whereNumber('id');
     Route::get('/student/logbook/delete/{id}', [LogbookController::class, 'destroy']);
@@ -113,12 +112,21 @@ Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->
     Route::delete('/supervisor/tasks/{id}', [SupervisorTaskController::class, 'destroy'])->whereNumber('id');
 });
 
+// Chat endpoints per role. The role is part of the URL so a browser that is logged in as
+// student AND lecturer (or supervisor) at the same time always acts as the portal it is on.
+foreach (['student', 'lecturer', 'supervisor'] as $chatRole) {
+    Route::middleware("auth:$chatRole")->prefix("chat/$chatRole")->group(function () {
+        Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->whereNumber(['conversation', 'message']);
+        Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->whereNumber(['conversation', 'message']);
+        Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'store'])->whereNumber('conversation')->middleware('throttle:60,1');
+        Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])->whereNumber('conversation');
+        Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatController::class, 'read'])->whereNumber('conversation');
+    });
+}
+
 Route::middleware('auth:student,lecturer,supervisor')->group(function () {
-    Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
-    // Route::get('/student/reminders', [StudentReminderController::class, 'index']);
-    // Route::post('/student/working-days', [StudentScheduleController::class, 'update']);
     Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'store'])
     ->whereNumber('conversation')->middleware('throttle:60,1')->name('chat.store');
 Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])
@@ -129,6 +137,25 @@ Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatCon
 
 Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+
+    // Extra admin tools. These must come BEFORE the resource routes below,
+    // otherwise /admin/students/export would be read as /admin/students/{id}.
+    Route::get('/admin/students/export', [AdminStudentController::class, 'export']);
+    Route::get('/admin/students/import', [App\Http\Controllers\AdminStudentImportController::class, 'show']);
+    Route::get('/admin/students/import/template', [App\Http\Controllers\AdminStudentImportController::class, 'template']);
+    Route::post('/admin/students/import', [App\Http\Controllers\AdminStudentImportController::class, 'store']);
+    Route::post('/admin/students/bulk', [AdminStudentController::class, 'bulk']);
+    Route::post('/admin/students/{id}/reset-password', [AdminStudentController::class, 'resetPassword'])->whereNumber('id');
+
+    Route::get('/admin/lecturers/import', [App\Http\Controllers\AdminLecturerImportController::class, 'show']);
+    Route::get('/admin/lecturers/import/template', [App\Http\Controllers\AdminLecturerImportController::class, 'template']);
+    Route::post('/admin/lecturers/import', [App\Http\Controllers\AdminLecturerImportController::class, 'store']);
+    Route::post('/admin/lecturers/bulk', [App\Http\Controllers\AdminLecturerController::class, 'bulk']);
+    Route::post('/admin/lecturers/{id}/reset-password', [App\Http\Controllers\AdminLecturerController::class, 'resetPassword'])->whereNumber('id');
+
+    Route::post('/admin/supervisors/bulk', [AdminSupervisorController::class, 'bulk']);
+    Route::post('/admin/supervisors/{id}/reset-password', [AdminSupervisorController::class, 'resetPassword'])->whereNumber('id');
+
     Route::resource('admin/students', AdminStudentController::class);
     Route::resource('admin/lecturers', App\Http\Controllers\AdminLecturerController::class);
     Route::resource('admin/supervisors', AdminSupervisorController::class);
@@ -158,6 +185,4 @@ Route::get('/internal/run-reminders', [CronController::class, 'reminders'])->mid
 Route::get('/attendance/{id}/mc', [AttendanceMcController::class, 'show'])
     ->whereNumber('id')
     ->middleware('auth:student,lecturer,supervisor,admin');
-
-
-    
+   

@@ -64,7 +64,10 @@ class WeekPlanner
                     continue;
                 }
 
-                $list[] = ['from' => $from, 'days' => self::parseDays((string) ($item['days'] ?? ''))];
+                $days = $item['days'] ?? '';
+                $days = is_array($days) ? implode(',', $days) : (string) $days;
+
+                $list[] = ['from' => $from, 'days' => self::parseDays($days)];
             }
         }
 

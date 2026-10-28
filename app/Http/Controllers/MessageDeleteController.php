@@ -18,7 +18,7 @@ class MessageDeleteController extends Controller
             ->where('conversation_id', $conversation->conversation_id)
             ->firstOrFail();
 
-        $actor = $this->participant($conversation);
+        $actor = $this->participant($conversation, $this->roleFromUrl($request));
 
         if (! $actor) {
             abort(403);
@@ -38,7 +38,7 @@ class MessageDeleteController extends Controller
             ->where('conversation_id', $conversation->conversation_id)
             ->firstOrFail();
 
-        $actor = $this->participant($conversation);
+        $actor = $this->participant($conversation, $this->roleFromUrl($request));
 
         // Only the person who sent a message may delete it for everyone.
         if (! $actor
@@ -60,22 +60,30 @@ class MessageDeleteController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /** /chat/{role}/... URLs name the portal the user is on; the old /conversations/... URLs return null. */
+    protected function roleFromUrl(Request $request): ?string
+    {
+        $role = $request->segment(1) === 'chat' ? $request->segment(2) : null;
+
+        return in_array($role, ['student', 'lecturer', 'supervisor'], true) ? $role : null;
+    }
+
     /**
      * Which logged-in user is a participant of this conversation, and which "deleted for me" column is theirs.
      */
-    protected function participant(Conversation $conversation): ?array
+    protected function participant(Conversation $conversation, ?string $role = null): ?array
     {
-        $student = Auth::guard('student')->user();
+        $student = (! $role || $role === 'student') ? Auth::guard('student')->user() : null;
         if ($student && (int) $student->student_id === (int) $conversation->student_id) {
             return ['user' => $student, 'id' => (int) $student->student_id, 'flag' => 'deleted_for_student'];
         }
 
-        $lecturer = Auth::guard('lecturer')->user();
+        $lecturer = (! $role || $role === 'lecturer') ? Auth::guard('lecturer')->user() : null;
         if ($lecturer && $conversation->lecturer_id && (int) $lecturer->lecturer_id === (int) $conversation->lecturer_id) {
             return ['user' => $lecturer, 'id' => (int) $lecturer->lecturer_id, 'flag' => 'deleted_for_lecturer'];
         }
 
-        $supervisor = Auth::guard('supervisor')->user();
+        $supervisor = (! $role || $role === 'supervisor') ? Auth::guard('supervisor')->user() : null;
         if ($supervisor && $conversation->supervisor_id && (int) $supervisor->supervisor_id === (int) $conversation->supervisor_id) {
             return ['user' => $supervisor, 'id' => (int) $supervisor->supervisor_id, 'flag' => 'deleted_for_supervisor'];
         }

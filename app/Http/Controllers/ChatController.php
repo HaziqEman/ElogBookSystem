@@ -20,7 +20,7 @@ class ChatController extends Controller
     public function store(Request $request, ChatUploader $uploader, $conversationId)
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
-        $me = $this->participant($conversation) ?? abort(403);
+        $me = $this->participant($conversation, $this->roleFromUrl($request)) ?? abort(403);
 
         $request->validate([
             'message'    => ['nullable', 'string', 'max:1000'],
@@ -76,7 +76,7 @@ class ChatController extends Controller
     public function since(Request $request, $conversationId)
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
-        $me = $this->participant($conversation) ?? abort(403);
+        $me = $this->participant($conversation, $this->roleFromUrl($request)) ?? abort(403);
 
         $after = (int) $request->query('after', 0);
 
@@ -106,7 +106,7 @@ class ChatController extends Controller
     public function read(Request $request, $conversationId)
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
-        $me = $this->participant($conversation) ?? abort(403);
+        $me = $this->participant($conversation, $this->roleFromUrl($request)) ?? abort(403);
 
         $theirs = fn ($q) => $q->where(function ($w) use ($me) {
             $w->where('sender_type', '!=', $me['type'])->orWhere('sender_id', '!=', $me['id']);
@@ -128,20 +128,28 @@ class ChatController extends Controller
         return response()->json(['ok' => true, 'up_to' => $upTo]);
     }
 
-    /** Which logged-in user is in this conversation, and which "deleted for me" column is theirs. */
-    protected function participant(Conversation $conversation): ?array
+    /** /chat/{role}/... URLs name the portal the user is on; the old /conversations/... URLs return null. */
+    protected function roleFromUrl(Request $request): ?string
     {
-        $student = Auth::guard('student')->user();
+        $role = $request->segment(1) === 'chat' ? $request->segment(2) : null;
+
+        return in_array($role, ['student', 'lecturer', 'supervisor'], true) ? $role : null;
+    }
+
+    /** Which logged-in user is in this conversation, and which "deleted for me" column is theirs. */
+    protected function participant(Conversation $conversation, ?string $role = null): ?array
+    {
+        $student = (! $role || $role === 'student') ? Auth::guard('student')->user() : null;
         if ($student && (int) $student->student_id === (int) $conversation->student_id) {
             return ['type' => get_class($student), 'id' => (int) $student->student_id, 'flag' => 'deleted_for_student'];
         }
 
-        $lecturer = Auth::guard('lecturer')->user();
+        $lecturer = (! $role || $role === 'lecturer') ? Auth::guard('lecturer')->user() : null;
         if ($lecturer && $conversation->lecturer_id && (int) $lecturer->lecturer_id === (int) $conversation->lecturer_id) {
             return ['type' => get_class($lecturer), 'id' => (int) $lecturer->lecturer_id, 'flag' => 'deleted_for_lecturer'];
         }
 
-        $supervisor = Auth::guard('supervisor')->user();
+        $supervisor = (! $role || $role === 'supervisor') ? Auth::guard('supervisor')->user() : null;
         if ($supervisor && $conversation->supervisor_id && (int) $supervisor->supervisor_id === (int) $conversation->supervisor_id) {
             return ['type' => get_class($supervisor), 'id' => (int) $supervisor->supervisor_id, 'flag' => 'deleted_for_supervisor'];
         }

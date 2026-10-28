@@ -22,7 +22,6 @@
     ];
 @endphp
 
-<div class="space-y-4">
-    @include('partials.chat-room', ['chat' => $chat])
+<div class="space-y-4 -mt-4 md:-mt-8">    @include('partials.chat-room', ['chat' => $chat])
 </div>
 @endsection

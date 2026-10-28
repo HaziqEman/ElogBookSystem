@@ -3,155 +3,309 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
+use App\Models\Attendance;
 use App\Models\Lecturer;
 use App\Models\Logbook;
 use App\Models\Student;
+use App\Models\Supervisor;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
+    /** Entries waiting longer than this many days count as overdue. */
+    private const OVERDUE_DAYS = 7;
+
+    /** A student with no entry for this many days is flagged as inactive. */
+    private const INACTIVE_DAYS = 7;
+
     public function dashboard()
     {
-        $hasStudentsTable = Schema::hasTable('students');
-        $hasLecturersTable = Schema::hasTable('lecturers');
-        $hasLogbooksTable = Schema::hasTable('logbooks');
-        $hasAttachmentsTable = Schema::hasTable('attachments');
+        $today = now()->startOfDay();
+        $localNow = now(Attendance::TIMEZONE);
 
-        $students = $hasStudentsTable ? Student::count() : 0;
-        $lecturers = $hasLecturersTable ? Lecturer::count() : 0;
-        $logbooks = $hasLogbooksTable ? Logbook::count() : 0;
-        $pending = $hasLogbooksTable ? Logbook::where('status', 'Pending')->count() : 0;
-        $approved = $hasLogbooksTable ? Logbook::where('status', 'Approved')->count() : 0;
-        $rejected = $hasLogbooksTable ? Logbook::where('status', 'Rejected')->count() : 0;
-        $revision = $hasLogbooksTable ? Logbook::where('status', 'Revision Required')->count() : 0;
-        $submittedToday = $hasLogbooksTable ? Logbook::whereDate('created_at', today())->count() : 0;
-        $submittedThisWeek = $hasLogbooksTable ? Logbook::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count() : 0;
-        $attachments = $hasAttachmentsTable ? Attachment::count() : 0;
-        $activeStudents = $hasStudentsTable ? Student::whereHas('logbooks', function ($query) {
-            $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-        })->count() : 0;
+        // ---------- Greeting ----------
+        $hour = (int) $localNow->format('G');
+        $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+        $adminName = optional(Auth::guard('admin')->user())->name ?? 'Administrator';
+        $todayLabel = $localNow->format('l, j F Y');
 
-        $recentLogbooks = $hasLogbooksTable ? Logbook::with(['student', 'student.lecturer'])
+        // ---------- Headline numbers ----------
+        $students = Student::count();
+        $lecturers = Lecturer::count();
+        $supervisors = Supervisor::count();
+        $logbooks = Logbook::count();
+
+        $studentsWithSupervisor = Student::whereNotNull('supervisor_id')->count();
+        $supervisorsWithStudents = Supervisor::has('students')->count();
+
+        $entriesToday = Logbook::whereDate('created_at', today())->count();
+        $entriesThisWeek = Logbook::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
+
+        // ---------- Review status (the company supervisor is the only reviewer now) ----------
+        $validated = Logbook::where('supervisor_status', 'Validated')->count();
+        $revision = Logbook::where('supervisor_status', 'Revision Requested')->count();
+        $pending = max(0, $logbooks - $validated - $revision);
+        $validatedPercent = $logbooks > 0 ? (int) round($validated / $logbooks * 100) : 0;
+
+        // Pending entries that a supervisor can actually review (the student has one assigned).
+        $awaitingReview = $this->pending(
+            Logbook::query()->whereHas('student', fn ($q) => $q->whereNotNull('supervisor_id'))
+        )->count();
+
+        $overdueReviews = $this->pending(
+            Logbook::query()->whereHas('student', fn ($q) => $q->whereNotNull('supervisor_id'))
+        )->where('created_at', '<', now()->subDays(self::OVERDUE_DAYS))->count();
+
+        $entriesWithoutReviewer = max(0, $pending - $awaitingReview);
+
+        // ---------- Entries per month (last 6 months) ----------
+        $months = collect(range(5, 0))->map(fn ($i) => now()->startOfMonth()->subMonths($i));
+
+        $entriesByMonth = Logbook::where('created_at', '>=', $months->first())
+            ->pluck('created_at')
+            ->groupBy(fn ($date) => Carbon::parse($date)->format('Y-m'))
+            ->map->count();
+
+        $trendLabels = $months->map(fn ($m) => $m->format('M'))->values();
+        $trendValues = $months->map(fn ($m) => (int) ($entriesByMonth[$m->format('Y-m')] ?? 0))->values();
+
+        // ---------- Review progress (last 4 weeks) ----------
+        $weekRows = Logbook::where('created_at', '>=', now()->startOfWeek()->subWeeks(3))
+            ->get(['created_at', 'supervisor_status']);
+
+        $reviewProgress = collect(range(3, 0))->map(function ($i) use ($weekRows) {
+            $start = now()->startOfWeek()->subWeeks($i);
+            $end = $start->copy()->endOfWeek();
+
+            $inWeek = $weekRows->filter(fn ($row) => $row->created_at >= $start && $row->created_at <= $end);
+            $total = $inWeek->count();
+            $reviewed = $inWeek->whereIn('supervisor_status', ['Validated', 'Revision Requested'])->count();
+
+            return [
+                'label' => $start->format('d M').' - '.$end->format('d M'),
+                'total' => $total,
+                'reviewed' => $reviewed,
+                'waiting' => $total - $reviewed,
+                'percent' => $total > 0 ? (int) round($reviewed / $total * 100) : 0,
+            ];
+        });
+
+        // ---------- Latest entries ----------
+        $latestEntries = Logbook::with(['student.lecturer', 'student.supervisor'])
             ->latest('created_at')
-            ->take(10)
-            ->get() : collect();
+            ->take(8)
+            ->get();
 
-        $recentActivities = collect();
-        if ($hasLogbooksTable) {
-            $recentActivities = Logbook::with('student')
-                ->latest('created_at')
-                ->take(10)
-                ->get()
-                ->map(function ($logbook) {
-                    $status = $logbook->status ?? 'Pending';
-                    $message = match ($status) {
-                        'Approved' => 'Lecturer approved a logbook',
-                        'Revision Required' => 'Lecturer requested revision',
-                        default => 'Student submitted a logbook',
-                    };
+        // ---------- Workload ----------
+        $lecturerWorkload = Lecturer::withCount('students')
+            ->orderByDesc('students_count')
+            ->orderBy('name')
+            ->take(5)
+            ->get();
 
-                    return [
-                        'title' => $message,
-                        'detail' => $logbook->student->name ?? 'Unknown student',
-                        'time' => $logbook->created_at?->diffForHumans() ?? 'Recently',
-                    ];
-                });
-        }
+        $waitingBySupervisor = $this->pending(
+            DB::table('logbooks')
+                ->join('students', 'students.student_id', '=', 'logbooks.student_id')
+                ->whereNotNull('students.supervisor_id'),
+            'logbooks.supervisor_status'
+        )
+            ->select('students.supervisor_id', DB::raw('COUNT(*) as waiting'))
+            ->groupBy('students.supervisor_id')
+            ->pluck('waiting', 'supervisor_id');
 
-        $studentWithMostSubmissions = $hasLogbooksTable ? Student::withCount('logbooks')->orderByDesc('logbooks_count')->first() : null;
-        $mostActiveStudent = $studentWithMostSubmissions?->name ?? 'No data';
-        $mostActiveStudentCount = $studentWithMostSubmissions?->logbooks_count ?? 0;
-
-        $studentsWithoutSubmissionThisWeek = $hasStudentsTable ? Student::whereDoesntHave('logbooks', function ($query) {
-            $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-        })->count() : 0;
-
-        $lecturerWithMostReviews = $hasLogbooksTable ? Lecturer::withCount(['students' => function ($query) {
-            $query->whereHas('logbooks', function ($subQuery) {
-                $subQuery->whereIn('status', ['Approved', 'Rejected', 'Revision Required']);
-            });
-        }])->orderByDesc('students_count')->first() : null;
-
-        $reviewedLogbooks = $hasLogbooksTable ? Logbook::whereIn('status', ['Approved', 'Rejected', 'Revision Required'])->count() : 0;
-        $pendingReviews = $hasLogbooksTable ? Logbook::where('status', 'Pending')->count() : 0;
-        $supervisedStudents = $hasStudentsTable ? Student::count() : 0;
-        $topLecturerName = $lecturerWithMostReviews?->name ?? 'No data';
-
-        $monthlyTrend = $hasLogbooksTable ? Logbook::query()
-            ->whereBetween('created_at', [now()->subMonths(6), now()])
+        $supervisorWorkload = Supervisor::withCount('students')
+            ->orderByDesc('students_count')
+            ->orderBy('name')
+            ->take(5)
             ->get()
-            ->groupBy(function ($logbook) {
-                return $logbook->created_at->format('m');
-            })
-            ->map(function ($group, $month) {
-                return [
-                    'month' => (int) $month,
-                    'count' => $group->count(),
-                ];
-            })
-            ->values() : collect();
+            ->each(fn ($supervisor) => $supervisor->waiting_count = (int) ($waitingBySupervisor[$supervisor->supervisor_id] ?? 0));
 
-        $statusBreakdown = $hasLogbooksTable ? Logbook::select('status', DB::raw('COUNT(*) as count'))
-            ->groupBy('status')
-            ->get() : collect();
+        // ---------- Needs your attention ----------
+        $attention = [];
 
-        $userDistribution = [
-            'students' => $students,
-            'lecturers' => $lecturers,
-        ];
-
-        $averageLogbooksPerStudent = $students > 0 ? round($logbooks / $students, 1) : 0;
-        $storageUsage = round((is_dir(storage_path('app')) ? folderSize(storage_path('app')) : 0) / 1024 / 1024, 2);
-        $databaseStatus = Schema::hasTable('users') ? 'Connected' : 'Unavailable';
-        $lastBackupTime = file_exists(storage_path('logs')) ? now()->toDateTimeString() : 'Not available';
-        $appVersion = 'v1.0.0';
-
-        return view(
-            'admin.dashboard',
-            compact(
-                'students',
-                'lecturers',
-                'logbooks',
-                'pending',
-                'approved',
-                'rejected',
-                'revision',
-                'submittedToday',
-                'submittedThisWeek',
-                'averageLogbooksPerStudent',
-                'recentLogbooks',
-                'recentActivities',
-                'activeStudents',
-                'studentsWithoutSubmissionThisWeek',
-                'mostActiveStudent',
-                'mostActiveStudentCount',
-                'pendingReviews',
-                'reviewedLogbooks',
-                'supervisedStudents',
-                'topLecturerName',
-                'monthlyTrend',
-                'statusBreakdown',
-                'userDistribution',
-                'attachments',
-                'storageUsage',
-                'databaseStatus',
-                'lastBackupTime',
-                'appVersion'
-            )
-        );
-    }
-}
-
-if (! function_exists('folderSize')) {
-    function folderSize($dir)
-    {
-        $size = 0;
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS)) as $file) {
-            $size += $file->getSize();
+        if ($overdueReviews > 0) {
+            $attention[] = [
+                'tone' => 'rose',
+                'icon' => 'fa-hourglass-half',
+                'title' => 'Overdue supervisor reviews',
+                'detail' => $overdueReviews.' '.str('entry')->plural($overdueReviews).' waiting more than '.self::OVERDUE_DAYS.' days for a supervisor.',
+                'count' => $overdueReviews,
+                'href' => '/admin/supervisors?state=waiting',
+            ];
         }
 
-        return $size;
+        $inactive = Student::whereNotNull('internship_start')
+            ->withMax('logbooks', 'created_at')
+            ->get()
+            ->filter(function ($student) use ($today) {
+                $start = $student->internship_start->copy()->startOfDay();
+                $end = $start->copy()->addWeeks(max(1, (int) ($student->internship_weeks ?: 14)));
+
+                if ($start->gt($today) || $end->lt($today)) {
+                    return false; // not started yet, or already finished
+                }
+
+                $reference = $student->logbooks_max_created_at
+                    ? Carbon::parse($student->logbooks_max_created_at)
+                    : $start;
+
+                return $reference->lt($today->copy()->subDays(self::INACTIVE_DAYS));
+            })
+            ->sortBy('name')
+            ->values();
+
+        if ($inactive->isNotEmpty()) {
+            $attention[] = [
+                'tone' => 'rose',
+                'icon' => 'fa-user-clock',
+                'title' => 'Students with no recent entry',
+                'detail' => $this->nameList($inactive->pluck('name'), $inactive->count()).' - nothing logged for '.self::INACTIVE_DAYS.'+ days.',
+                'count' => $inactive->count(),
+                'href' => '/admin/students?status=in_progress&sort=start',
+            ];
+        }
+
+        [$noSupervisorCount, $noSupervisorNames] = $this->summarise(Student::whereNull('supervisor_id'));
+        if ($noSupervisorCount > 0) {
+            $attention[] = [
+                'tone' => 'amber',
+                'icon' => 'fa-building-user',
+                'title' => 'Students without a company supervisor',
+                'detail' => $noSupervisorNames.($entriesWithoutReviewer > 0 ? ' - '.$entriesWithoutReviewer.' entries cannot be reviewed yet.' : '.'),
+                'count' => $noSupervisorCount,
+                'href' => '/admin/students?supervisor=none',
+            ];
+        }
+
+        [$noLecturerCount, $noLecturerNames] = $this->summarise(Student::whereNull('lecturer_id'));
+        if ($noLecturerCount > 0) {
+            $attention[] = [
+                'tone' => 'amber',
+                'icon' => 'fa-user-tie',
+                'title' => 'Students without a lecturer',
+                'detail' => $noLecturerNames.'.',
+                'count' => $noLecturerCount,
+                'href' => '/admin/students?lecturer=none',
+            ];
+        }
+
+        if (Schema::hasColumn('students', 'internship_start')) {
+            [$noDatesCount, $noDatesNames] = $this->summarise(Student::whereNull('internship_start'));
+            if ($noDatesCount > 0) {
+                $attention[] = [
+                    'tone' => 'amber',
+                    'icon' => 'fa-calendar-xmark',
+                    'title' => 'Internship dates not set',
+                    'detail' => $noDatesNames.' - weeks and reminders will not work until dates are set.',
+                    'count' => $noDatesCount,
+                    'href' => '/admin/students?status=not_set',
+                ];
+            }
+        }
+
+        [$idleSupervisorCount, $idleSupervisorNames] = $this->summarise(Supervisor::doesntHave('students'));
+        if ($idleSupervisorCount > 0) {
+            $attention[] = [
+                'tone' => 'blue',
+                'icon' => 'fa-user-slash',
+                'title' => 'Supervisors with no students',
+                'detail' => $idleSupervisorNames.'.',
+                'count' => $idleSupervisorCount,
+                'href' => '/admin/supervisors?state=no_students',
+            ];
+        }
+
+        [$idleLecturerCount, $idleLecturerNames] = $this->summarise(Lecturer::doesntHave('students'));
+        if ($idleLecturerCount > 0) {
+            $attention[] = [
+                'tone' => 'blue',
+                'icon' => 'fa-user-slash',
+                'title' => 'Lecturers with no students',
+                'detail' => $idleLecturerNames.'.',
+                'count' => $idleLecturerCount,
+                'href' => '/admin/lecturers?state=no_students',
+            ];
+        }
+
+        // ---------- System ----------
+        try {
+            DB::connection()->getPdo();
+            $databaseStatus = 'Connected';
+        } catch (\Throwable $e) {
+            $databaseStatus = 'Unavailable';
+        }
+
+        $attachments = Schema::hasTable('attachments') ? Attachment::count() : 0;
+        $laravelVersion = app()->version();
+        $phpVersion = PHP_VERSION;
+
+        return view('admin.dashboard', compact(
+            'greeting',
+            'adminName',
+            'todayLabel',
+            'students',
+            'lecturers',
+            'supervisors',
+            'logbooks',
+            'studentsWithSupervisor',
+            'supervisorsWithStudents',
+            'entriesToday',
+            'entriesThisWeek',
+            'validated',
+            'revision',
+            'pending',
+            'validatedPercent',
+            'awaitingReview',
+            'overdueReviews',
+            'trendLabels',
+            'trendValues',
+            'reviewProgress',
+            'latestEntries',
+            'lecturerWorkload',
+            'supervisorWorkload',
+            'attention',
+            'databaseStatus',
+            'attachments',
+            'laravelVersion',
+            'phpVersion'
+        ));
+    }
+
+    /**
+     * Limit a logbook query (Eloquent or DB::table) to entries nobody has reviewed yet.
+     */
+    private function pending($query, string $column = 'supervisor_status')
+    {
+        return $query->where(function ($where) use ($column) {
+            $where->whereNull($column)->orWhere($column, 'Pending');
+        });
+    }
+
+    /**
+     * Returns [count, "Name, Name and 2 more"] for a student/lecturer/supervisor query.
+     */
+    private function summarise($query): array
+    {
+        $count = (clone $query)->count();
+        $names = $count > 0 ? (clone $query)->orderBy('name')->limit(3)->pluck('name') : collect();
+
+        return [$count, $this->nameList($names, $count)];
+    }
+
+    private function nameList($names, int $total): string
+    {
+        $names = collect($names)->take(3)->values();
+        $more = $total - $names->count();
+
+        if ($names->isEmpty()) {
+            return '';
+        }
+
+        $text = $names->implode(', ');
+
+        return $more > 0 ? $text.' and '.$more.' more' : $text;
     }
 }

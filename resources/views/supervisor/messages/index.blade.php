@@ -12,7 +12,7 @@
     ];
 @endphp
 
-<div class="space-y-4">
+<div class="space-y-4 -mt-4 md:-mt-8">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Messages</h1>
         <p class="text-sm text-slate-500">Chat with your interns.</p>

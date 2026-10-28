@@ -54,6 +54,8 @@ class StudentDashboardController extends Controller
         $openCount = 0;
         $doneCount = 0;
         $tasksSoon = 0;
+        $overdueCount = 0;
+        $upcomingCount = 0;
 
         if ($extrasReady) {
             $monthRecords = Attendance::where('student_id', $student->student_id)
@@ -70,18 +72,27 @@ class StudentDashboardController extends Controller
             $openCount = Todo::where('student_id', $student->student_id)->where('is_done', false)->count();
             $doneCount = Todo::where('student_id', $student->student_id)->where('is_done', true)->count();
 
-            $openTodos = Todo::where('student_id', $student->student_id)
+            $overdueCount = Todo::where('student_id', $student->student_id)
+                ->where('is_done', false)
+                ->whereNotNull('due_date')
+                ->where('due_date', '<', $todayKey)
+                ->count();
+            $upcomingCount = max($openCount - $overdueCount, 0);
+
+            $openTodos = Todo::with('supervisor')
+                ->where('student_id', $student->student_id)
                 ->where('is_done', false)
                 ->orderByRaw('due_date IS NULL')
                 ->orderBy('due_date')
                 ->orderBy('todo_id')
-                ->take(8)
+                ->take(50)
                 ->get();
 
-            $doneTodos = Todo::where('student_id', $student->student_id)
+            $doneTodos = Todo::with('supervisor')
+                ->where('student_id', $student->student_id)
                 ->where('is_done', true)
                 ->orderByDesc('updated_at')
-                ->take(5)
+                ->take(10)
                 ->get();
 
             $tasksSoon = Todo::where('student_id', $student->student_id)
@@ -150,37 +161,87 @@ class StudentDashboardController extends Controller
         $gridStart = $monthStart->copy()->startOfWeek(Carbon::MONDAY);
         $gridEnd = $monthStart->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
 
-        $logDays = Logbook::where('student_id', $student->student_id)
+        $gridLogs = Logbook::where('student_id', $student->student_id)
             ->whereBetween('activity_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
-            ->pluck('activity_date')
-            ->map(fn ($date) => Carbon::parse($date)->toDateString())
-            ->unique()
-            ->flip();
+            ->orderBy('logbook_id')
+            ->get(['logbook_id', 'activity_date', 'description'])
+            ->groupBy(fn ($log) => Carbon::parse($log->activity_date)->toDateString());
 
-        $dueDays = collect();
+        $gridTodos = collect();
 
         if ($extrasReady) {
-            $dueDays = Todo::where('student_id', $student->student_id)
+            $gridTodos = Todo::with('supervisor')
+                ->where('student_id', $student->student_id)
                 ->where('is_done', false)
                 ->whereBetween('due_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
+                ->orderBy('todo_id')
                 ->get()
-                ->map(fn ($todo) => $todo->due_date->toDateString())
-                ->unique()
-                ->flip();
+                ->groupBy(fn ($todo) => $todo->due_date->toDateString());
         }
 
         $cells = [];
+        $agenda = [];
 
         for ($cursor = $gridStart->copy(); $cursor->lte($gridEnd); $cursor->addDay()) {
             $key = $cursor->toDateString();
+            $inMonth = $cursor->month === $monthStart->month;
 
             $cells[] = [
+                'key' => $key,
                 'label' => $cursor->day,
-                'in_month' => $cursor->month === $monthStart->month,
+                'long' => $cursor->format('l, d F'),
+                'in_month' => $inMonth,
                 'is_today' => $key === $todayKey,
-                'has_log' => $logDays->has($key),
-                'has_due' => $dueDays->has($key),
+                'has_log' => $gridLogs->has($key),
+                'has_due' => $gridTodos->has($key),
             ];
+
+            if (! $inMonth) {
+                continue;
+            }
+
+            $items = [];
+
+            // Today: what still needs to be done.
+            if ($key === $todayKey && $remind) {
+                if (! $hasEntryToday) {
+                    $items[] = [
+                        'type' => 'todo',
+                        'title' => 'Logbook entry',
+                        'meta' => 'Not written yet. Add what you worked on today.',
+                        'action' => ['label' => 'Write entry', 'href' => '#new-entry', 'date' => $todayKey],
+                    ];
+                }
+
+                if (! ($attendance && $attendance->check_in)) {
+                    $items[] = [
+                        'type' => 'todo',
+                        'title' => 'Attendance',
+                        'meta' => 'You have not clocked in yet.',
+                        'action' => ['label' => 'Clock in', 'href' => '#attendance-card'],
+                    ];
+                }
+            }
+
+            foreach ($gridLogs->get($key, collect()) as $log) {
+                $items[] = [
+                    'type' => 'log',
+                    'title' => 'Logbook entry',
+                    'meta' => \Illuminate\Support\Str::limit((string) $log->description, 90) ?: 'Entry submitted',
+                    'action' => null,
+                ];
+            }
+
+            foreach ($gridTodos->get($key, collect()) as $todo) {
+                $items[] = [
+                    'type' => 'due',
+                    'title' => $todo->title,
+                    'meta' => 'Task due'.(! empty($todo->supervisor_id) ? ' · From '.(optional($todo->supervisor)->name ?? 'your supervisor') : ''),
+                    'action' => null,
+                ];
+            }
+
+            $agenda[$key] = $items;
         }
 
         $calendar = [
@@ -188,7 +249,67 @@ class StudentDashboardController extends Controller
             'prev' => $monthStart->copy()->subMonthNoOverflow()->format('Y-m'),
             'next' => $monthStart->copy()->addMonthNoOverflow()->format('Y-m'),
             'cells' => $cells,
+            'agenda' => $agenda,
         ];
+
+        // Upcoming deadlines: open tasks that are still ahead, plus the weekly logbook dates.
+        $deadlineItems = collect();
+
+        if ($extrasReady) {
+            Todo::with('supervisor')
+                ->where('student_id', $student->student_id)
+                ->where('is_done', false)
+                ->whereNotNull('due_date')
+                ->where('due_date', '>=', $todayKey)
+                ->orderBy('due_date')
+                ->orderBy('todo_id')
+                ->take(6)
+                ->get()
+                ->each(function ($todo) use ($deadlineItems) {
+                    $deadlineItems->push([
+                        'date' => $todo->due_date->copy(),
+                        'title' => $todo->title,
+                        'meta' => ! empty($todo->supervisor_id)
+                            ? 'Assigned by '.(optional($todo->supervisor)->name ?? 'your supervisor')
+                            : 'Your task',
+                    ]);
+                });
+        }
+
+        if ($currentWeek !== null && $currentWeek >= 1) {
+            $thisWeek = $weeks[$currentWeek - 1] ?? null;
+
+            if ($thisWeek && $thisWeek['last_working'] && $thisWeek['last_working']->toDateString() >= $todayKey) {
+                $deadlineItems->push([
+                    'date' => $thisWeek['last_working']->copy(),
+                    'title' => 'Week '.$thisWeek['number'].' sent to supervisor',
+                    'meta' => 'Automatic, after your last working day',
+                ]);
+            }
+        }
+
+        if ($currentWeek !== null && $currentWeek >= 0) {
+            $nextWeek = $weeks[$currentWeek] ?? null;
+
+            if ($nextWeek) {
+                $deadlineItems->push([
+                    'date' => $nextWeek['start']->copy(),
+                    'title' => 'Week '.$nextWeek['number'].' logbook opens',
+                    'meta' => 'You can write entries once it starts',
+                ]);
+            }
+        }
+
+        $deadlines = $deadlineItems
+            ->sortBy(fn ($item) => $item['date']->toDateString())
+            ->take(4)
+            ->map(function ($item) use ($todayKey) {
+                $item['days'] = max((int) Carbon::parse($todayKey)->diffInDays(Carbon::parse($item['date']->toDateString()), false), 0);
+
+                return $item;
+            })
+            ->values()
+            ->all();
 
         // Daily AI draft allowance.
         $aiLimit = max(1, (int) config('aihelp.daily_limit', 10));
@@ -222,6 +343,9 @@ class StudentDashboardController extends Controller
             'doneTodos',
             'openCount',
             'doneCount',
+            'overdueCount',
+            'upcomingCount',
+            'deadlines',
             'calendar',
             'aiReady',
             'aiLimit',

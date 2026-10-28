@@ -249,9 +249,7 @@
                     </header>
 
                     <div class="p-4 md:p-8 max-w-7xl w-full mx-auto flex-1" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
-                        @if(request()->is('student*') && ! request()->is('student/messages*'))
-                            @include('partials.reminder-popup')
-                        @endif
+
                         @yield('content')
                     </div>
                 </main>
