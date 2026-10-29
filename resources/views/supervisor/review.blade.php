@@ -3,8 +3,8 @@
 @section('content')
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <div class="space-y-6" style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif">
-    <a href="/supervisor/dashboard" class="inline-flex items-center gap-2 text-sm font-bold text-[#1F45D6] hover:underline">
-        <i class="fa-solid fa-arrow-left"></i> Back to dashboard
+    <a href="{{ $logbook->student_id && $logbook->week_no ? '/supervisor/students/'.$logbook->student_id.'?week='.$logbook->week_no : '/supervisor/dashboard' }}" class="inline-flex items-center gap-2 text-sm font-bold text-[#1F45D6] hover:underline">
+        <i class="fa-solid fa-arrow-left"></i> Back to Week {{ $logbook->week_no }}
     </a>
 
     @if(session('error'))
@@ -60,7 +60,7 @@
                 <p class="text-xs font-semibold uppercase tracking-wide text-[#94A3B8]">Attachment</p>
                 @if($logbook->attachments->count())
                     @foreach($logbook->attachments as $attachment)
-                        <a href="/{{ $attachment->url }}" target="_blank" class="mt-1 block break-all text-sm text-[#1F45D6] underline">{{ $attachment->file_name }}</a>
+                        <a href="{{ $attachment->url }}" target="_blank" class="mt-1 block break-all text-sm text-[#1F45D6] underline">{{ $attachment->file_name }}</a>
                     @endforeach
                 @else
                     <p class="mt-1 text-sm text-[#5B6478]">No file attached.</p>

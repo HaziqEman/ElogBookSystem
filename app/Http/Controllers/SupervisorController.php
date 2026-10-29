@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Logbook;
 use App\Models\Student;
+use App\Models\WeekSubmission;
+use App\Services\WeekBatchService;
+use App\Services\WeekPlanner;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -17,6 +20,7 @@ class SupervisorController extends Controller
     {
         $supervisor = Auth::guard('supervisor')->user();
         $today = Carbon::now(Attendance::TIMEZONE);
+        $batchService = app(WeekBatchService::class);
 
         $students = Student::where('supervisor_id', $supervisor->supervisor_id)
             ->orderBy('name')
@@ -25,92 +29,119 @@ class SupervisorController extends Controller
         $ids = $students->pluck('student_id');
         $base = Logbook::whereIn('student_id', $ids);
 
-        // Per student + status: count, oldest and newest entry.
-        $grouped = (clone $base)
-            ->selectRaw('student_id, supervisor_status, COUNT(*) as total, MIN(created_at) as oldest, MAX(created_at) as newest')
-            ->groupBy('student_id', 'supervisor_status')
-            ->get()
-            ->groupBy('student_id');
+        // Entry counts per student, week and status.
+        $statMap = [];
+        foreach ((clone $base)
+            ->selectRaw('student_id, week_no, supervisor_status, COUNT(*) as c')
+            ->groupBy('student_id', 'week_no', 'supervisor_status')
+            ->get() as $row) {
+            $statMap[$row->student_id][(int) $row->week_no][$row->supervisor_status ?: 'Pending'] = (int) $row->c;
+        }
 
-        $rows = $students->map(function ($student) use ($grouped, $today) {
-            $g = ($grouped[$student->student_id] ?? collect())->keyBy(fn ($r) => $r->supervisor_status ?? 'Pending');
+        // Days with at least one entry, per student and week (for the "in progress" panel).
+        $daysMap = [];
+        foreach ((clone $base)
+            ->selectRaw('student_id, week_no, COUNT(DISTINCT activity_date) as d')
+            ->groupBy('student_id', 'week_no')
+            ->get() as $row) {
+            $daysMap[$row->student_id][(int) $row->week_no] = (int) $row->d;
+        }
 
-            $pending = (int) optional($g->get('Pending'))->total;
-            $validated = (int) optional($g->get('Validated'))->total;
-            $revision = (int) optional($g->get('Revision Requested'))->total;
-            $total = $pending + $validated + $revision;
+        // Weeks that were sent to this supervisor. Only these count as "waiting".
+        $batches = WeekSubmission::whereIn('student_id', $ids)->get()
+            ->map(function ($sub) use ($statMap, $students, $today) {
+                $g = $statMap[$sub->student_id][$sub->week_no] ?? [];
+                $pending = $g['Pending'] ?? 0;
+                $waitDays = $sub->sent_at ? (int) abs($sub->sent_at->diffInDays($today)) : 0;
 
-            $oldest = optional($g->get('Pending'))->oldest;
-            $oldestDays = $oldest ? (int) Carbon::parse($oldest)->diffInDays($today) : null;
-            $newest = $g->max('newest');
+                return [
+                    'student' => $students->firstWhere('student_id', $sub->student_id),
+                    'week' => (int) $sub->week_no,
+                    'pending' => $pending,
+                    'validated' => $g['Validated'] ?? 0,
+                    'revision' => $g['Revision Requested'] ?? 0,
+                    'total' => array_sum($g),
+                    'sent_at' => $sub->sent_at,
+                    'wait_days' => $waitDays,
+                    'priority' => $pending > 0 ? ($waitDays >= 7 ? 'High' : 'Medium') : null,
+                ];
+            })
+            ->filter(fn ($b) => $b['student'] && $b['total'] > 0)
+            ->values();
 
-            if ($pending > 0) {
-                $priority = $oldestDays >= 7 ? 'High' : 'Medium';
-                $issue = $pending.' '.($pending === 1 ? 'entry' : 'entries').' waiting for your review'
-                    .($oldestDays >= 1 ? ' (oldest '.$oldestDays.' '.($oldestDays === 1 ? 'day' : 'days').')' : '');
-            } else {
-                $priority = null;
-                $issue = null;
-            }
-
-            $label = $total === 0 ? 'No entries'
-                : ($pending > 0 ? 'Pending review'
-                : ($revision > 0 ? 'Revision requested' : 'Up to date'));
-
-            return [
-                'student' => $student,
-                'total' => $total,
-                'pending' => $pending,
-                'validated' => $validated,
-                'revision' => $revision,
-                'oldest_days' => $oldestDays,
-                'last_at' => $newest ? Carbon::parse($newest) : null,
-                'priority' => $priority,
-                'main_issue' => $issue,
-                'review_label' => $label,
-            ];
-        });
+        $waiting = $batches->where('pending', '>', 0);
 
         $kpis = [
             'students' => $students->count(),
-            'pending' => $rows->sum('pending'),
-            'validated' => $rows->sum('validated'),
-            'revision' => $rows->sum('revision'),
-            'overdue' => $rows->where('priority', 'High')->count(),
-            'students_waiting' => $rows->where('pending', '>', 0)->count(),
-            'total_entries' => $rows->sum('total'),
+            'weeks_waiting' => $waiting->count(),
+            'students_waiting' => $waiting->pluck('student.student_id')->unique()->count(),
+            'pending' => $batches->sum('pending'),
+            'validated' => $batches->sum('validated'),
+            'revision' => $batches->sum('revision'),
+            'overdue' => $waiting->where('priority', 'High')->count(),
+            'sent_entries' => $batches->sum('total'),
         ];
-        $kpis['reviewed_rate'] = $kpis['total_entries'] > 0
-            ? (int) round(($kpis['validated'] / $kpis['total_entries']) * 100)
+        $kpis['reviewed_rate'] = $kpis['sent_entries'] > 0
+            ? (int) round($kpis['validated'] / $kpis['sent_entries'] * 100)
             : null;
 
-        $order = ['High' => 3, 'Medium' => 2];
-        $needsAttention = $rows->filter(fn ($r) => $r['priority'])
-            ->sortByDesc(fn ($r) => [$order[$r['priority']], $r['pending']])
+        $needsReview = $waiting
+            ->sortBy(fn ($b) => [$b['priority'] === 'High' ? 0 : 1, $b['sent_at'] ? $b['sent_at']->timestamp : 0])
             ->values()
             ->take(6);
 
-        // Entries this week (Mon-Sun): submitted vs already reviewed.
-        $weekStart = $today->copy()->startOfWeek();
-        $weekEntries = (clone $base)
-            ->whereBetween('activity_date', [$weekStart->toDateString(), $weekStart->copy()->endOfWeek()->toDateString()])
-            ->get(['activity_date', 'supervisor_status'])
-            ->groupBy(fn ($l) => Carbon::parse($l->activity_date)->toDateString());
+        // This week, not sent yet: how far along is each student?
+        $inProgress = $students->map(function ($student) use ($today, $batchService) {
+            $planner = new WeekPlanner($student, $today);
 
-        $weekChart = collect(range(0, 6))->map(function ($i) use ($weekStart, $weekEntries, $today) {
-            $day = $weekStart->copy()->addDays($i);
-            $list = $weekEntries->get($day->toDateString(), collect());
+            if (! $planner->hasStart()) {
+                return null;
+            }
+
+            $week = $planner->currentWeek();
+
+            if ($week === null || $week < 1 || $week > $planner->totalWeeks()) {
+                return null;
+            }
+
+            $start = $planner->weekStart($week)->copy()->startOfDay();
+            $end = $start->copy()->addDays(6);
+
+            $dates = Logbook::where('student_id', $student->student_id)
+                ->whereBetween('activity_date', [$start->toDateString(), $end->toDateString()])
+                ->pluck('activity_date')
+                ->map(fn ($d) => Carbon::parse($d)->toDateString())
+                ->unique();
+
+            $required = 0;
+            $logged = 0;
+            $extra = 0;
+
+            for ($i = 0; $i < 7; $i++) {
+                $day = $start->copy()->addDays($i);
+                $has = $dates->contains($day->toDateString());
+
+                if ($planner->isWorkingDay($day)) {
+                    $required++;
+                    $logged += $has ? 1 : 0;
+                } elseif ($has) {
+                    $extra++;
+                }
+            }
 
             return [
-                'label' => $day->format('D'),
-                'date' => $day->format('d M'),
-                'submitted' => $list->count(),
-                'reviewed' => $list->filter(fn ($l) => ($l->supervisor_status ?? 'Pending') !== 'Pending')->count(),
-                'is_today' => $day->isSameDay($today),
+                'student' => $student,
+                'week' => $week,
+                'logged' => $logged,
+                'required' => $required,
+                'extra' => $extra,
+                'percent' => $required > 0 ? min(100, (int) round($logged / $required * 100)) : 0,
+                'closes' => $batchService->lastWorkingDay($planner, $week),
             ];
-        });
+        })->filter()->values();
 
-        // Review progress for the last 4 weeks.
+        // Review progress for the last 4 weeks (by activity date).
+        $weekStart = $today->copy()->startOfWeek();
         $trend = collect(range(3, 0))->map(function ($ago) use ($base, $weekStart) {
             $from = $weekStart->copy()->subWeeks($ago);
             $to = $from->copy()->endOfWeek();
@@ -123,6 +154,35 @@ class SupervisorController extends Controller
                 'rate' => $list->count() ? (int) round($reviewed / $list->count() * 100) : null,
                 'total' => $list->count(),
                 'pending' => $list->count() - $reviewed,
+            ];
+        });
+
+        // One row per student for the progress table.
+        $rows = $students->map(function ($student) use ($batches, $inProgress) {
+            $mine = $batches->where('student.student_id', $student->student_id);
+            $waitingWeeks = $mine->where('pending', '>', 0);
+            $pending = $mine->sum('pending');
+            $revision = $mine->sum('revision');
+            $total = $mine->sum('total');
+            $live = $inProgress->firstWhere('student.student_id', $student->student_id);
+
+            $label = $pending > 0 ? 'Pending review'
+                : ($revision > 0 ? 'Revision requested'
+                : ($total > 0 ? 'Up to date' : 'Nothing sent yet'));
+
+            return [
+                'student' => $student,
+                'weeks_sent' => $mine->count(),
+                'weeks_waiting' => $waitingWeeks->count(),
+                'pending' => $pending,
+                'validated' => $mine->sum('validated'),
+                'revision' => $revision,
+                'total' => $total,
+                'oldest_days' => $waitingWeeks->max('wait_days'),
+                'oldest_week' => optional($waitingWeeks->sortBy(fn ($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0)->first())['week'] ?? null,
+                'last_sent' => $mine->max(fn ($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0),
+                'live' => $live,
+                'review_label' => $label,
             ];
         });
 
@@ -155,13 +215,6 @@ class SupervisorController extends Controller
             ['path' => $request->url(), 'query' => $request->query(), 'fragment' => 'students']
         );
 
-        $recent = (clone $base)
-            ->with('student')
-            ->orderByDesc('created_at')
-            ->orderByDesc('logbook_id')
-            ->take(10)
-            ->get();
-
         $greeting = $today->hour < 12 ? 'Good morning' : ($today->hour < 17 ? 'Good afternoon' : 'Good evening');
 
         return view('supervisor.dashboard', [
@@ -169,12 +222,11 @@ class SupervisorController extends Controller
             'today' => $today,
             'greeting' => $greeting,
             'kpis' => $kpis,
-            'needsAttention' => $needsAttention,
-            'weekChart' => $weekChart,
+            'needsReview' => $needsReview,
+            'inProgress' => $inProgress,
             'trend' => $trend,
             'students' => $studentRows,
             'totalStudents' => $rows->count(),
-            'recent' => $recent,
             'q' => $q,
             'filter' => $filter,
         ]);

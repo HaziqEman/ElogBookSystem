@@ -28,6 +28,7 @@ use App\Http\Controllers\LecturerStudentController;
 use App\Http\Controllers\StudentReminderController;
 use App\Http\Controllers\StudentScheduleController;
 use App\Http\Controllers\SupervisorTaskController;
+use App\Http\Controllers\SupervisorWeekController;
 
 
 // Home Page
@@ -100,6 +101,13 @@ Route::middleware('auth:supervisor')->group(function () {
 Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->group(function () {
     Route::get('/supervisor/dashboard', [SupervisorController::class, 'dashboard']);
     Route::get('/supervisor/logbook', [SupervisorReviewController::class, 'next']);
+
+    // Weekly batches: one page per student and week, with the AI summary and one-submit review.
+    Route::get('/supervisor/weeks/next', [SupervisorWeekController::class, 'next']);
+    Route::get('/supervisor/students/{id}', [SupervisorWeekController::class, 'show'])->whereNumber('id');
+    Route::post('/supervisor/students/{id}/weeks/{week}/summary', [SupervisorWeekController::class, 'summary'])->whereNumber(['id', 'week'])->middleware('throttle:8,1');
+    Route::post('/supervisor/students/{id}/weeks/{week}/review', [SupervisorWeekController::class, 'review'])->whereNumber(['id', 'week']);
+
     Route::get('/supervisor/logbook/{id}', [SupervisorReviewController::class, 'show'])->whereNumber('id');
     Route::post('/supervisor/logbook/{id}/review', [SupervisorReviewController::class, 'store'])->whereNumber('id');
     Route::get('/supervisor/messages', [SupervisorMessageController::class, 'index'])->name('supervisor.messages.index');

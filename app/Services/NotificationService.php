@@ -111,6 +111,58 @@ class NotificationService
     }
 
     /**
+     * Tell the company supervisor that a student's finished week is ready to review.
+     */
+    public function weekSent(Supervisor $supervisor, Student $student, int $week, int $entries): void
+    {
+        $this->notify(
+            $supervisor,
+            'week',
+            "{$student->name} sent Week {$week} for review",
+            $entries.' '.Str::plural('entry', $entries).' ready to review.',
+            '/supervisor/students/'.$student->student_id.'?week='.$week,
+            'weeksent:'.$student->student_id.':'.$week
+        );
+    }
+
+    /**
+     * One follow-up when a week is still waiting after a few days.
+     */
+    public function weekReminder(Supervisor $supervisor, Student $student, int $week, int $pending): void
+    {
+        $this->notify(
+            $supervisor,
+            'week',
+            "Reminder: {$student->name}'s Week {$week} is still waiting",
+            $pending.' '.Str::plural('entry', $pending).' not reviewed yet.',
+            '/supervisor/students/'.$student->student_id.'?week='.$week,
+            'weekremind:'.$student->student_id.':'.$week
+        );
+    }
+
+    /**
+     * Tell the student the result of a whole-week review (one notification, not one per entry).
+     */
+    public function weekReviewed(Student $student, int $week, string $reviewerName, int $validated, int $revisions): void
+    {
+        try {
+            if ($revisions > 0) {
+                $title = 'Your company supervisor asked for '.$revisions.' '.Str::plural('revision', $revisions).' in Week '.$week;
+                $url = '/student/dashboard?week='.$week.'#logbook-week';
+            } else {
+                $title = 'Your company supervisor validated Week '.$week;
+                $url = '/student/feedback';
+            }
+
+            $body = $reviewerName.': '.$validated.' validated'.($revisions > 0 ? ', '.$revisions.' to revise' : '').'.';
+
+            $this->notify($student, 'review', $title, $body, $url);
+        } catch (\Throwable $e) {
+            Log::error('Week review notification failed: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Tell the other person in a conversation that a new message arrived.
      */
     public function messageReceived(Message $message): void
