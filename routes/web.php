@@ -12,6 +12,7 @@ use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\SupervisorReviewController;
 use App\Http\Controllers\SupervisorEvaluationController;
+use App\Http\Controllers\EvaluationViewController;
 use App\Http\Controllers\SupervisorMessageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminSupervisorController;
@@ -86,6 +87,8 @@ Route::middleware('auth:student')->group(function () {
 
 Route::middleware('auth:lecturer')->group(function () {
     Route::get('/lecturer/dashboard', [LecturerController::class, 'dashboard']);
+    Route::get('/lecturer/evaluations', [EvaluationViewController::class, 'lecturerIndex']);
+    Route::get('/lecturer/evaluations/{id}', [EvaluationViewController::class, 'lecturerShow'])->whereNumber('id');
     Route::get('/lecturer/students/{id}', [LecturerStudentController::class, 'show'])->whereNumber('id');
     Route::get('/lecturer/students/{id}/logbooks/pdf', [LogbookPdfController::class, 'lecturer'])->whereNumber('id')->name('lecturer.student.logbooks.pdf');
     Route::get('/lecturer/students/{id}/message', [LecturerStudentController::class, 'message'])->whereNumber('id');
@@ -152,6 +155,8 @@ Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatCon
 
 Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/admin/evaluations', [EvaluationViewController::class, 'adminIndex']);
+    Route::get('/admin/evaluations/{id}', [EvaluationViewController::class, 'adminShow'])->whereNumber('id');
 
     // Extra admin tools. These must come BEFORE the resource routes below,
     // otherwise /admin/students/export would be read as /admin/students/{id}.

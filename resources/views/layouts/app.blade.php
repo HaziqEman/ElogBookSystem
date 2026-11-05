@@ -105,6 +105,7 @@
                                 $navItems = [
                                     ['href' => '/lecturer/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Dashboard', 'match' => ['lecturer/dashboard', 'lecturer/students/*', 'lecturer/logbook', 'lecturer/logbook/*']],
                                     ['href' => '/lecturer/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['lecturer/messages', 'lecturer/messages/*']],
+                                    ['href' => '/lecturer/evaluations', 'icon' => 'fa-clipboard-check', 'label' => 'Supervisor Marks', 'match' => ['lecturer/evaluations', 'lecturer/evaluations/*']],
                                 ];
                                 } elseif (request()->is('supervisor*')) {
                                     $navItems = [
@@ -120,6 +121,7 @@
                                     ['href' => '/admin/lecturers', 'icon' => 'fa-user-tie', 'label' => 'Manage Lecturers', 'match' => ['admin/lecturers', 'admin/lecturers/*']],
                                     ['href' => '/admin/supervisors', 'icon' => 'fa-building-user', 'label' => 'Manage Supervisors', 'match' => ['admin/supervisors', 'admin/supervisors/*']],
                                     ['href' => '/admin/reports', 'icon' => 'fa-chart-line', 'label' => 'Reports', 'match' => ['admin/reports', 'admin/reports/*']],
+                                    ['href' => '/admin/evaluations', 'icon' => 'fa-clipboard-check', 'label' => 'Supervisor Marks', 'match' => ['admin/evaluations', 'admin/evaluations/*']],
                                 ];
                             }
 
