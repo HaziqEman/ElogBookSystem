@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachment;
 use App\Models\Lecturer;
 use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Throwable;
 
 class LogbookPdfController extends Controller
 {
@@ -63,9 +65,8 @@ class LogbookPdfController extends Controller
     }
 
     /**
-     * Embed image attachments as base64 so DomPDF can render them,
-     * and list non-image files by name.
-     * NOTE: adjust $path / disk below to match your Attachment model.
+     * Embed image attachments so DomPDF can draw them, and list other files by name.
+     * Works for Cloudinary links (https://...) and old local files (uploads/...).
      */
     private function prepareAttachments($logbooks): void
     {
@@ -74,13 +75,10 @@ class LogbookPdfController extends Controller
             $files = [];
 
             foreach ($logbook->attachments as $attachment) {
-                $path = $attachment->file_path ?? $attachment->path ?? null;
-                $ext = strtolower(pathinfo($attachment->file_name ?? '', PATHINFO_EXTENSION));
-                $isImage = in_array($ext, ['jpg', 'jpeg', 'png'], true);
+                $src = $attachment->kind() === 'image' ? $this->imageDataUri($attachment) : null;
 
-                if ($isImage && $path && Storage::disk('public')->exists($path)) {
-                    $mime = $ext === 'png' ? 'image/png' : 'image/jpeg';
-                    $images[] = 'data:'.$mime.';base64,'.base64_encode(Storage::disk('public')->get($path));
+                if ($src) {
+                    $images[] = $src;
                 } else {
                     $files[] = $attachment->file_name;
                 }
@@ -88,6 +86,49 @@ class LogbookPdfController extends Controller
 
             $logbook->setAttribute('pdf_images', $images);
             $logbook->setAttribute('pdf_files', $files);
+        }
+    }
+
+    /** Download or read the image and return it as a data URI, or null if it cannot be loaded. */
+    private function imageDataUri(Attachment $attachment): ?string
+    {
+        try {
+            $path = (string) $attachment->file_path;
+
+            if (Str::startsWith($path, ['http://', 'https://'])) {
+                // Ask Cloudinary for a smaller JPG: keeps the PDF light and converts WebP/GIF for DomPDF.
+                $url = str_contains($path, '/image/upload/')
+                    ? preg_replace('#/image/upload/#', '/image/upload/c_limit,w_1000,h_1000,f_jpg,q_auto/', $path, 1)
+                    : $path;
+
+                $response = Http::timeout(15)->get($url);
+
+                if (! $response->successful()) {
+                    return null;
+                }
+
+                $binary = $response->body();
+            } else {
+                $full = public_path(ltrim($path, '/'));
+
+                if (! is_file($full)) {
+                    return null;
+                }
+
+                $binary = file_get_contents($full);
+            }
+
+            $mime = @getimagesizefromstring($binary)['mime'] ?? null;
+
+            if (! in_array($mime, ['image/jpeg', 'image/png', 'image/gif'], true)) {
+                return null;
+            }
+
+            return 'data:'.$mime.';base64,'.base64_encode($binary);
+        } catch (Throwable $e) {
+            report($e);
+
+            return null;
         }
     }
 
