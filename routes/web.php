@@ -15,6 +15,7 @@ use App\Http\Controllers\SupervisorMessageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminSupervisorController;
 use App\Http\Controllers\LogbookController;
+use App\Http\Controllers\LogbookPdfController;
 use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\StudentMessageController;
 use App\Http\Controllers\LecturerMessageController;
@@ -54,6 +55,7 @@ Route::middleware('auth:student')->group(function () {
     Route::post('/student/logbook/ai-help', [LogbookController::class, 'aiHelp'])->middleware(['throttle:5,1', LimitAiHelp::class]);
     Route::get('/student/dashboard', [StudentDashboardController::class, 'index']);
     Route::get('/student/logbooks', [StudentDashboardController::class, 'logbooks']);
+    Route::get('/student/logbooks/pdf', [LogbookPdfController::class, 'student'])->name('student.logbooks.pdf');
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
     Route::get('/student/logbook/edit/{id}', [StudentLogbookEditController::class, 'edit'])->whereNumber('id');
     Route::post('/student/logbook/update/{id}', [StudentLogbookEditController::class, 'update'])->whereNumber('id');
@@ -84,6 +86,7 @@ Route::middleware('auth:student')->group(function () {
 Route::middleware('auth:lecturer')->group(function () {
     Route::get('/lecturer/dashboard', [LecturerController::class, 'dashboard']);
     Route::get('/lecturer/students/{id}', [LecturerStudentController::class, 'show'])->whereNumber('id');
+    Route::get('/lecturer/students/{id}/logbooks/pdf', [LogbookPdfController::class, 'lecturer'])->whereNumber('id')->name('lecturer.student.logbooks.pdf');
     Route::get('/lecturer/students/{id}/message', [LecturerStudentController::class, 'message'])->whereNumber('id');
     Route::redirect('/lecturer/logbook', '/lecturer/dashboard');
     Route::get('/lecturer/logbook/{id}', [LecturerStudentController::class, 'entry'])->whereNumber('id');
@@ -105,6 +108,7 @@ Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->
     // Weekly batches: one page per student and week, with the AI summary and one-submit review.
     Route::get('/supervisor/weeks/next', [SupervisorWeekController::class, 'next']);
     Route::get('/supervisor/students/{id}', [SupervisorWeekController::class, 'show'])->whereNumber('id');
+    Route::get('/supervisor/students/{id}/logbooks/pdf', [LogbookPdfController::class, 'supervisor'])->whereNumber('id')->name('supervisor.student.logbooks.pdf');
     Route::post('/supervisor/students/{id}/weeks/{week}/summary', [SupervisorWeekController::class, 'summary'])->whereNumber(['id', 'week'])->middleware('throttle:8,1');
     Route::post('/supervisor/students/{id}/weeks/{week}/review', [SupervisorWeekController::class, 'review'])->whereNumber(['id', 'week']);
 

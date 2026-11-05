@@ -362,8 +362,7 @@
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-[#334155]">Date of Training</label>
-                    <input type="date" name="activity_date" value="{{ old('activity_date') }}" @if($startKey) min="{{ $startKey }}" @endif max="{{ $todayKey }}" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">
-                </div>
+                    <input type="date" name="activity_date" value="{{ old('activity_date', $todayKey) }}" @if($startKey) min="{{ $startKey }}" @endif max="{{ $todayKey }}" class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">                </div>
                 @if($planner->hasStart())
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-[#334155]">Week</label>
@@ -420,6 +419,9 @@
                     @endif
                 </div>
             </div>
+            <a href="{{ route('student.logbooks.pdf') }}" class="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[#CBD3E3] bg-white px-3 text-sm font-bold text-[#1F45D6] transition hover:bg-[#F3F5FC]">
+                <i class="fa-solid fa-file-pdf"></i> Export PDF
+            </a>
         </div>
 
         @if(! $planner->hasStart())
@@ -1332,4 +1334,4 @@
     syncSchedule();
 })();
 </script>
-@endsection
+@endsection

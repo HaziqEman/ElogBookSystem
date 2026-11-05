@@ -20,7 +20,10 @@
             <h2 class="text-2xl font-bold text-slate-800">Full logbook</h2>
             <p class="mt-1 text-sm text-slate-500">Every entry you have written, newest first.</p>
         </div>
-        <a href="/student/dashboard#logbook-week" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Back to weeks</a>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('student.logbooks.pdf') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
+            <a href="/student/dashboard#logbook-week" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Back to weeks</a>
+        </div>
     </div>
 
     <div class="space-y-3">
