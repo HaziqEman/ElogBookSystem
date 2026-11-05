@@ -87,7 +87,7 @@
                             </div>
                             <div class="flex flex-wrap gap-1.5">
                                 @for($n = 1; $n <= $max; $n++)
-                                    <label class="{{ $locked ? 'cursor-not-allowed' : 'cursor-pointer' }}">
+                                    <label class="relative {{ $locked ? 'cursor-not-allowed' : 'cursor-pointer' }}">
                                         <input type="radio" name="scores[{{ $key }}]" value="{{ $n }}" class="peer sr-only" data-score {{ $current === $n ? 'checked' : '' }} {{ $locked ? 'disabled' : '' }}>
                                         <span class="flex h-10 min-w-10 items-center justify-center rounded-xl border border-[#CBD3E3] bg-white px-2 text-sm font-bold text-[#334155] transition hover:bg-[#F3F5FC] peer-checked:border-[#2F5BFF] peer-checked:bg-[#2F5BFF] peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-[#2F5BFF]/40">{{ $n }}</span>
                                     </label>
@@ -104,7 +104,7 @@
             <textarea id="comments" name="comments" rows="4" maxlength="3000" {{ $locked ? 'disabled' : '' }} placeholder="Strengths, areas to improve, and anything the faculty should know..." class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">{{ old('comments', optional($evaluation)->comments) }}</textarea>
         </section>
 
-        <section class="sticky bottom-3 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[#C3CCEA] bg-white px-6 py-4 shadow-[0_10px_30px_rgba(15,27,77,0.12)]">
+        <section class="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[#C3CCEA] bg-white px-6 py-4 shadow-[0_6px_18px_rgba(15,27,77,0.05)]">
             <div>
                 <p class="text-xs font-semibold text-[#5B6478]">Marks <span id="eval-answered">0</span>/{{ count($criteria) }} answered</p>
                 <p class="text-lg font-extrabold"><span id="eval-total">0</span> / {{ $maxTotal }} <span class="text-sm font-semibold text-[#5B6478]">&rarr; final</span> <span id="eval-final" class="text-[#1F45D6]">0</span> / {{ $weightText }}</p>
