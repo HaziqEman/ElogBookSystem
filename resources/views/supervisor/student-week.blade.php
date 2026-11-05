@@ -53,6 +53,7 @@
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('supervisor.student.logbooks.pdf', $student->student_id) }}" class="flex min-h-10 items-center gap-2 rounded-xl border border-[#CBD3E3] bg-white px-4 text-sm font-bold text-[#1F45D6] transition hover:bg-[#F3F5FC]"><i class="fa-solid fa-file-pdf"></i> Export logbook PDF</a>
                 <a href="/supervisor/messages/with/{{ $student->student_id }}" class="flex min-h-10 items-center gap-2 rounded-xl border border-[#CBD3E3] bg-white px-4 text-sm font-bold text-[#1F45D6] transition hover:bg-[#F3F5FC]"><i class="fa-solid fa-comment"></i> Message</a>
+                <a href="/supervisor/students/{{ $student->student_id }}/evaluation" class="flex min-h-10 items-center gap-2 rounded-xl bg-[#2F5BFF] px-4 text-sm font-bold text-white transition hover:bg-[#1F45D6]"><i class="fa-solid fa-clipboard-check"></i> Final evaluation</a>
             </div>
         </div>
 

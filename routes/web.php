@@ -11,6 +11,7 @@ use App\Http\Controllers\StudentLogbookEditController;
 use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\SupervisorReviewController;
+use App\Http\Controllers\SupervisorEvaluationController;
 use App\Http\Controllers\SupervisorMessageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminSupervisorController;
@@ -108,6 +109,8 @@ Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->
     // Weekly batches: one page per student and week, with the AI summary and one-submit review.
     Route::get('/supervisor/weeks/next', [SupervisorWeekController::class, 'next']);
     Route::get('/supervisor/students/{id}', [SupervisorWeekController::class, 'show'])->whereNumber('id');
+    Route::get('/supervisor/students/{id}/evaluation', [SupervisorEvaluationController::class, 'show'])->whereNumber('id');
+    Route::post('/supervisor/students/{id}/evaluation', [SupervisorEvaluationController::class, 'store'])->whereNumber('id');
     Route::get('/supervisor/students/{id}/logbooks/pdf', [LogbookPdfController::class, 'supervisor'])->whereNumber('id')->name('supervisor.student.logbooks.pdf');
     Route::post('/supervisor/students/{id}/weeks/{week}/summary', [SupervisorWeekController::class, 'summary'])->whereNumber(['id', 'week'])->middleware('throttle:8,1');
     Route::post('/supervisor/students/{id}/weeks/{week}/review', [SupervisorWeekController::class, 'review'])->whereNumber(['id', 'week']);
