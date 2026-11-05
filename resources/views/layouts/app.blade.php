@@ -106,14 +106,14 @@
                                     ['href' => '/lecturer/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Dashboard', 'match' => ['lecturer/dashboard', 'lecturer/students/*', 'lecturer/logbook', 'lecturer/logbook/*']],
                                     ['href' => '/lecturer/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['lecturer/messages', 'lecturer/messages/*']],
                                 ];
-                            } elseif (request()->is('supervisor*')) {
-                                $navItems = [
-                                    ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', 'supervisor/logbook/*', 'supervisor/students/*', 'supervisor/weeks/*']],]],
-                                    ['href' => '/supervisor/tasks', 'icon' => 'fa-list-check', 'label' => 'Tasks', 'match' => ['supervisor/tasks', 'supervisor/tasks/*']],
-                                    ['href' => '/supervisor/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['supervisor/messages', 'supervisor/messages/*']],
-                                    ['href' => '/supervisor/password', 'icon' => 'fa-key', 'label' => 'Change Password', 'match' => ['supervisor/password']],
-                                ];
-                            } else {
+                                } elseif (request()->is('supervisor*')) {
+                                    $navItems = [
+                                        ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', 'supervisor/logbook/*', 'supervisor/students/*', 'supervisor/weeks/*']],
+                                        ['href' => '/supervisor/tasks', 'icon' => 'fa-list-check', 'label' => 'Tasks', 'match' => ['supervisor/tasks', 'supervisor/tasks/*']],
+                                        ['href' => '/supervisor/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['supervisor/messages', 'supervisor/messages/*']],
+                                        ['href' => '/supervisor/password', 'icon' => 'fa-key', 'label' => 'Change Password', 'match' => ['supervisor/password']],
+                                    ];
+                                } else {
                                 $navItems = [
                                     ['href' => '/admin/dashboard', 'icon' => 'fa-sliders', 'label' => 'System Overview', 'match' => ['admin/dashboard']],
                                     ['href' => '/admin/students', 'icon' => 'fa-file-invoice', 'label' => 'Manage Students', 'match' => ['admin/students', 'admin/students/*']],
@@ -160,7 +160,7 @@
 
                         <nav class="px-3 space-y-1">
                             @foreach($navItems as $item)
-                                @php $isActive = request()->is(...$item['match']); @endphp
+                                @php $isActive = request()->is(...\Illuminate\Support\Arr::flatten($item['match'])); @endphp
                                 <a href="{{ $item['href'] }}"
                                    class="{{ $navBase }} {{ $isActive ? $navActive : $navIdle }}"
                                    @if($isActive) aria-current="page" @endif>
