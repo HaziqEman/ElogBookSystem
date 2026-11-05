@@ -26,8 +26,7 @@
     @endphp
 
     @if($showDashboardShell)
-        <div class="flex flex-col h-[100dvh] overflow-hidden">
-            {{-- Top simulator bar --}}
+        <div class="fixed inset-0 flex flex-col overflow-hidden">            {{-- Top simulator bar --}}
             <div class="bg-slate-900 text-white px-3 md:px-4 py-2 flex flex-wrap justify-between items-center text-xs gap-2 shadow-inner shrink-0"
                  style="padding-top: max(0.5rem, env(safe-area-inset-top)); padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));">
                 <div class="flex items-center gap-2">
@@ -109,7 +108,7 @@
                                 ];
                             } elseif (request()->is('supervisor*')) {
                                 $navItems = [
-                                    ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', 'supervisor/logbook/*']],
+                                    ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', 'supervisor/logbook/*', 'supervisor/students/*', 'supervisor/weeks/*']],]],
                                     ['href' => '/supervisor/tasks', 'icon' => 'fa-list-check', 'label' => 'Tasks', 'match' => ['supervisor/tasks', 'supervisor/tasks/*']],
                                     ['href' => '/supervisor/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['supervisor/messages', 'supervisor/messages/*']],
                                     ['href' => '/supervisor/password', 'icon' => 'fa-key', 'label' => 'Change Password', 'match' => ['supervisor/password']],
