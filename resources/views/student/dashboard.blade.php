@@ -384,14 +384,15 @@
             </div>
 
             <div>
-                <label class="mb-1 block text-xs font-semibold text-[#334155]">Activity Description</label>
+                <label for="description-field" class="mb-1 block text-xs font-semibold text-[#334155]">Activity Description <span class="text-red-600">*</span></label>
                 <div class="mb-2 flex items-center justify-between gap-2">
                     <span class="text-[11px] text-[#5B6478]">Need help drafting a polished entry?</span>
                     <button type="button" id="ai-help-btn" class="shrink-0 rounded-lg border border-[#D3E0FF] bg-[#E8EFFF] px-3 py-1.5 text-xs font-bold text-[#1F45D6] transition hover:bg-[#D3E0FF] disabled:cursor-not-allowed disabled:opacity-60">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="ai-help-label">AI Help</span>
                     </button>
                 </div>
-                <textarea id="description-field" rows="5" name="description" placeholder="Detail tasks performed..." class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm focus:border-[#2F5BFF] focus:outline-none">{{ old('description') }}</textarea>
+                <textarea id="description-field" rows="5" name="description" placeholder="Detail tasks performed..." class="w-full rounded-xl border p-2.5 text-sm focus:outline-none {{ $errors->has('description') ? 'border-red-400 focus:border-red-500' : 'border-[#CBD3E3] focus:border-[#2F5BFF]' }}">{{ old('description') }}</textarea>
+                <p id="description-error" class="{{ $errors->has('description') ? '' : 'hidden ' }}mt-1.5 text-xs font-semibold text-red-600">{{ $errors->first('description') }}</p>
                 <p id="ai-help-status" class="mt-2 text-xs text-[#5B6478]"></p>
             </div>
             <div>
@@ -777,6 +778,49 @@
     }
 
     window.addEventListener('pageshow', onDate);
+
+    // The description is the real entry, so it needs real content. Show a red note instead of failing silently.
+    var descField = byId('description-field');
+    var descError = byId('description-error');
+    var DESC_MIN = 10; // keep the same as 'min:10' in LogbookController
+
+    function descProblem() {
+        var length = descField ? descField.value.trim().length : 0;
+
+        if (length === 0) return 'No description written. Please describe what you did before saving.';
+        if (length < DESC_MIN) return 'Your description is too short (' + length + '/' + DESC_MIN + ' characters). Please write at least ' + DESC_MIN + ' characters.';
+
+        return '';
+    }
+
+    function showDescError(text) {
+        if (!descError) return;
+        descError.textContent = text || '';
+        descError.classList.toggle('hidden', !text);
+        if (descField) {
+            descField.classList.toggle('border-red-400', !!text);
+            descField.classList.toggle('border-[#CBD3E3]', !text);
+        }
+    }
+
+    if (form && descField) {
+        // Capture phase, so this runs before the shared async submit script and can stop it.
+        form.addEventListener('submit', function (event) {
+            var problem = descProblem();
+
+            if (problem) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                showDescError(problem);
+                descField.focus();
+            }
+        }, true);
+
+        descField.addEventListener('input', function () {
+            if (!descError || descError.classList.contains('hidden')) return;
+            showDescError(descProblem());
+        });
+    }
 
     function openEntry(focusName, date) {
         var panel = byId('new-entry');

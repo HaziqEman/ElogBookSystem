@@ -34,8 +34,11 @@
         <input type="number" name="week_no" required value="{{ old('week_no', $logbook->week_no) }}" class="w-full rounded-lg border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none">
     </div>
     <div>
-        <label class="mb-1 block text-xs font-semibold text-slate-600">Activity Description</label>
-        <textarea name="description" rows="7" required class="w-full rounded-lg border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none">{{ old('description', $logbook->description) }}</textarea>
+        <label class="mb-1 block text-xs font-semibold text-slate-600">Activity Description <span class="text-red-600">*</span></label>
+        <textarea name="description" rows="7" required minlength="10" class="w-full rounded-lg border p-2.5 text-sm focus:outline-none {{ $errors->has('description') ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-blue-500' }}">{{ old('description', $logbook->description) }}</textarea>
+        @error('description')
+            <p class="mt-1 text-xs font-semibold text-red-600">{{ $message }}</p>
+        @enderror
     </div>
     <div>
         <label class="mb-1 block text-xs font-semibold text-slate-600">Attachments</label>

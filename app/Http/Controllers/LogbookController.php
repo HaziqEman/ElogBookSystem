@@ -105,9 +105,14 @@ class LogbookController extends Controller
 
         $data = $request->validate([
             'week_no' => 'nullable|integer|min:1|max:60',
-            'description' => 'required|string',
+            'description' => 'required|string|min:10',
             'activity_date' => 'required|date',
             'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
+        ], [
+            'description.required' => 'No description written. Please describe what you did before saving.',
+            'description.min' => 'Your description is too short. Please write at least 10 characters.',
+            'attachment.mimes' => 'The attachment must be a JPG, PNG, GIF, WEBP, PDF or Word file.',
+            'attachment.max' => 'The attachment is too large. The limit is 5 MB.',
         ]);
 
         $date = Carbon::parse($data['activity_date'], Attendance::TIMEZONE)->startOfDay();
