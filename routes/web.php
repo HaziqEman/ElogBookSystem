@@ -19,6 +19,8 @@ use App\Http\Controllers\AdminSupervisorController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\LogbookPdfController;
 use App\Http\Controllers\AdminStudentController;
+use App\Http\Controllers\AdminUniversityController;
+use App\Http\Controllers\StudentUniversityController;
 use App\Http\Controllers\StudentMessageController;
 use App\Http\Controllers\LecturerMessageController;
 use App\Http\Controllers\MessageDeleteController;
@@ -83,6 +85,9 @@ Route::middleware('auth:student')->group(function () {
 
     Route::get('/student/dashboard/reminders', [StudentReminderController::class, 'index']);
     Route::post('/student/dashboard/working-days', [StudentScheduleController::class, 'update']);
+
+    Route::post('/student/university', [StudentUniversityController::class, 'update'])->middleware('throttle:10,1');
+    Route::get('/student/university/search', [StudentUniversityController::class, 'search'])->middleware('throttle:30,1');
 });
 
 Route::middleware('auth:lecturer')->group(function () {
@@ -175,6 +180,10 @@ Route::middleware('auth:admin')->group(function () {
 
     Route::post('/admin/supervisors/bulk', [AdminSupervisorController::class, 'bulk']);
     Route::post('/admin/supervisors/{id}/reset-password', [AdminSupervisorController::class, 'resetPassword'])->whereNumber('id');
+
+    Route::post('/admin/universities/{id}/verify', [AdminUniversityController::class, 'verify'])->whereNumber('id');
+    Route::post('/admin/universities/{id}/merge', [AdminUniversityController::class, 'merge'])->whereNumber('id');
+    Route::resource('admin/universities', AdminUniversityController::class)->except(['show']);
 
     Route::resource('admin/students', AdminStudentController::class);
     Route::resource('admin/lecturers', App\Http\Controllers\AdminLecturerController::class);

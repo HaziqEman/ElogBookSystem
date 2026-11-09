@@ -85,6 +85,32 @@
 
         <div class="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
             <div>
+                <h3 class="text-sm font-bold text-slate-700">University &amp; internship placement</h3>
+                <p class="mt-1 text-xs text-slate-500">The student can also fill these in from their own dashboard.</p>
+            </div>
+            <label class="block space-y-2">
+                <span class="text-sm font-semibold text-slate-600">University</span>
+                <select name="university_id" class="w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                    <option value="">Not set</option>
+                    @foreach($universities as $university)
+                        <option value="{{ $university->university_id }}" {{ old('university_id', null) == $university->university_id ? 'selected' : '' }}>{{ $university->name }}{{ $university->is_verified ? '' : ' (pending)' }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <label class="space-y-2">
+                    <span class="text-sm font-semibold text-slate-600">Department</span>
+                    <input type="text" name="department" value="{{ old('department', '') }}" placeholder="IT Department" class="w-full rounded-lg border border-slate-200 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </label>
+                <label class="space-y-2">
+                    <span class="text-sm font-semibold text-slate-600">Organization address</span>
+                    <input type="text" name="organization_address" value="{{ old('organization_address', '') }}" placeholder="Company address" class="w-full rounded-lg border border-slate-200 p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </label>
+            </div>
+        </div>
+
+        <div class="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+            <div>
                 <h3 class="text-sm font-bold text-slate-700">Internship dates</h3>
                 <p class="mt-1 text-xs text-slate-500">The student's weeks, reminders and weekly review notices are worked out from these. Only the administrator can change them.</p>
             </div>

@@ -420,9 +420,14 @@
                     @endif
                 </div>
             </div>
-            <a href="{{ route('student.logbooks.pdf') }}" class="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[#CBD3E3] bg-white px-3 text-sm font-bold text-[#1F45D6] transition hover:bg-[#F3F5FC]">
-                <i class="fa-solid fa-file-pdf"></i> Export PDF
-            </a>
+            <button
+            type="button"
+            onclick="openUniversityModal()"
+            class="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[#CBD3E3] bg-white px-3 text-sm font-bold text-[#1F45D6] transition hover:bg-[#F3F5FC]"
+        >
+            <i class="fa-solid fa-file-pdf"></i>
+            Export PDF
+            </button>
         </div>
 
         @if(! $planner->hasStart())
@@ -663,7 +668,46 @@
 
 <div id="entry-dates" data-live data-dates="{{ json_encode($entryDates->values()->all()) }}" class="hidden"></div>
 
+{{-- University modal. Kept OUTSIDE every data-live block: the live refresh replaces those blocks'
+     HTML, which would wipe this form (and its tab buttons) while the student is using it. --}}
+<div id="universityModal" onclick="if (event.target === this) closeUniversityModal()" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="universityModalTitle">
+    <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="mb-5 flex items-start justify-between gap-3">
+            <div>
+                <h2 id="universityModalTitle" class="text-xl font-extrabold text-gray-900">University Information</h2>
+                <p class="mt-1 text-sm text-gray-500">Confirm your university before exporting. It will appear on your logbook PDF.</p>
+            </div>
+            <button type="button" onclick="closeUniversityModal()" aria-label="Close" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        @include('student.partials.university-form')
+    </div>
+</div>
+
 <script>
+
+function openUniversityModal() {
+    const modal = document.getElementById('universityModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeUniversityModal() {
+    const modal = document.getElementById('universityModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeUniversityModal();
+});
+
 (function () {
     if (window.__dashboardBound) return;
     window.__dashboardBound = true;

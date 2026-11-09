@@ -47,8 +47,20 @@
         <div class="appx-top">Appendix A</div>
         <div class="appx-title">Appendix A: Practical Training Logbook</div>
 
-        <div class="insert-box logo-box">[ Insert logo here ]</div>
-        <div class="insert-box uni-box">[ Insert university name here ]</div>
+        {{-- University logo + name come from the student's saved university. The dashed boxes stay as the fallback. --}}
+        @if(! empty($universityLogo))
+            <div class="center" style="margin: 0 auto 14px;">
+                <img src="{{ $universityLogo }}" alt="" style="height: 100px; width: auto;">
+            </div>
+        @else
+            <div class="insert-box logo-box">[ Insert logo here ]</div>
+        @endif
+
+        @if(! empty($university))
+            <div class="center" style="font-family: 'Times New Roman', serif; font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 14px;">{{ $university->name }}</div>
+        @else
+            <div class="insert-box uni-box">[ Insert university name here ]</div>
+        @endif
 
         <div class="center period">
             PRACTICAL TRAINING LOGBOOK<br>
@@ -67,7 +79,7 @@
 
         <table class="cover-t">
             <tr><td class="k">Name of the organization</td><td class="v">{{ $student->company_name ?? $supervisor->company_name ?? '' }}</td></tr>
-            <tr><td class="k">Address of the organization</td><td class="v" style="height:70px">{!! nl2br(e($student->company_address ?? $supervisor->company_address ?? '')) !!}</td></tr>
+            <tr><td class="k">Address of the organization</td><td class="v" style="height:70px">{!! nl2br(e($student->organization_address ?: ($student->company_address ?? $supervisor->company_address ?? ''))) !!}</td></tr>
             <tr><td class="k">Department<br>(if applicable)</td><td class="v" style="height:40px">{{ $student->department ?? '' }}</td></tr>
             <tr><td class="k">Name of industry supervisor</td><td class="v">{{ $supervisor->name ?? '' }}</td></tr>
         </table>

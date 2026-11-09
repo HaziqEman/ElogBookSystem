@@ -121,6 +121,7 @@
                                     ['href' => '/admin/lecturers', 'icon' => 'fa-user-tie', 'label' => 'Manage Lecturers', 'match' => ['admin/lecturers', 'admin/lecturers/*']],
                                     ['href' => '/admin/supervisors', 'icon' => 'fa-building-user', 'label' => 'Manage Supervisors', 'match' => ['admin/supervisors', 'admin/supervisors/*']],
                                     ['href' => '/admin/reports', 'icon' => 'fa-chart-line', 'label' => 'Reports', 'match' => ['admin/reports', 'admin/reports/*']],
+                                    ['href' => '/admin/universities', 'icon' => 'fa-building-columns', 'label' => 'Universities', 'match' => ['admin/universities', 'admin/universities/*']],
                                     ['href' => '/admin/evaluations', 'icon' => 'fa-clipboard-check', 'label' => 'Supervisor Marks', 'match' => ['admin/evaluations', 'admin/evaluations/*']],
                                 ];
                             }

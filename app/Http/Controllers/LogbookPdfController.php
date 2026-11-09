@@ -59,7 +59,11 @@ class LogbookPdfController extends Controller
             \Carbon\Carbon::parse($dates->first())->format('d F Y').' - '.\Carbon\Carbon::parse($dates->last())->format('d F Y')
         );
 
-        return Pdf::loadView('logbook.pdf', compact('student', 'logbooks', 'lecturer', 'supervisor', 'period'))
+        // University name + logo for the PDF header (logo is embedded because DomPDF cannot rely on remote images).
+        $university = $student->university;
+        $universityLogo = $university && $university->logo_url ? $this->logoDataUri($university->logo_url) : null;
+
+        return Pdf::loadView('logbook.pdf', compact('student', 'logbooks', 'lecturer', 'supervisor', 'period', 'university', 'universityLogo'))
             ->setPaper('a4')
             ->download($this->filename($student));
     }
@@ -118,6 +122,36 @@ class LogbookPdfController extends Controller
                 $binary = file_get_contents($full);
             }
 
+            $mime = @getimagesizefromstring($binary)['mime'] ?? null;
+
+            if (! in_array($mime, ['image/jpeg', 'image/png', 'image/gif'], true)) {
+                return null;
+            }
+
+            return 'data:'.$mime.';base64,'.base64_encode($binary);
+        } catch (Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    /** Fetch the university logo as a small PNG data URI, or null so the PDF still prints without it. */
+    private function logoDataUri(string $url): ?string
+    {
+        try {
+            // Cloudinary: shrink it and convert to PNG (keeps transparency, and handles WebP for DomPDF).
+            $url = str_contains($url, '/image/upload/')
+                ? preg_replace('#/image/upload/#', '/image/upload/c_limit,w_300,h_300,f_png/', $url, 1)
+                : $url;
+
+            $response = Http::timeout(10)->get($url);
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $binary = $response->body();
             $mime = @getimagesizefromstring($binary)['mime'] ?? null;
 
             if (! in_array($mime, ['image/jpeg', 'image/png', 'image/gif'], true)) {

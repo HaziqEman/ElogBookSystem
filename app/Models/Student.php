@@ -20,6 +20,9 @@ class Student extends Authenticatable
         'password',
         'phone_no',
         'course',
+        'university_id',
+        'organization_address',
+        'department',
         'internship_start',
         'internship_weeks',
         'working_days',
@@ -40,6 +43,15 @@ class Student extends Authenticatable
             Lecturer::class,
             'lecturer_id',
             'lecturer_id'
+        );
+    }
+
+    public function university()
+    {
+        return $this->belongsTo(
+            University::class,
+            'university_id',
+            'university_id'
         );
     }
 

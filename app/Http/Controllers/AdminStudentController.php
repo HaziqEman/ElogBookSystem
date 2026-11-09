@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ChecksUniqueEmail;
 use App\Models\Lecturer;
 use App\Models\Student;
 use App\Models\Supervisor;
+use App\Models\University;
 use App\Services\WeekPlanner;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -286,8 +287,9 @@ class AdminStudentController extends Controller
     {
         $lecturers = Lecturer::orderBy('name')->get();
         $supervisors = Supervisor::orderBy('name')->get();
+        $universities = University::orderBy('name')->get();
 
-        return view('admin.students.create', compact('lecturers', 'supervisors'));
+        return view('admin.students.create', compact('lecturers', 'supervisors', 'universities'));
     }
 
     public function store(Request $request)
@@ -301,6 +303,9 @@ class AdminStudentController extends Controller
             'course' => 'nullable|string|max:255',
             'lecturer_id' => 'required|integer|exists:lecturers,lecturer_id',
             'supervisor_id' => 'nullable|integer|exists:supervisors,supervisor_id',
+            'university_id' => 'nullable|integer|exists:universities,university_id',
+            'department' => 'nullable|string|max:255',
+            'organization_address' => 'nullable|string|max:500',
         ], $this->internshipRules()));
 
         $ready = Schema::hasColumn('students', 'internship_start');
@@ -318,6 +323,9 @@ class AdminStudentController extends Controller
             'course' => $data['course'] ?? 'Unknown',
             'lecturer_id' => $data['lecturer_id'],
             'supervisor_id' => $data['supervisor_id'] ?? null,
+            'university_id' => $data['university_id'] ?? null,
+            'department' => $data['department'] ?? null,
+            'organization_address' => $data['organization_address'] ?? null,
         ];
 
         if ($ready) {
@@ -341,8 +349,9 @@ class AdminStudentController extends Controller
         $student = Student::findOrFail($id);
         $lecturers = Lecturer::orderBy('name')->get();
         $supervisors = Supervisor::orderBy('name')->get();
+        $universities = University::orderBy('name')->get();
 
-        return view('admin.students.edit', compact('student', 'lecturers', 'supervisors'));
+        return view('admin.students.edit', compact('student', 'lecturers', 'supervisors', 'universities'));
     }
 
     public function update(Request $request, $id)
@@ -355,6 +364,9 @@ class AdminStudentController extends Controller
             'course' => 'nullable|string|max:255',
             'lecturer_id' => 'required|integer|exists:lecturers,lecturer_id',
             'supervisor_id' => 'nullable|integer|exists:supervisors,supervisor_id',
+            'university_id' => 'nullable|integer|exists:universities,university_id',
+            'department' => 'nullable|string|max:255',
+            'organization_address' => 'nullable|string|max:500',
         ], $this->internshipRules()));
 
         $ready = Schema::hasColumn('students', 'internship_start');
@@ -369,6 +381,9 @@ class AdminStudentController extends Controller
             'course' => $data['course'] ?? $student->course,
             'lecturer_id' => $data['lecturer_id'],
             'supervisor_id' => $data['supervisor_id'] ?? null,
+            'university_id' => $data['university_id'] ?? null,
+            'department' => $data['department'] ?? null,
+            'organization_address' => $data['organization_address'] ?? null,
         ];
 
         if ($ready) {
