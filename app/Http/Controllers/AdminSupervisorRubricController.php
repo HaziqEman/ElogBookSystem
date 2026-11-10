@@ -6,8 +6,8 @@ use App\Exports\SupervisorRubricTemplateExport;
 use App\Imports\SupervisorRubricImport;
 use App\Services\SupervisorRubricService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -38,13 +38,33 @@ class AdminSupervisorRubricController extends Controller
             'file.max' => 'The file must be 5 MB or smaller.',
         ]);
 
-        if (
-            ! Schema::hasTable('supervisor_evaluations')
-            || ! Schema::hasColumn('supervisor_evaluations', 'rubric_snapshot')
-            || ! Schema::hasTable('supervisor_rubrics')
-        ) {
+        $connection = DB::connection();
+        $schema = $connection->getSchemaBuilder();
+        $hasEvaluationsTable = $schema->hasTable('supervisor_evaluations');
+        $missingSetup = [];
+
+        if (! $hasEvaluationsTable) {
+            $missingSetup[] = 'supervisor_evaluations table';
+        } elseif (! $schema->hasColumn('supervisor_evaluations', 'rubric_snapshot')) {
+            $missingSetup[] = 'supervisor_evaluations.rubric_snapshot column';
+        }
+
+        if (! $schema->hasTable('supervisor_rubrics')) {
+            $missingSetup[] = 'supervisor_rubrics table';
+        }
+
+        if ($missingSetup) {
+            $schemaName = $connection->getDriverName() === 'pgsql'
+                ? $connection->selectOne('select current_schema() as schema_name')->schema_name
+                : 'not applicable';
+
             return back()->withErrors([
-                'file' => 'Rubric database setup is missing. Run database/neon_supervisor_rubric.sql in the Neon SQL Editor, then try importing again.',
+                'file' => 'Rubric setup is missing from the database used by this app: '
+                    .implode(', ', $missingSetup)
+                    .'. App connection: '.$connection->getDriverName()
+                    .' / '.$connection->getDatabaseName()
+                    .' / schema '.$schemaName
+                    .'. Run database/neon_supervisor_rubric.sql against this exact database and schema, then retry.',
             ])->withInput();
         }
 
