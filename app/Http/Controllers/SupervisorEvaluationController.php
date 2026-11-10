@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\SupervisorEvaluation;
+use App\Services\SupervisorRubricService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -21,12 +22,12 @@ class SupervisorEvaluationController extends Controller
         return Student::where('supervisor_id', $this->supervisor()->supervisor_id)->findOrFail($id);
     }
 
-    /** Flat list of criteria from config/supervisor_rubric.php: key => [label, max, help]. */
-    protected function criteria(): array
+    /** Flat list of criteria from a rubric: key => [label, max, help]. */
+    protected function criteria(array $rubric): array
     {
         $list = [];
 
-        foreach (config('supervisor_rubric.sections', []) as $section) {
+        foreach ($rubric['sections'] ?? [] as $section) {
             foreach ($section['criteria'] as $key => $criterion) {
                 $list[$key] = [
                     'label' => $criterion['label'],
@@ -39,10 +40,11 @@ class SupervisorEvaluationController extends Controller
         return $list;
     }
 
-    public function show($id)
+    public function show($id, SupervisorRubricService $rubrics)
     {
         $student = $this->ownStudent($id);
         $evaluation = SupervisorEvaluation::where('student_id', $student->student_id)->first();
+        $rubric = $evaluation?->rubric_snapshot ?: $rubrics->current();
 
         $entries = Logbook::where('student_id', $student->student_id);
 
@@ -55,25 +57,26 @@ class SupervisorEvaluationController extends Controller
         return view('supervisor.evaluation', [
             'student' => $student,
             'evaluation' => $evaluation,
-            'rubric' => config('supervisor_rubric'),
-            'criteria' => $this->criteria(),
+            'rubric' => $rubric,
+            'criteria' => $this->criteria($rubric),
             'stats' => $stats,
-            'locked' => $evaluation && ! config('supervisor_rubric.allow_edit', true),
+            'locked' => $evaluation && ! ($rubric['allow_edit'] ?? true),
         ]);
     }
 
-    public function store(Request $request, $id)
+    public function store(Request $request, $id, SupervisorRubricService $rubrics)
     {
         $student = $this->ownStudent($id);
         $back = '/supervisor/students/'.$student->student_id.'/evaluation';
 
         $existing = SupervisorEvaluation::where('student_id', $student->student_id)->first();
+        $rubric = $existing?->rubric_snapshot ?: $rubrics->current();
 
-        if ($existing && ! config('supervisor_rubric.allow_edit', true)) {
+        if ($existing && ! ($rubric['allow_edit'] ?? true)) {
             return redirect($back)->with('error', 'This evaluation was already submitted and can no longer be changed.');
         }
 
-        $criteria = $this->criteria();
+        $criteria = $this->criteria($rubric);
         $rules = ['comments' => 'nullable|string|max:3000'];
         $attributes = [];
 
@@ -91,7 +94,7 @@ class SupervisorEvaluationController extends Controller
 
         $total = array_sum($scores);
         $max = array_sum(array_column($criteria, 'max'));
-        $weight = (float) config('supervisor_rubric.weight', 100);
+        $weight = (float) ($rubric['weight'] ?? 100);
         $final = $max > 0 ? round($total / $max * $weight, 2) : 0;
 
         try {
@@ -105,6 +108,7 @@ class SupervisorEvaluationController extends Controller
                     'final_mark' => $final,
                     'comments' => trim((string) ($data['comments'] ?? '')) ?: null,
                     'submitted_at' => now(),
+                    'rubric_snapshot' => $rubric,
                 ]
             );
         } catch (\Throwable $e) {

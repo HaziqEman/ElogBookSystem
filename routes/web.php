@@ -20,6 +20,7 @@ use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\LogbookPdfController;
 use App\Http\Controllers\AdminStudentController;
 use App\Http\Controllers\AdminUniversityController;
+use App\Http\Controllers\AdminSupervisorRubricController;
 use App\Http\Controllers\StudentUniversityController;
 use App\Http\Controllers\StudentMessageController;
 use App\Http\Controllers\LecturerMessageController;
@@ -63,6 +64,8 @@ Route::middleware('auth:student')->group(function () {
     Route::post('/student/logbook/store', [LogbookController::class, 'store']);
     Route::get('/student/logbook/edit/{id}', [StudentLogbookEditController::class, 'edit'])->whereNumber('id');
     Route::post('/student/logbook/update/{id}', [StudentLogbookEditController::class, 'update'])->whereNumber('id');
+    Route::post('/student/logbook/{logbook}/attachments/{attachment}/delete', [StudentLogbookEditController::class, 'destroyAttachment'])
+        ->whereNumber(['logbook', 'attachment']);
     Route::get('/student/logbook/delete/{id}', [LogbookController::class, 'destroy']);
     Route::get('/student/feedback', [StudentController::class, 'feedback']);
 
@@ -160,6 +163,9 @@ Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatCon
 
 Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/admin/supervisor-rubric', [AdminSupervisorRubricController::class, 'index']);
+    Route::get('/admin/supervisor-rubric/template', [AdminSupervisorRubricController::class, 'template']);
+    Route::post('/admin/supervisor-rubric/import', [AdminSupervisorRubricController::class, 'import']);
     Route::get('/admin/evaluations', [EvaluationViewController::class, 'adminIndex']);
     Route::get('/admin/evaluations/{id}', [EvaluationViewController::class, 'adminShow'])->whereNumber('id');
 

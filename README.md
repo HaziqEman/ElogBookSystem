@@ -117,3 +117,16 @@ Database fixtures do not prove that Pusher authorization/realtime delivery, Fire
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+Supervisor review: SupervisorReviewController.php, SupervisorWeekController.php, SupervisorController.php, supervisor/review.blade.php, supervisor/student-week.blade.php.
+
+Lecturer views and insights: LecturerStudentController.php, LecturerLogbookController.php, lecturer/student.blade.php, LecturerInsights.php.
+
+PDF export and reporting: LogbookPdfController.php, logbook/pdf.blade.php, ReportsController.php, admin/reports/index.blade.php, admin/reports/pdf.blade.php.
+
+Admin dashboard and student/supervisor administration: AdminController.php, AdminStudentController.php, AdminSupervisorController.php, admin/dashboard.blade.php.
+
+Other student features: StudentCalendarController.php, StudentController.php, student/calendar.blade.php, student/feedback.blade.php.
+
+Supporting models, services, and database setup: Feedback.php, WeekPlanner.php, GeminiDraftService.php, LocalDraftBuilder.php, WeekSummaryService.php, WeekBatchService.php, ReminderService.php, 2026_10_03_000001_add_title_to_logbooks_table.php.

@@ -3,11 +3,13 @@
 /*
  * Company supervisor marks rubric.
  *
- * CHANGE THIS FILE to match the evaluation form your faculty gave you.
+ * Default rubric used until an administrator imports one from the admin portal.
+ * Imported rubrics are stored in the database and applied to new evaluations.
+ * Each submitted evaluation keeps a snapshot of the rubric used to score it.
  * - Each criterion is scored from 1 up to its "max" (default 5).
  * - "weight" is the percentage this evaluation is worth in the final grade.
  * - The final mark = (marks obtained / total possible marks) x weight.
- * - After editing, run: php artisan config:clear
+ * - This file is a fallback/default, not the active rubric after an import.
  */
 
 return [

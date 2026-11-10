@@ -123,6 +123,7 @@
                                     ['href' => '/admin/reports', 'icon' => 'fa-chart-line', 'label' => 'Reports', 'match' => ['admin/reports', 'admin/reports/*']],
                                     ['href' => '/admin/universities', 'icon' => 'fa-building-columns', 'label' => 'Universities', 'match' => ['admin/universities', 'admin/universities/*']],
                                     ['href' => '/admin/evaluations', 'icon' => 'fa-clipboard-check', 'label' => 'Supervisor Marks', 'match' => ['admin/evaluations', 'admin/evaluations/*']],
+                                    ['href' => '/admin/supervisor-rubric', 'icon' => 'fa-list-check', 'label' => 'Supervisor Rubric', 'match' => ['admin/supervisor-rubric', 'admin/supervisor-rubric/*']],
                                 ];
                             }
 

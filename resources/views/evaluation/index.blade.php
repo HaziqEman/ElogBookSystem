@@ -5,7 +5,6 @@
 
 @php
     $card = 'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
-    $weightText = rtrim(rtrim(number_format($weight, 2), '0'), '.');
     $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
 @endphp
 
@@ -62,7 +61,14 @@
                                 @endif
                             </td>
                             <td class="px-5 py-3 text-[#334155]">{{ $evaluation ? $evaluation->total_marks.' / '.$evaluation->max_marks : '-' }}</td>
-                            <td class="px-5 py-3 font-extrabold text-[#1F45D6]">{{ $evaluation ? $fmt($evaluation->final_mark).' / '.$weightText : '-' }}</td>
+                            <td class="px-5 py-3 font-extrabold text-[#1F45D6]">
+                                @if($evaluation)
+                                    @php($evaluationWeight = (float) ($evaluation->rubric_snapshot['weight'] ?? $weight))
+                                    {{ $fmt($evaluation->final_mark).' / '.rtrim(rtrim(number_format($evaluationWeight, 2), '0'), '.') }}
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td class="px-5 py-3 text-right">
                                 <a href="{{ $base }}/{{ $student->student_id }}" class="rounded-lg bg-[#E8EFFF] px-3 py-1.5 text-xs font-bold text-[#1F45D6] transition hover:bg-[#D3E0FF]">View</a>
                             </td>

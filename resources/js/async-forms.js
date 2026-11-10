@@ -117,12 +117,22 @@ document.addEventListener('submit', async function (event) {
             form.dispatchEvent(new CustomEvent('async:invalid', { bubbles: true, detail: data }));
 
             var errors = data.errors ? Object.values(data.errors).flat() : [];
-            toast(errors[0] || data.message || 'Please check what you entered.', 'error');
+            var validationMessage = errors[0] || data.message || 'Please check what you entered.';
+            var errorPrefix = form.dataset.errorPrefix || '';
+            if (errorPrefix && validationMessage.indexOf(errorPrefix) !== 0) {
+                validationMessage = errorPrefix + validationMessage;
+            }
+            toast(validationMessage, 'error');
             return;
         }
 
         if (!response.ok) {
-            throw new Error(data.message || 'Something went wrong. Please try again.');
+            var failureMessage = data.message || 'Something went wrong. Please try again.';
+            var failurePrefix = form.dataset.errorPrefix || '';
+            if (failurePrefix && failureMessage.indexOf(failurePrefix) !== 0) {
+                failureMessage = failurePrefix + failureMessage;
+            }
+            throw new Error(failureMessage);
         }
 
         form.dispatchEvent(new CustomEvent('async:success', { bubbles: true, detail: data }));
@@ -132,8 +142,13 @@ document.addEventListener('submit', async function (event) {
             await refreshLive();
         }
     } catch (error) {
-        form.dispatchEvent(new CustomEvent('async:error', { bubbles: true, detail: { message: error.message } }));
-        toast(error.message, 'error');
+        var caughtMessage = error.message || 'Something went wrong. Please try again.';
+        var caughtPrefix = form.dataset.errorPrefix || '';
+        if (caughtPrefix && caughtMessage.indexOf(caughtPrefix) !== 0) {
+            caughtMessage = caughtPrefix + caughtMessage;
+        }
+        form.dispatchEvent(new CustomEvent('async:error', { bubbles: true, detail: { message: caughtMessage } }));
+        toast(caughtMessage, 'error');
     } finally {
         delete form.dataset.busy;
 

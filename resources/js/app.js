@@ -3,6 +3,10 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import './chat';
 
+if (document.getElementById('logbook-week') || document.querySelector('[data-edit-logbook-form]')) {
+	import('./student-dashboard.js');
+}
+
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
 		navigator.serviceWorker.register('/service-worker.js').catch(() => {});

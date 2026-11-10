@@ -50,16 +50,18 @@ class StudentLogbookEditController extends Controller
             'week_no' => 'required|integer',
             'description' => 'required|string|min:10',
             'activity_date' => 'required|date',
-            'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
+            'attachments' => 'nullable|array|max:5',
+            'attachments.*' => 'file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
         ], [
             'description.required' => 'No description written. Please describe what you did before saving.',
             'description.min' => 'Your description is too short. Please write at least 10 characters.',
-            'attachment.mimes' => 'The attachment must be a JPG, PNG, GIF, WEBP, PDF or Word file.',
-            'attachment.max' => 'The attachment is too large. The limit is 5 MB.',
+            'attachments.max' => 'You can add up to 5 attachments at a time.',
+            'attachments.*.mimes' => 'Each attachment must be a JPG, PNG, GIF, WEBP, PDF or Word file.',
+            'attachments.*.max' => 'Each attachment must be 5 MB or smaller.',
         ]);
 
         try {
-            DB::transaction(function () use ($request, $logbook, $data, $storage) {
+            DB::transaction(function () use ($logbook, $data, $storage) {
                 $logbook->update([
                     'week_no' => $data['week_no'],
                     'title' => 'Week '.$data['week_no'],
@@ -69,8 +71,8 @@ class StudentLogbookEditController extends Controller
                     'supervisor_status' => 'Pending',
                 ]);
 
-                if ($request->hasFile('attachment')) {
-                    $stored = $storage->store($request->file('attachment'));
+                foreach ($data['attachments'] ?? [] as $file) {
+                    $stored = $storage->store($file);
 
                     Attachment::create([
                         'logbook_id' => $logbook->logbook_id,
@@ -81,12 +83,58 @@ class StudentLogbookEditController extends Controller
                 }
             });
         } catch (\Throwable $e) {
-            Log::error('Logbook update failed: '.$e->getMessage());
+            Log::error('Logbook update failed: '.$e->getMessage(), [
+                'logbook_id' => $logbook->logbook_id,
+                'attachment_count' => count($data['attachments'] ?? []),
+                'exception' => $e,
+            ]);
 
-            return $this->reply($request, false, 'Could not save your changes. Please try again.', 500);
+            $message = ! empty($data['attachments'])
+                ? 'Edit failed: one or more attachments could not be uploaded or saved. Your entry was not saved; please try again.'
+                : 'Edit failed: your changes could not be saved. Please try again.';
+
+            return $this->reply($request, false, $message, 500);
         }
 
-        return $this->reply($request, true, 'Entry updated and sent back for review.');
+        $uploadedCount = count($data['attachments'] ?? []);
+        $message = 'Entry updated and sent back for review.';
+
+        if ($uploadedCount > 0) {
+            $message .= ' '.$uploadedCount.' attachment'.($uploadedCount === 1 ? '' : 's').' uploaded.';
+        }
+
+        return $this->reply($request, true, $message);
+    }
+
+    public function destroyAttachment(Request $request, $logbookId, $attachmentId, AttachmentStorage $storage)
+    {
+        $student = Auth::guard('student')->user();
+        $logbook = $student->logbooks()->findOrFail($logbookId);
+
+        if (! $logbook->isEditableByStudent()) {
+            return $this->reply($request, false, self::LOCKED, 403);
+        }
+
+        $attachment = $logbook->attachments()->findOrFail($attachmentId);
+
+        try {
+            $storage->delete($attachment);
+            $attachment->delete();
+            $logbook->update([
+                'status' => 'Pending',
+                'supervisor_status' => 'Pending',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Logbook attachment deletion failed: '.$e->getMessage(), [
+                'logbook_id' => $logbook->logbook_id,
+                'attachment_id' => $attachment->attachment_id,
+                'exception' => $e,
+            ]);
+
+            return $this->reply($request, false, 'Edit failed: the attachment could not be deleted. Please try again.', 500);
+        }
+
+        return $this->reply($request, true, 'Attachment removed.');
     }
 
     protected function reply(Request $request, bool $ok, string $message, int $failStatus = 422)

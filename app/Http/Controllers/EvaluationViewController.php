@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use App\Models\SupervisorEvaluation;
+use App\Services\SupervisorRubricService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,7 +16,7 @@ class EvaluationViewController extends Controller
 {
     // ---------- Lecturer ----------
 
-    public function lecturerIndex(Request $request)
+    public function lecturerIndex(Request $request, SupervisorRubricService $rubrics)
     {
         $lecturer = Auth::guard('lecturer')->user();
 
@@ -23,36 +24,36 @@ class EvaluationViewController extends Controller
             ->where('lecturer_id', $lecturer->lecturer_id)
             ->orderBy('name');
 
-        return $this->index($request, $query, '/lecturer/evaluations', 'Supervisor marks for your students');
+        return $this->index($request, $query, '/lecturer/evaluations', 'Supervisor marks for your students', $rubrics->current());
     }
 
-    public function lecturerShow($id)
+    public function lecturerShow($id, SupervisorRubricService $rubrics)
     {
         $lecturer = Auth::guard('lecturer')->user();
         $student = Student::with('supervisor')->where('lecturer_id', $lecturer->lecturer_id)->findOrFail($id);
 
-        return $this->detail($student, '/lecturer/evaluations');
+        return $this->detail($student, '/lecturer/evaluations', $rubrics->current());
     }
 
     // ---------- Admin ----------
 
-    public function adminIndex(Request $request)
+    public function adminIndex(Request $request, SupervisorRubricService $rubrics)
     {
         $query = Student::with('supervisor')->orderBy('name');
 
-        return $this->index($request, $query, '/admin/evaluations', 'Supervisor marks for all students');
+        return $this->index($request, $query, '/admin/evaluations', 'Supervisor marks for all students', $rubrics->current());
     }
 
-    public function adminShow($id)
+    public function adminShow($id, SupervisorRubricService $rubrics)
     {
         $student = Student::with('supervisor')->findOrFail($id);
 
-        return $this->detail($student, '/admin/evaluations');
+        return $this->detail($student, '/admin/evaluations', $rubrics->current());
     }
 
     // ---------- Shared ----------
 
-    protected function index(Request $request, $query, string $base, string $title)
+    protected function index(Request $request, $query, string $base, string $title, array $rubric)
     {
         $search = trim((string) $request->query('q', ''));
 
@@ -81,21 +82,22 @@ class EvaluationViewController extends Controller
             'search' => $search,
             'total' => $allIds->count(),
             'evaluatedCount' => $evaluatedCount,
-            'weight' => (float) config('supervisor_rubric.weight', 100),
+            'weight' => (float) ($rubric['weight'] ?? 100),
         ]);
     }
 
-    protected function detail(Student $student, string $base)
+    protected function detail(Student $student, string $base, array $currentRubric)
     {
         $evaluation = SupervisorEvaluation::where('student_id', $student->student_id)->first();
+        $rubric = $evaluation?->rubric_snapshot ?: $currentRubric;
 
         return view('evaluation.show', [
             'student' => $student,
             'evaluation' => $evaluation,
             'supervisor' => $student->supervisor,
-            'rubric' => config('supervisor_rubric'),
+            'rubric' => $rubric,
             'base' => $base,
-            'weight' => (float) config('supervisor_rubric.weight', 100),
+            'weight' => (float) ($rubric['weight'] ?? 100),
         ]);
     }
 }

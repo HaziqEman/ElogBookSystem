@@ -15,11 +15,13 @@ class SupervisorEvaluation extends Model
         'final_mark',
         'comments',
         'submitted_at',
+        'rubric_snapshot',
     ];
 
     protected $casts = [
         'scores' => 'array',
         'submitted_at' => 'datetime',
+        'rubric_snapshot' => 'array',
     ];
 
     public function student()
