@@ -44,7 +44,7 @@ class AdminSupervisorRubricController extends Controller
             || ! Schema::hasTable('supervisor_rubrics')
         ) {
             return back()->withErrors([
-                'file' => 'Rubric database migrations are missing. Run php artisan migrate on this application, then try importing again.',
+                'file' => 'Rubric database setup is missing. Run database/neon_supervisor_rubric.sql in the Neon SQL Editor, then try importing again.',
             ])->withInput();
         }
 
