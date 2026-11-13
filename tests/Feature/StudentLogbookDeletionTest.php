@@ -57,6 +57,29 @@ class StudentLogbookDeletionTest extends TestCase
         $this->assertDatabaseHas('logbooks', ['logbook_id' => $logbook->logbook_id]);
     }
 
+    public function test_student_can_delete_entry_when_local_attachment_file_is_missing(): void
+    {
+        $student = $this->createStudent('student@example.test', 'STU001');
+        $logbook = $this->createLogbook($student);
+        $attachment = Attachment::create([
+            'logbook_id' => $logbook->logbook_id,
+            'file_name' => 'missing-evidence.jpg',
+            'file_path' => 'uploads/missing-evidence-'.uniqid('', true).'.jpg',
+            'upload_date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($student, 'student')
+            ->post(route('student.logbook.destroy', $logbook->logbook_id), ['_method' => 'DELETE'], [
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->assertOk()
+            ->assertJson(['message' => 'Logbook entry deleted.']);
+
+        $this->assertDatabaseMissing('logbooks', ['logbook_id' => $logbook->logbook_id]);
+        $this->assertDatabaseMissing('attachments', ['attachment_id' => $attachment->attachment_id]);
+    }
+
     public function test_non_async_delete_returns_to_the_full_logbook_page(): void
     {
         $student = $this->createStudent('student@example.test', 'STU001');

@@ -6,6 +6,7 @@ use App\Models\Attachment;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\UploadedFile;
 use RuntimeException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AttachmentStorage
@@ -90,11 +91,33 @@ class AttachmentStorage
             throw new RuntimeException('The attachment storage path is not a supported local upload.');
         }
 
+        if (preg_match('#(^|/)\.\.?(/|$)#', str_replace('\\', '/', $relativePath))) {
+            throw new RuntimeException('The attachment storage path is not a supported local upload.');
+        }
+
         $uploadDirectory = realpath(public_path('uploads'));
+
+        if (! $uploadDirectory) {
+            Log::warning('Local attachment directory is missing; removing its stale database reference.', [
+                'attachment_id' => $attachment->attachment_id,
+            ]);
+
+            return;
+        }
+
         $filePath = realpath(public_path($relativePath));
 
-        if (! $uploadDirectory || ! $filePath || ! Str::startsWith($filePath, $uploadDirectory.DIRECTORY_SEPARATOR)) {
-            throw new RuntimeException('The local attachment file could not be found.');
+        if (! $filePath) {
+            Log::warning('Local attachment file is missing; removing its stale database reference.', [
+                'attachment_id' => $attachment->attachment_id,
+                'file_path' => $relativePath,
+            ]);
+
+            return;
+        }
+
+        if (! Str::startsWith($filePath, $uploadDirectory.DIRECTORY_SEPARATOR)) {
+            throw new RuntimeException('The local attachment path resolves outside the uploads directory.');
         }
 
         if (! unlink($filePath)) {
