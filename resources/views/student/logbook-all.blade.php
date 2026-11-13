@@ -1,74 +1,92 @@
 @extends('layouts.app')
 
 @section('content')
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 @php
     $pill = function (string $status) {
         if (in_array($status, ['Approved', 'Validated'], true)) {
-            return 'bg-emerald-100 text-emerald-800';
+            return 'bg-[#D1FAE5] text-[#065F46]';
         }
-        if (in_array($status, ['Rejected', 'Revision Requested'], true)) {
-            return 'bg-orange-100 text-orange-800';
+        if (in_array($status, ['Rejected', 'Revision Requested', 'Revision needed'], true)) {
+            return 'bg-[#FFEDD5] text-[#9A3412]';
         }
-        return 'bg-amber-100 text-amber-800';
+        if ($status === 'Waiting for review') {
+            return 'bg-[#E0E7FF] text-[#3730A3]';
+        }
+        if (in_array($status, ['Not sent yet', 'Not assigned'], true)) {
+            return 'bg-[#EEF1F7] text-[#5B6478]';
+        }
+
+        return 'bg-[#FEF3C7] text-[#7C2D12]';
     };
-    $supervisorAssigned = (bool) optional($student)->supervisor_id;
+
+    $chipClass = [
+        'validated' => 'bg-[#D1FAE5] text-[#065F46]',
+        'waiting' => 'bg-[#E0E7FF] text-[#3730A3]',
+        'revision' => 'bg-[#FFEDD5] text-[#9A3412]',
+        'current' => 'bg-[#2F5BFF] text-white',
+        'incomplete' => 'bg-[#FFE4E6] text-[#9F1239]',
+        'locked' => 'bg-[#EEF1F7] text-[#94A3B8]',
+    ];
+
+    $statusText = [
+        'validated' => 'Validated',
+        'waiting' => 'Waiting for review',
+        'revision' => 'Revision needed',
+        'current' => 'Current week',
+        'incomplete' => 'Entries missing',
+        'locked' => 'Not open yet',
+    ];
+    $card = 'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
+    $fullLogbookPage = true;
+    $plannedLogbookIds = collect($weeks)
+        ->flatMap(fn ($week) => collect($week['days'])->flatMap(fn ($day) => $day['entries']->pluck('logbook_id')))
+        ->flip();
+    $unplannedLogbooks = $visibleLogbooks
+        ->reject(fn ($entry) => $plannedLogbookIds->has($entry->logbook_id));
 @endphp
 
-<div class="mx-auto max-w-4xl space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-xs md:p-6">
-        <div>
-            <h2 class="text-2xl font-bold text-slate-800">Full logbook</h2>
-            <p class="mt-1 text-sm text-slate-500">Every entry you have written, newest first.</p>
+<div class="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8" style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif">    @if(session('success'))
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800" role="status">{{ session('success') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            <p class="font-bold">Please check the following:</p>
+            <ul class="mt-1 list-inside list-disc">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('student.logbooks.pdf') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"><i class="fa-solid fa-file-pdf"></i> Export PDF</a>
-            <a href="/student/dashboard#logbook-week" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Back to weeks</a>
-        </div>
-    </div>
+    @endif
 
-    <div class="space-y-3">
-        @forelse($logbooks as $logbook)
-            @php
-                $file = $logbook->attachments->first();
-                $moreFiles = max($logbook->attachments->count() - 1, 0);
-            @endphp
-            <article class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs md:p-5 {{ $logbook->needsRevision() ? 'border-orange-200 bg-orange-50/40' : '' }}">
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">Week {{ $logbook->week_no }}</span>
-                    <span class="text-xs font-semibold text-slate-500">{{ $logbook->activity_date ? \Carbon\Carbon::parse($logbook->activity_date)->format('d M Y') : '-' }}</span>
-                    <span class="ml-auto">
-                        @if($logbook->isEditableByStudent())
-                            <a href="/student/logbook/edit/{{ $logbook->logbook_id }}" class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold transition {{ $logbook->needsRevision() ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}">{{ $logbook->needsRevision() ? 'Revise' : 'Edit' }}</a>
-                        @else
-                            <span class="text-xs text-slate-400"><i class="fa-solid fa-lock"></i> Locked</span>
-                        @endif
-                    </span>
-                </div>
+    @include('student.partials.dashboard-logbook')
 
-                <p class="mt-2 break-words text-sm leading-relaxed text-slate-600">{{ $logbook->description }}</p>
-
-                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    @if($file)
-                        <a href="{{ $file->url }}" target="_blank" rel="noopener" title="{{ $file->file_name }}" class="inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 transition hover:bg-slate-200">
-                            <i class="fa-solid fa-paperclip text-slate-400"></i>
-                            <span class="max-w-[12rem] truncate sm:max-w-[18rem]">{{ $file->file_name }}</span>
+    @if(! $hasFilters && $unplannedLogbooks->isNotEmpty())
+        <section class="space-y-3 rounded-[22px] border border-[#E3E8F2] bg-white p-6 shadow-[0_6px_18px_rgba(15,27,77,0.05)]">
+            <div>
+                <h2 class="text-xl font-extrabold text-[#1E293B]">Other logbook entries</h2>
+                <p class="mt-1 text-sm text-[#5B6478]">These entries are outside the configured internship-week dates.</p>
+            </div>
+            @foreach($unplannedLogbooks as $entry)
+                <article class="rounded-2xl border border-[#E7ECF6] bg-[#FCFDFF] p-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <time class="text-xs font-bold text-[#5B6478]">{{ $entry->activity_date ? \Carbon\Carbon::parse($entry->activity_date)->format('D, d M Y') : 'Date not set' }}</time>
+                        <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $pill($entry->supervisor_status ?? 'Pending') }}">Supervisor: {{ $entry->supervisor_status ?? 'Pending' }}</span>
+                    </div>
+                    <p class="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-[#334155]">{{ $entry->description }}</p>
+                    @foreach($entry->attachments as $attachment)
+                        <a href="{{ $attachment->url }}" target="_blank" rel="noopener" class="mt-2 inline-flex max-w-full items-center gap-2 rounded-lg bg-[#EEF2FB] px-3 py-2 text-xs font-semibold text-[#1F45D6]">
+                            <i class="fa-solid fa-paperclip"></i><span class="truncate">{{ $attachment->file_name }}</span>
                         </a>
-                        @if($moreFiles > 0)
-                            <span class="text-slate-400">+{{ $moreFiles }} more</span>
-                        @endif
-                    @else
-                        <span class="rounded-full bg-slate-50 px-2.5 py-1 text-slate-400">No file</span>
-                    @endif
-                    @if($supervisorAssigned)
-                        <span class="rounded-full px-2.5 py-1 font-semibold {{ $pill($logbook->supervisor_status ?? 'Pending') }}">Supervisor: {{ $logbook->supervisor_status ?? 'Pending' }}</span>
-                    @endif
-                </div>
-            </article>
-        @empty
-            <div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">No entries yet.</div>
-        @endforelse
-    </div>
-
-    <div>{{ $logbooks->links() }}</div>
+                    @endforeach
+                    @foreach($entry->feedbacks->sortByDesc('feedback_id') as $feedback)
+                        <div class="mt-3 rounded-xl bg-[#F7F9FD] p-3">
+                            <p class="text-xs font-bold text-[#334155]">{{ $feedback->supervisor_id ? 'Company supervisor' : 'Lecturer' }} feedback</p>
+                            <p class="mt-1 whitespace-pre-line break-words text-xs leading-relaxed text-[#475569]">{{ $feedback->comment }}</p>
+                        </div>
+                    @endforeach
+                </article>
+            @endforeach
+        </section>
+    @endif
 </div>
+@include('student.partials.dashboard-modals')
 @endsection

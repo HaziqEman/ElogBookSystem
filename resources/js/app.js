@@ -3,7 +3,11 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import './chat';
 
-if (document.getElementById('logbook-week') || document.querySelector('[data-edit-logbook-form]')) {
+if (
+	document.getElementById('logbook-week')
+	|| document.getElementById('calendar-card')
+	|| document.querySelector('[data-edit-logbook-form]')
+) {
 	import('./student-dashboard.js');
 }
 

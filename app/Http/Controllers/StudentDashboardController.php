@@ -353,17 +353,123 @@ class StudentDashboardController extends Controller
         ));
     }
 
-    /** Every entry, newest first (the "Open full logbook" page). */
-    public function logbooks()
+    /** Full weekly logbook review, including the entry feedback history. */
+    public function logbooks(Request $request)
     {
         $student = Auth::guard('student')->user();
+        $today = Carbon::now(Attendance::TIMEZONE)->startOfDay();
+        $planner = new WeekPlanner($student, $today);
+        $todayKey = $today->toDateString();
+        $search = trim((string) $request->query('search', ''));
+        $review = in_array($request->query('review'), ['action', 'pending', 'validated'], true)
+            ? $request->query('review')
+            : 'all';
 
-        $logbooks = Logbook::with('attachments')
+        $logbooks = Logbook::with(['attachments', 'feedbacks.lecturer', 'feedbacks.supervisor'])
             ->where('student_id', $student->student_id)
-            ->orderByDesc('activity_date')
-            ->orderByDesc('logbook_id')
-            ->paginate(15);
+            ->orderBy('activity_date')
+            ->orderBy('logbook_id')
+            ->get();
 
-        return view('student.logbook-all', compact('student', 'logbooks'));
+        $matchesSearch = function (Logbook $logbook) use ($search): bool {
+            if ($search === '') {
+                return true;
+            }
+
+            $values = collect([
+                $logbook->description,
+                $logbook->supervisor_status,
+            ])->concat($logbook->attachments->pluck('file_name'));
+
+            foreach ($logbook->feedbacks as $feedback) {
+                $values->push($feedback->comment);
+                $values->push(optional($feedback->lecturer)->name);
+                $values->push(optional($feedback->supervisor)->name);
+            }
+
+            return $values->contains(
+                fn ($value) => $value !== null && mb_stripos((string) $value, $search) !== false
+            );
+        };
+
+        $reviewMatches = fn (Logbook $logbook): bool => match ($review) {
+            'action' => $logbook->supervisor_status === 'Revision Requested',
+            'pending' => ($logbook->supervisor_status ?? 'Pending') === 'Pending',
+            'validated' => $logbook->supervisor_status === 'Validated',
+            default => true,
+        };
+
+        $counts = [
+            'all' => $logbooks->count(),
+            'action' => $logbooks->filter(fn ($logbook) => $logbook->supervisor_status === 'Revision Requested')->count(),
+            'pending' => $logbooks->filter(fn ($logbook) => ($logbook->supervisor_status ?? 'Pending') === 'Pending')->count(),
+            'validated' => $logbooks->filter(fn ($logbook) => $logbook->supervisor_status === 'Validated')->count(),
+        ];
+        $visibleLogbookIds = $logbooks
+            ->filter(fn ($logbook) => $matchesSearch($logbook) && $reviewMatches($logbook))
+            ->pluck('logbook_id')
+            ->flip();
+        $hasFilters = $search !== '' || $review !== 'all';
+
+        $entryDates = $logbooks
+            ->pluck('activity_date')
+            ->filter()
+            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+            ->unique()
+            ->values();
+
+        $weeks = [];
+        $selected = null;
+
+        if ($planner->hasStart()) {
+            $from = $planner->firstMonday()->toDateString();
+            $to = $planner->weekStart($planner->totalWeeks())->addDays(6)->toDateString();
+            $logbooksByDate = $logbooks
+                ->filter(fn ($logbook) => $logbook->activity_date)
+                ->groupBy(fn ($logbook) => Carbon::parse($logbook->activity_date)->toDateString());
+            $attendanceByDate = Schema::hasTable('attendances')
+                ? Attendance::where('student_id', $student->student_id)
+                    ->whereBetween('attendance_date', [$from, $to])
+                    ->get()
+                    ->keyBy(fn ($record) => $record->attendance_date->toDateString())
+                : collect();
+
+            $weeks = $planner->weeks($logbooksByDate, $attendanceByDate);
+            $default = max(1, min($planner->totalWeeks(), $planner->currentWeek() ?? 1));
+            $weekNumber = max(1, min($planner->totalWeeks(), (int) $request->query('week', $default)));
+            $selected = $weeks[$weekNumber - 1] ?? null;
+        }
+
+        $supervisorAssigned = (bool) $student->supervisor_id;
+        $currentWeek = $planner->currentWeek() ?? 1;
+        $firstMondayKey = $planner->hasStart() ? $planner->firstMonday()->toDateString() : '';
+        $startKey = $planner->hasStart() ? $planner->start()->toDateString() : '';
+        $workingDaysCsv = implode(',', $planner->workingDays());
+        $visibleLogbooks = $logbooks
+            ->filter(fn ($logbook) => $visibleLogbookIds->has($logbook->logbook_id))
+            ->sortByDesc('activity_date')
+            ->sortByDesc('logbook_id')
+            ->values();
+
+        return view('student.logbook-all', compact(
+            'student',
+            'today',
+            'todayKey',
+            'planner',
+            'currentWeek',
+            'weeks',
+            'selected',
+            'search',
+            'review',
+            'counts',
+            'hasFilters',
+            'visibleLogbookIds',
+            'visibleLogbooks',
+            'supervisorAssigned',
+            'firstMondayKey',
+            'startKey',
+            'workingDaysCsv',
+            'entryDates'
+        ));
     }
 }

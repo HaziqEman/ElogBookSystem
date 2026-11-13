@@ -14,6 +14,45 @@ class LogbookPdfExportTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_student_logbook_page_searches_entries_without_internship_dates(): void
+    {
+        $lecturer = Lecturer::create([
+            'name' => 'Dr. Lee',
+            'email' => 'lee@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Computer Science',
+        ]);
+        $supervisor = Supervisor::create([
+            'name' => 'Company Supervisor',
+            'email' => 'supervisor@example.test',
+            'password' => Hash::make('password'),
+            'must_change_password' => false,
+        ]);
+        $student = $this->createStudent($lecturer, $supervisor, 'STU003');
+        $entry = Logbook::create([
+            'student_id' => $student->student_id,
+            'week_no' => 1,
+            'description' => 'Completed the assigned project work.',
+            'activity_date' => '2026-10-30',
+            'status' => 'Pending',
+        ]);
+        $this->actingAs($student, 'student')
+            ->get('/student/logbooks')
+            ->assertOk()
+            ->assertSee('onclick="openUniversityModal()"', false)
+            ->assertSee('id="universityModal"', false)
+            ->assertSee('action="/student/university"', false)
+            ->assertSee('Save &amp; Export PDF', false)
+            ->assertSee('Your internship dates have not been set yet')
+            ->assertSee('Completed the assigned project work.');
+
+        $this->get('/student/logbooks?search=project')
+            ->assertOk()
+            ->assertSee('Search entries, files or feedback')
+            ->assertSee('Matching entries')
+            ->assertSee('Completed the assigned project work.');
+    }
+
     public function test_student_lecturer_and_assigned_supervisor_can_export_logbooks(): void
     {
         $lecturer = Lecturer::create([

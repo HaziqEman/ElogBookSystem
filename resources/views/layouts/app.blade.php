@@ -99,7 +99,6 @@
                                     ['href' => '/student/calendar', 'icon' => 'fa-calendar-days', 'label' => 'Calendar', 'match' => ['student/calendar']],
                                     ['href' => '/student/attendance', 'icon' => 'fa-user-clock', 'label' => 'Attendance', 'match' => ['student/attendance', 'student/attendance/*']],
                                     ['href' => '/student/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['student/messages', 'student/messages/*']],
-                                    ['href' => '/student/feedback', 'icon' => 'fa-comments-dollar', 'label' => 'Supervisor Feedback', 'match' => ['student/feedback', 'student/feedback/*']],
                                 ];
                             } elseif (request()->is('lecturer*')) {
                                 $navItems = [

@@ -66,8 +66,10 @@ Route::middleware('auth:student')->group(function () {
     Route::post('/student/logbook/update/{id}', [StudentLogbookEditController::class, 'update'])->whereNumber('id');
     Route::post('/student/logbook/{logbook}/attachments/{attachment}/delete', [StudentLogbookEditController::class, 'destroyAttachment'])
         ->whereNumber(['logbook', 'attachment']);
-    Route::get('/student/logbook/delete/{id}', [LogbookController::class, 'destroy']);
-    Route::get('/student/feedback', [StudentController::class, 'feedback']);
+    Route::delete('/student/logbook/{id}', [LogbookController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('student.logbook.destroy');
+    Route::redirect('/student/feedback', '/student/logbooks');
 
     Route::get('/student/calendar', [StudentCalendarController::class, 'index']);
 
@@ -89,6 +91,7 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/student/dashboard/reminders', [StudentReminderController::class, 'index']);
     Route::post('/student/dashboard/working-days', [StudentScheduleController::class, 'update']);
 
+    Route::get('/student/university/export', [StudentUniversityController::class, 'exportForm']);
     Route::post('/student/university', [StudentUniversityController::class, 'update'])->middleware('throttle:10,1');
     Route::get('/student/university/search', [StudentUniversityController::class, 'search'])->middleware('throttle:30,1');
 });
@@ -197,6 +200,8 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/admin/reports', [App\Http\Controllers\ReportsController::class, 'index']);
     Route::get('/admin/reports/export/excel', [App\Http\Controllers\ReportsController::class, 'exportExcel']);
     Route::get('/admin/reports/export/pdf', [App\Http\Controllers\ReportsController::class, 'exportPdf']);
+    Route::get('/admin/reports/export/dashboard', [App\Http\Controllers\ReportsController::class, 'exportDashboard']);
+    Route::get('/admin/reports/export/csv/{type}', [App\Http\Controllers\ReportsController::class, 'exportCsv'])->whereIn('type', ['progress', 'marks', 'weekly', 'attention', 'lecturers', 'supervisors', 'companies']);
 });
 
 // Notifications for students, lecturers and company supervisors.
@@ -220,4 +225,3 @@ Route::get('/internal/run-reminders', [CronController::class, 'reminders'])->mid
 Route::get('/attendance/{id}/mc', [AttendanceMcController::class, 'show'])
     ->whereNumber('id')
     ->middleware('auth:student,lecturer,supervisor,admin');
-   

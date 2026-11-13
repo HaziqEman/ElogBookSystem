@@ -108,6 +108,14 @@ class StudentUniversityController extends Controller
         return redirect('/student/dashboard')->with('success', $notice);
     }
 
+    /** Full page with the University Information form, opened from "Export PDF". */
+    public function exportForm()
+    {
+        $student = Auth::guard('student')->user();
+
+        return view('student.university-export', compact('student'));
+    }
+
     /** "Did you mean...?" suggestions while the student types a new university name. */
     public function search(Request $request)
     {

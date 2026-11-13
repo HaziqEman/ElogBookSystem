@@ -30,20 +30,9 @@ document.addEventListener('keydown', function (event) {
 
     function byId(id) { return document.getElementById(id); }
 
-    // // Reminder banner: hidden for the rest of the day when closed.
-    // function applyBannerDismiss() {
-    //     var banner = byId('reminder-banner');
-    //     if (!banner) return;
-
-    //     try {
-    //         if (localStorage.getItem(banner.getAttribute('data-dismiss-key'))) banner.classList.add('hidden');
-    //     } catch (e) {}
-    // }
-
+ 
     // applyBannerDismiss();
-    // document.addEventListener('async:swapped', applyBannerDismiss);
-
-    // New entry form: week number and day checks.
+  
    
     var form = byId('logbook-form');
     var dateInput = form ? form.querySelector('input[name="activity_date"]') : null;
@@ -82,11 +71,7 @@ document.addEventListener('keydown', function (event) {
                 return 'This date is outside your internship weeks.';
             }
 
-            // var weekday = new Date(utc(value)).getUTCDay();
-            // var iso = weekday === 0 ? 7 : weekday;
-            // if (workingDays.indexOf(iso) === -1) {
-            //     return 'That day is not one of your working days. Your administrator sets your working days.';
-            // }
+
         
         }
 
@@ -256,18 +241,7 @@ document.addEventListener('keydown', function (event) {
         var target = event.target;
         if (!target || !target.closest) return;
 
-        // var close = target.closest('#reminder-close');
 
-        // if (close) {
-        //     var banner = byId('reminder-banner');
-
-        //     if (banner) {
-        //         banner.classList.add('hidden');
-        //         try { localStorage.setItem(banner.getAttribute('data-dismiss-key'), '1'); } catch (e) {}
-        //     }
-
-        //     return;
-        // }
 
         var write = target.closest('a[href="#new-entry"]');
 
@@ -598,15 +572,17 @@ document.addEventListener('keydown', function (event) {
         }
     });
 
-    // Calendar: click a day to see its items. Todo tabs: filter the list.
+    // Calendar and to-do card.
+    // Click a day: the day tab (right side) shows that day. Other tabs filter the task list.
     var calSelected = null;
-    var todoTab = 'all';
+    var todoTab = 'all';          // 'day' | 'all' | 'overdue' | 'upcoming'
 
     function applyCalendar(key) {
         var card = byId('calendar-card');
         if (!card) return;
 
-        var panels = card.querySelectorAll('[data-cal-panel]');
+        // The day panels live in the to-do card, so search the whole page.
+        var panels = document.querySelectorAll('[data-cal-panel]');
         var found = false;
 
         panels.forEach(function (panel) {
@@ -625,6 +601,14 @@ document.addEventListener('keydown', function (event) {
             button.classList.toggle('is-sel', on);
             button.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
+
+        // Keep the day tab label and count in step with the selected day.
+        var active = document.querySelector('[data-cal-panel="' + key + '"]');
+        var label = document.querySelector('[data-day-label]');
+        var count = document.querySelector('[data-day-count]');
+
+        if (active && label) label.textContent = active.getAttribute('data-cal-short');
+        if (active && count) count.textContent = active.getAttribute('data-cal-count');
     }
 
     function applyTodoTab(tab) {
@@ -632,10 +616,19 @@ document.addEventListener('keydown', function (event) {
         if (!card) return;
 
         if (tab) todoTab = tab;
+
+        var isDay = todoTab === 'day';
+        var filter = isDay ? 'all' : todoTab;
         var shown = 0;
 
+        // Day tab shows the day panels, every other tab shows the task list.
+        card.querySelectorAll('[data-todo-view]').forEach(function (view) {
+            var isDayView = view.getAttribute('data-todo-view') === 'day';
+            view.classList.toggle('hidden', isDayView !== isDay);
+        });
+
         card.querySelectorAll('[data-todo-row]').forEach(function (row) {
-            var show = todoTab === 'all' || row.getAttribute('data-state') === todoTab;
+            var show = filter === 'all' || row.getAttribute('data-state') === filter;
             row.classList.toggle('hidden', !show);
             if (show) shown++;
         });
@@ -658,7 +651,11 @@ document.addEventListener('keydown', function (event) {
         if (!target || !target.closest) return;
 
         var day = target.closest('[data-cal-day]');
-        if (day) { applyCalendar(day.getAttribute('data-cal-day')); return; }
+        if (day) {
+            applyCalendar(day.getAttribute('data-cal-day'));
+            applyTodoTab('day');
+            return;
+        }
 
         var tab = target.closest('[data-todo-tab]');
         if (tab) applyTodoTab(tab.getAttribute('data-todo-tab'));

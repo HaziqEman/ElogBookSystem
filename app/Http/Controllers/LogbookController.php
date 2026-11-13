@@ -193,11 +193,42 @@ class LogbookController extends Controller
             return redirect()->back()->withInput()->with('error', 'Failed to create log entry. Please try again.');        }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id, AttachmentStorage $storage)
     {
         $student = Auth::guard('student')->user();
-        $student->logbooks()->findOrFail($id)->delete();
+        $logbook = $student->logbooks()->with('attachments')->findOrFail($id);
 
-        return redirect('/student/logbooks')->with('success', 'Log entry removed.');
+        if (! $logbook->isEditableByStudent()) {
+            $message = 'This entry has been validated by your supervisor and can no longer be deleted.';
+
+            return $this->deleteReply($request, false, $message, 403);
+        }
+
+        try {
+            foreach ($logbook->attachments as $attachment) {
+                $storage->delete($attachment);
+            }
+
+            $logbook->delete();
+        } catch (\Throwable $e) {
+            Log::error('Logbook deletion failed: '.$e->getMessage(), [
+                'logbook_id' => $logbook->logbook_id,
+                'exception' => $e,
+            ]);
+
+            return $this->deleteReply($request, false, 'The logbook entry could not be deleted. Please try again.', 500);
+        }
+
+        return $this->deleteReply($request, true, 'Logbook entry deleted.');
+    }
+
+    private function deleteReply(Request $request, bool $success, string $message, int $status = 200)
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message], $status);
+        }
+
+        return redirect('/student/logbooks#logbook-week')
+            ->with($success ? 'success' : 'error', $message);
     }
 }
