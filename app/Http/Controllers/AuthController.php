@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
 use App\Models\Admin;
 use App\Models\Lecturer;
 use App\Models\Student;
@@ -14,12 +15,9 @@ use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $data = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+        $data = $request->validated();
 
         $email = trim($data['email']);
         $password = $data['password'];
