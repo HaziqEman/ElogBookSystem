@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Logbook;
+use App\Models\Lecturer;
+use App\Models\Supervisor;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+
+class Student extends Authenticatable
+{
+    protected $primaryKey = 'student_id';
+
+    protected $fillable = [
+        'lecturer_id',
+        'supervisor_id',
+        'matric_no',
+        'name',
+        'email',
+        'password',
+        'phone_no',
+        'course',
+        'university_id',
+        'organization_address',
+        'department',
+        'internship_start',
+        'internship_weeks',
+        'working_days',
+        'working_schedule',
+    ];
+
+    protected $hidden = [
+        'password'
+    ];
+
+    protected $casts = [
+        'internship_start' => 'date',
+    ];
+
+    public function lecturer()
+    {
+        return $this->belongsTo(
+            Lecturer::class,
+            'lecturer_id',
+            'lecturer_id'
+        );
+    }
+
+    public function university()
+    {
+        return $this->belongsTo(
+            University::class,
+            'university_id',
+            'university_id'
+        );
+    }
+
+    public function supervisor()
+    {
+        return $this->belongsTo(
+            Supervisor::class,
+            'supervisor_id',
+            'supervisor_id'
+        );
+    }
+
+    public function logbooks()
+    {
+        return $this->hasMany(
+            Logbook::class,
+            'student_id'
+        );
+    }
+
+    public function todos()
+    {
+        return $this->hasMany(Todo::class, 'student_id', 'student_id');
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class, 'student_id', 'student_id');
+    }
+}

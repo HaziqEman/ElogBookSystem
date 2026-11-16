@@ -7,10 +7,12 @@
     <summary
         class="flex cursor-pointer list-none items-center justify-between gap-3 px-7 py-5 [&::-webkit-details-marker]:hidden"
     >
-        <div>
-            <h2 class="text-xl font-extrabold">New logbook entry</h2>
-            <p class="mt-0.5 text-[13px] text-[#5B6478]">One entry per working day. Pick the day you
-                worked, write the work, and attach a file if you have one.</p>
+        <div class="flex items-center gap-3.5">
+            <span class="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-[#E8EFFF] text-[#1F45D6]"><i class="fa-solid fa-pen-to-square"></i></span>
+            <div>
+                <h2 class="text-xl font-extrabold">New logbook entry</h2>
+                <p class="mt-0.5 text-[13px] text-[#5B6478]">One entry per working day. Pick the day you worked, write the work, and attach a file if you have one.</p>
+            </div>
         </div>
         <span
             class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]"
@@ -222,7 +224,7 @@
                     href="{{ $fullLogbookPage ?? false ? request()->fullUrlWithQuery(['week' => $week['number']]) . '#logbook-week' : '/student/dashboard?week=' . $week['number'] . '#logbook-week' }}"
                     @if ($fullLogbookPage ?? false) data-live-nav @endif
                     title="{{ $statusText[$week['status']] }}"
-                    class="{{ $chipClass[$week['status']] }} {{ $week['number'] === $selected['number'] ? 'ring-2 ring-[#2F5BFF] ring-offset-2' : '' }} flex min-h-[42px] min-w-[52px] items-center justify-center rounded-xl px-3 text-sm font-extrabold transition"
+                    class="{{ $chipClass[$week['status']] }} {{ $week['number'] === $selected['number'] ? 'ring-2 ring-[#2F5BFF] ring-offset-2' : '' }} flex min-h-[42px] min-w-[52px] items-center justify-center rounded-full px-3 text-sm font-extrabold transition hover:-translate-y-0.5 hover:shadow-sm"
                 >W{{ $week['number'] }}</a>
             @endforeach
         </div>
@@ -259,7 +261,7 @@
                         data-working-day="{{ $number }}"
                         aria-pressed="{{ in_array($number, $planner->workingDays(), true) ? 'true' : 'false' }}"
                         title="{{ $number >= 6 ? ($number === 6 ? 'Saturday' : 'Sunday') . ' counts as day ' . $number . ' of your week' : '' }}"
-                        class="{{ in_array($number, $planner->workingDays(), true) ? 'border-[#2F5BFF] bg-[#E8EFFF] text-[#1F45D6]' : 'border-[#CBD3E3] bg-white text-[#334155] hover:border-[#9DB4FF]' }} min-h-[56px] w-full rounded-xl border-2 text-sm font-extrabold transition focus-visible:ring-2 focus-visible:ring-[#2F5BFF]/40 sm:min-h-[60px] sm:text-base"
+                        class="{{ in_array($number, $planner->workingDays(), true) ? 'border-[#2F5BFF] bg-[#E8EFFF] text-[#1F45D6]' : 'border-[#CBD3E3] bg-white text-[#334155] hover:border-[#9DB4FF]' }} min-h-[44px] w-full rounded-xl border-2 text-sm font-extrabold transition focus-visible:ring-2 focus-visible:ring-[#2F5BFF]/40 sm:min-h-[48px]"
                     >{{ $name }}</button>
                 @endforeach
             </div>
@@ -371,16 +373,20 @@
                                     ? 'bg-[#E0E7FF] text-[#3730A3]'
                                     : 'bg-[#FEF3C7] text-[#7C2D12]');
                         $isToday = $day['state'] === 'today';
-                        $rowClass = $isToday
-                            ? 'border-2 border-[#2F5BFF] bg-white'
-                            : ($day['state'] === 'upcoming'
-                                ? 'border border-[#E7ECF6] bg-[#F7F9FD]'
-                                : 'border border-[#E7ECF6] bg-[#FCFDFF]');
+                        $accent = match ($day['state']) {
+                            'done' => 'border-l-[5px] border-l-[#34D399]',
+                            'missing' => 'border-l-[5px] border-l-[#FB7185]',
+                            'dayoff' => 'border-l-[5px] border-l-[#FBBF24]',
+                            default => '',
+                        };
+                        $rowClass = ($isToday
+                            ? 'border-2 border-[#2F5BFF] bg-blue-50/40'
+                            : ($day['state'] === 'upcoming' ? 'border border-[#E7ECF6] bg-[#F7F9FD]' : 'border border-[#E7ECF6] bg-white')) . ' ' . $accent;
                     @endphp
                     <article
-                        class="{{ $rowClass }} flex flex-wrap items-start gap-5 rounded-[20px] p-[18px]"
+                        class="{{ $rowClass }} flex flex-wrap items-start gap-5 rounded-2xl p-4 transition hover:shadow-md sm:p-5"
                     >
-                        <div class="w-14 flex-none pt-1 text-center">
+                        <div class="w-16 flex-none rounded-2xl bg-slate-50 py-2 text-center ring-1 ring-slate-100">
                             <div class="text-xs font-extrabold tracking-wider text-[#5B6478]">
                                 {{ strtoupper($date->format('D')) }}</div>
                             <div class="text-[28px] font-extrabold leading-none">

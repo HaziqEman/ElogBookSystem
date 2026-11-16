@@ -80,6 +80,13 @@ class StudentAttendanceController extends Controller
             'accuracy' => 'nullable|numeric|min:0|max:1000000',
         ]);
 
+        if ($data['work_mode'] === 'Home') {
+            $data['location_status'] = 'unavailable';
+            $data['latitude'] = null;
+            $data['longitude'] = null;
+            $data['accuracy'] = null;
+        }
+
         try {
             $attendance = Attendance::firstOrNew([
                 'student_id' => $student->student_id,

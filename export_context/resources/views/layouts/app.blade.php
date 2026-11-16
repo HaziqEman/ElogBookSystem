@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="eLogBook">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="icon" href="{{ asset('pwa/icon-192.svg') }}" type="image/svg+xml">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>E-Logbook System</title>
+
+    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <script src="https://cdn.tailwindcss.com"></script>
+    @endif
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+    @php
+        $showDashboardShell = request()->is('student*') || request()->is('lecturer*') || request()->is('supervisor*') || request()->is('admin*');
+    @endphp
+
+    @if($showDashboardShell)
+        <div class="fixed inset-0 flex flex-col overflow-hidden">            {{-- Top simulator bar --}}
+            <div class="bg-slate-900 text-white px-3 md:px-4 py-2 flex flex-wrap justify-between items-center text-xs gap-2 shadow-inner shrink-0"
+                 style="padding-top: max(0.5rem, env(safe-area-inset-top)); padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));">
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('login.home') }}" title="Return to the login page to access another system module." class="bg-amber-500 text-slate-950 font-bold px-2 py-0.5 rounded-sm hover:bg-amber-400 transition cursor-pointer text-[11px] md:text-xs">PROPOSAL SIMULATOR</a>
+                    <p class="hidden sm:block">Click roles to switch portal views:</p>
+                </div>
+                <div class="flex flex-wrap gap-1.5 md:gap-2">
+                    <a href="{{ route('module.switch', ['role' => 'student']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('student*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Student<span class="hidden sm:inline"> Module</span></a>
+                    <a href="{{ route('module.switch', ['role' => 'lecturer']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('lecturer*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Lecturer<span class="hidden sm:inline"> Module</span></a>
+                    <a href="{{ route('module.switch', ['role' => 'supervisor']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('supervisor*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Supervisor<span class="hidden sm:inline"> Module</span></a>
+                    <a href="{{ route('module.switch', ['role' => 'admin']) }}" class="px-2 md:px-3 py-1 rounded font-semibold text-[11px] md:text-xs {{ request()->is('admin*') ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600' }} transition">Admin<span class="hidden sm:inline"> Module</span></a>
+                </div>
+            </div>
+
+            <div class="relative flex flex-1 min-h-0 overflow-hidden">
+                {{-- Dark overlay (phones only, shown when the drawer is open) --}}
+                <div id="sidebar-overlay" class="fixed inset-0 z-30 bg-slate-900/60 hidden md:hidden" aria-hidden="true"></div>
+
+                {{-- Sidebar: slide-out drawer on phones, fixed column on laptops --}}
+                <aside id="sidebar"
+                       class="fixed inset-y-0 left-0 z-40 w-64 max-w-[85vw] -translate-x-full transition-transform duration-200 ease-out md:static md:z-auto md:max-w-none md:translate-x-0 bg-gradient-to-b from-blue-900 to-indigo-950 text-white flex flex-col justify-between shrink-0 shadow-xl overflow-y-auto"
+                       style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);">
+                    <div>
+                        <div class="p-6 border-b border-blue-800/50 flex items-center gap-3">
+                            <div class="bg-white/10 p-2 rounded-lg text-blue-300">
+                                <i class="fa-solid fa-book-bookmark text-xl"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h1 class="font-bold tracking-wide leading-tight text-base uppercase text-white">Smart eLogBook</h1>
+                                <p class="text-[10px] text-blue-300 tracking-wider">INTERNSHIP MANAGEMENT SYSTEM</p>
+                            </div>
+                            <button type="button" id="sidebar-close" class="md:hidden shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-blue-200 hover:bg-white/10" aria-label="Close menu">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+
+                        @php
+                            $currentStudent = request()->is('student*') ? Auth::guard('student')->user() : null;
+                            $currentLecturer = request()->is('lecturer*') ? Auth::guard('lecturer')->user() : null;
+                            $currentSupervisor = request()->is('supervisor*') ? Auth::guard('supervisor')->user() : null;
+                            $currentAdmin = request()->is('admin*') ? Auth::guard('admin')->user() : null;
+
+                            $supervisorName = null;
+                            $industryName = null;
+
+                            if (request()->is('student*') && $currentStudent) {
+                                $displayName = $currentStudent->name;
+                                $roleLabel = 'Logged in as Student';
+                                $supervisorName = optional($currentStudent->lecturer)->name;
+                                $industryName = optional($currentStudent->supervisor)->name;
+                            } elseif (request()->is('lecturer*') && $currentLecturer) {
+                                $displayName = $currentLecturer->name;
+                                $roleLabel = 'Faculty Evaluator';
+                            } elseif (request()->is('supervisor*') && $currentSupervisor) {
+                                $displayName = $currentSupervisor->name;
+                                $roleLabel = 'Industry Supervisor';
+                            } elseif (request()->is('admin*') && $currentAdmin) {
+                                $displayName = $currentAdmin->name ?? 'System Administrator';
+                                $roleLabel = 'System Administrator';
+                            } else {
+                                $displayName = 'System User';
+                                $roleLabel = 'Guest';
+                            }
+
+                            // Menu for the current role. "match" lists every page that should light up the link.
+                            if (request()->is('student*')) {
+                                $navItems = [
+                                    ['href' => '/student/dashboard', 'icon' => 'fa-house', 'label' => 'Dashboard', 'match' => ['student/dashboard']],
+                                    ['href' => '/student/logbooks', 'icon' => 'fa-book', 'label' => 'Logbook', 'match' => ['student/logbooks', 'student/logbook/*']],
+                                    ['href' => '/student/calendar', 'icon' => 'fa-calendar-days', 'label' => 'Calendar', 'match' => ['student/calendar']],
+                                    ['href' => '/student/attendance', 'icon' => 'fa-user-clock', 'label' => 'Attendance', 'match' => ['student/attendance', 'student/attendance/*']],
+                                    ['href' => '/student/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['student/messages', 'student/messages/*']],
+                                    ['href' => '/student/feedback', 'icon' => 'fa-comments-dollar', 'label' => 'Supervisor Feedback', 'match' => ['student/feedback', 'student/feedback/*']],
+                                ];
+                            } elseif (request()->is('lecturer*')) {
+                                $navItems = [
+                                    ['href' => '/lecturer/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Dashboard', 'match' => ['lecturer/dashboard', 'lecturer/students/*', 'lecturer/logbook', 'lecturer/logbook/*']],
+                                    ['href' => '/lecturer/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['lecturer/messages', 'lecturer/messages/*']],
+                                    ['href' => '/lecturer/evaluations', 'icon' => 'fa-clipboard-check', 'label' => 'Supervisor Marks', 'match' => ['lecturer/evaluations', 'lecturer/evaluations/*']],
+                                ];
+                                } elseif (request()->is('supervisor*')) {
+                                    $navItems = [
+                                        ['href' => '/supervisor/dashboard', 'icon' => 'fa-gauge-high', 'label' => 'Supervisor Dashboard', 'match' => ['supervisor/dashboard', 'supervisor/logbook', 'supervisor/logbook/*', 'supervisor/students/*', 'supervisor/weeks/*']],
+                                        ['href' => '/supervisor/tasks', 'icon' => 'fa-list-check', 'label' => 'Tasks', 'match' => ['supervisor/tasks', 'supervisor/tasks/*']],
+                                        ['href' => '/supervisor/messages', 'icon' => 'fa-comments', 'label' => 'Messages', 'match' => ['supervisor/messages', 'supervisor/messages/*']],
+                                        ['href' => '/supervisor/password', 'icon' => 'fa-key', 'label' => 'Change Password', 'match' => ['supervisor/password']],
+                                    ];
+                                } else {
+                                $navItems = [
+                                    ['href' => '/admin/dashboard', 'icon' => 'fa-sliders', 'label' => 'System Overview', 'match' => ['admin/dashboard']],
+                                    ['href' => '/admin/students', 'icon' => 'fa-file-invoice', 'label' => 'Manage Students', 'match' => ['admin/students', 'admin/students/*']],
+                                    ['href' => '/admin/lecturers', 'icon' => 'fa-user-tie', 'label' => 'Manage Lecturers', 'match' => ['admin/lecturers', 'admin/lecturers/*']],
+                                    ['href' => '/admin/supervisors', 'icon' => 'fa-building-user', 'label' => 'Manage Supervisors', 'match' => ['admin/supervisors', 'admin/supervisors/*']],
+                                    ['href' => '/admin/reports', 'icon' => 'fa-chart-line', 'label' => 'Reports', 'match' => ['admin/reports', 'admin/reports/*']],
+                                    ['href' => '/admin/universities', 'icon' => 'fa-building-columns', 'label' => 'Universities', 'match' => ['admin/universities', 'admin/universities/*']],
+                                    ['href' => '/admin/evaluations', 'icon' => 'fa-clipboard-check', 'label' => 'Supervisor Marks', 'match' => ['admin/evaluations', 'admin/evaluations/*']],
+                                ];
+                            }
+
+                            $navBase = 'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium text-sm text-left transition';
+                            $navActive = 'bg-blue-800/60 text-white';
+                            $navIdle = 'text-blue-200 hover:bg-white/5 hover:text-white';
+                        @endphp
+
+                        <div class="p-4 mx-3 my-4 bg-white/5 rounded-xl border border-white/5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 shrink-0 rounded-full bg-blue-500 flex items-center justify-center font-bold text-sm border-2 border-blue-400">
+                                    {{ strtoupper(substr($displayName ?? 'S', 0, 1)) }}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs text-blue-200">{{ $roleLabel }}</p>
+                                    <h4 class="font-semibold text-sm truncate">{{ $displayName }}</h4>
+                                </div>
+                            </div>
+                            @if(request()->is('student*') && $supervisorName)
+                                <div class="rounded-xl bg-white/10 p-3 text-sm text-slate-200">
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Faculty Evaluator</p>
+                                    <p class="mt-1 font-semibold">{{ $supervisorName }}</p>
+                                </div>
+                            @endif
+                            @if(request()->is('student*') && $industryName)
+                                <div class="mt-2 rounded-xl bg-white/10 p-3 text-sm text-slate-200">
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Industry Supervisor</p>
+                                    <p class="mt-1 font-semibold">{{ $industryName }}</p>
+                                </div>
+                            @endif
+                            @if(request()->is('supervisor*') && $currentSupervisor && $currentSupervisor->company_name)
+                                <div class="rounded-xl bg-white/10 p-3 text-sm text-slate-200">
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Company</p>
+                                    <p class="mt-1 font-semibold">{{ $currentSupervisor->company_name }}</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <nav class="px-3 space-y-1">
+                            @foreach($navItems as $item)
+                                @php $isActive = request()->is(...\Illuminate\Support\Arr::flatten($item['match'])); @endphp
+                                <a href="{{ $item['href'] }}"
+                                   class="{{ $navBase }} {{ $isActive ? $navActive : $navIdle }}"
+                                   @if($isActive) aria-current="page" @endif>
+                                    <i class="fa-solid {{ $item['icon'] }} w-5"></i> {{ $item['label'] }}
+                                </a>
+                            @endforeach
+                            <a href="/logout" class="{{ $navBase }} {{ $navIdle }}">
+                                <i class="fa-solid fa-arrow-right-from-bracket w-5"></i> Log Out
+                            </a>
+                        </nav>
+                    </div>
+
+                    <div class="p-4 border-t border-blue-900/60 text-xs text-blue-300/60 flex justify-between items-center">
+                        <span>v2.5 Full-Routing</span>
+                        <i class="fa-solid fa-circle text-emerald-400 text-[8px] animate-pulse"></i>
+                    </div>
+                </aside>
+
+                <main class="flex-1 min-w-0 flex flex-col overflow-y-auto overflow-x-hidden">
+                    <header class="bg-white border-b border-slate-200 h-14 md:h-16 flex items-center justify-between gap-3 px-4 md:px-8 shrink-0 shadow-xs">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <button type="button" id="sidebar-toggle" class="md:hidden shrink-0 w-10 h-10 flex items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+                                <i class="fa-solid fa-bars text-lg"></i>
+                            </button>
+                            <h2 class="text-sm md:text-lg font-bold text-slate-800 tracking-tight truncate">
+                                @if(request()->is('student*'))
+                                    UITM E-LOGBOOK PORTAL > Student Portal
+                                @elseif(request()->is('lecturer*'))
+                                    UITM E-LOGBOOK PORTAL > Lecturer Panel
+                                @elseif(request()->is('supervisor*'))
+                                    UITM E-LOGBOOK PORTAL > Supervisor Panel
+                                @else
+                                    UITM E-LOGBOOK PORTAL > Admin Console
+                                @endif
+                            </h2>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            @if(request()->is('student*') || request()->is('lecturer*') || request()->is('supervisor*'))
+                                @php $notifRole = request()->segment(1); @endphp
+                                <a href="/{{ $notifRole }}/notifications" id="notif-bell" data-count-url="/{{ $notifRole }}/notifications/unread-count" aria-label="Notifications" class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100">
+                                    <i class="fa-solid fa-bell text-lg"></i>
+                                    <span id="notif-badge" class="absolute -right-0.5 -top-0.5 hidden min-w-[18px] rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-[18px] text-white">0</span>
+                                </a>
+                                <script>
+                                    (function () {
+                                        var bell = document.getElementById('notif-bell');
+                                        var badge = document.getElementById('notif-badge');
+                                        if (!bell || !badge) return;
+
+                                        function refresh() {
+                                            fetch(bell.getAttribute('data-count-url'), {
+                                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                                                credentials: 'same-origin'
+                                            })
+                                                .then(function (r) { return r.ok ? r.json() : null; })
+                                                .then(function (d) {
+                                                    if (!d) return;
+                                                    var n = parseInt(d.count, 10) || 0;
+                                                    badge.textContent = n > 99 ? '99+' : n;
+                                                    badge.classList.toggle('hidden', n === 0);
+                                                })
+                                                .catch(function () {});
+                                        }
+
+                                        refresh();
+                                        setInterval(refresh, 60000);
+                                        document.addEventListener('visibilitychange', function () {
+                                            if (!document.hidden) refresh();
+                                        });
+                                    })();
+                                </script>
+                            @endif
+                            <span class="hidden md:inline-flex text-xs bg-slate-100 text-slate-600 px-3 py-1.5 font-mono rounded-lg border border-slate-200">
+                                @if(request()->is('student*'))
+                                    Student > Dashboard
+                                @elseif(request()->is('lecturer*'))
+                                    Lecturer > Review
+                                @elseif(request()->is('supervisor*'))
+                                    Supervisor > Validate
+                                @else
+                                    Admin > Overview
+                                @endif
+                            </span>
+                        </div>
+                    </header>
+
+                    <div class="p-4 md:p-8 max-w-7xl w-full mx-auto flex-1" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+
+                        @yield('content')
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+                var sidebar = document.getElementById('sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var openBtn = document.getElementById('sidebar-toggle');
+                var closeBtn = document.getElementById('sidebar-close');
+                if (!sidebar || !overlay || !openBtn) return;
+
+                function openMenu() {
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.remove('hidden');
+                    openBtn.setAttribute('aria-expanded', 'true');
+                }
+
+                function closeMenu() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                    openBtn.setAttribute('aria-expanded', 'false');
+                }
+
+                openBtn.addEventListener('click', openMenu);
+                overlay.addEventListener('click', closeMenu);
+                if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+
+                sidebar.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', closeMenu);
+                });
+
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') closeMenu();
+                });
+
+                window.addEventListener('resize', function () {
+                    if (window.innerWidth >= 768) closeMenu();
+                });
+            })();
+        </script>
+    @else
+        <div class="min-h-screen">
+            @yield('content')
+        </div>
+    @endif
+</body>
+</html>
