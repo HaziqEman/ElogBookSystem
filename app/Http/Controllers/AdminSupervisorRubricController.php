@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\SupervisorRubricTemplateExport;
+use App\Http\Requests\ImportSupervisorRubricRequest;
 use App\Imports\SupervisorRubricImport;
 use App\Services\SupervisorRubricService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -28,15 +28,9 @@ class AdminSupervisorRubricController extends Controller
         );
     }
 
-    public function import(Request $request, SupervisorRubricService $rubrics)
+    public function import(ImportSupervisorRubricRequest $request, SupervisorRubricService $rubrics)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
-        ], [
-            'file.required' => 'Choose an Excel or CSV file first.',
-            'file.mimes' => 'Upload an .xlsx, .xls, or .csv file.',
-            'file.max' => 'The file must be 5 MB or smaller.',
-        ]);
+        $request->validated();
 
         $connection = DB::connection();
         $schema = $connection->getSchemaBuilder();

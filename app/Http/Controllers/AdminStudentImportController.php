@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exports\StudentsTemplateExport;
+use App\Http\Requests\ImportStudentFileRequest;
 use App\Imports\StudentsImport;
-use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AdminStudentImportController extends Controller
@@ -19,15 +19,9 @@ class AdminStudentImportController extends Controller
         return Excel::download(new StudentsTemplateExport(), 'students-import-template.xlsx');
     }
 
-    public function store(Request $request)
+    public function store(ImportStudentFileRequest $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:5120',
-        ], [
-            'file.required' => 'Choose an Excel or CSV file first.',
-            'file.mimes' => 'The file must be .xlsx, .xls or .csv.',
-            'file.max' => 'The file is too large (max 5 MB).',
-        ]);
+        $request->validated();
 
         @set_time_limit(300);
 

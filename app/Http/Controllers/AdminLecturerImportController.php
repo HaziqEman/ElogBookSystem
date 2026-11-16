@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exports\LecturersTemplateExport;
+use App\Http\Requests\ImportLecturerFileRequest;
 use App\Imports\LecturersImport;
-use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AdminLecturerImportController extends Controller
@@ -19,15 +19,9 @@ class AdminLecturerImportController extends Controller
         return Excel::download(new LecturersTemplateExport(), 'lecturers-import-template.xlsx');
     }
 
-    public function store(Request $request)
+    public function store(ImportLecturerFileRequest $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:5120',
-        ], [
-            'file.required' => 'Choose an Excel or CSV file first.',
-            'file.mimes' => 'The file must be .xlsx, .xls or .csv.',
-            'file.max' => 'The file is too large (max 5 MB).',
-        ]);
+        $request->validated();
 
         @set_time_limit(300);
 
