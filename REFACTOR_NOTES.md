@@ -50,6 +50,7 @@
 - The baseline failures expose test/setup and route expectations that do not consistently match current authorization and supervisor-review behavior. Do not weaken authorization or invent lecturer review behavior just to satisfy those tests.
 - Review generated exports, deployment host references, and the large Blade templates manually before deleting or moving code.
 - Avoid migrations unless a fresh-schema failure confirms the missing field is required; do not edit deployed migrations.
+- The `Attendance` model's active clock, duration, location URL, and label helpers remain on the model. They are used across multiple services and role-specific views; extracting them safely needs a shared attendance view-data design and broader characterization.
 
 ## Confirmed bugs fixed separately
 
@@ -206,3 +207,11 @@
 - Scanned references for 18 models, 19 Form Requests, 21 services, and 37 controllers across app code, routes, resources, tests, config, scripts, and database code. No class with zero external references was found.
 - Compared public controller methods with route actions and textual call sites; no unreferenced controller method was identified. There is no `app/Jobs` directory.
 - Route/view/asset candidate deletion is limited to the export route/action and the legacy chat-client view above. No model, Form Request, service, job, or asset is deleted in this phase.
+
+## Phase 4: Fat model review
+
+- Of the 18 models, only `app/Models/Attendance.php` exceeded approximately 150 lines (186 lines before this phase).
+- Added characterization tests for local time conversion, completed/incomplete work duration, day-off and work-mode labels, MC attachment metadata, and location URL generation. These passed against the pre-refactor model before the change.
+- Removed the unused `historyNote()` method; no call site existed in app code, views, routes, tests, or other project files. Added explicit `BelongsTo` and `HasOne` return types to the model's relationships.
+- Kept the remaining attendance methods: they are side-effect-free derived values/labels used across controllers, services, and several role-specific views, rather than workflows. Moving them would require adding view-data plumbing across those existing contexts; there is no existing shared attendance presentation service. This broader extraction is deferred under "Needs human review" rather than introducing a new abstraction or changing rendered behavior.
+- No migration, relationship name, or stored value was changed.

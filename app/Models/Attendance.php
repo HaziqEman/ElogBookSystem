@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Attendance extends Model
 {
@@ -50,12 +51,12 @@ class Attendance extends Model
         'location_accuracy' => 'integer',
     ];
 
-    public function student()
+    public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id', 'student_id');
     }
 
-    public function file()
+    public function file(): HasOne
     {
         return $this->hasOne(AttendanceFile::class, 'attendance_id', 'attendance_id');
     }
@@ -162,25 +163,4 @@ class Attendance extends Model
         return 'https://www.openstreetmap.org/?mlat='.$this->latitude.'&mlon='.$this->longitude.'#map=17/'.$this->latitude.'/'.$this->longitude;
     }
 
-    /** One line for the attendance history table. */
-    public function historyNote(): string
-    {
-        if ($this->isDayOff()) {
-            return $this->note ?: '-';
-        }
-
-        $parts = [];
-
-        if ($this->workModeLabel()) {
-            $parts[] = $this->workModeLabel();
-        }
-
-        if ($this->location_status === 'shared' && $this->location_name) {
-            $parts[] = Str::limit($this->location_name, 60);
-        } elseif ($this->location_status && $this->location_status !== 'shared') {
-            $parts[] = 'Location not shared';
-        }
-
-        return $parts ? implode(' - ', $parts) : '-';
-    }
 }
