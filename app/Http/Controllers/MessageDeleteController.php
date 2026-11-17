@@ -26,7 +26,6 @@ class MessageDeleteController extends Controller
         }
 
         $message->update([$actor['flag'] => true]);
-        app(ChatUploader::class)->destroy($message);
 
         return response()->json(['success' => true]);
     }
@@ -56,6 +55,7 @@ class MessageDeleteController extends Controller
             'deleted_for_supervisor' => true,
         ]);
 
+        app(ChatUploader::class)->destroy($message);
         broadcast(new MessageDeleted($message))->toOthers();
 
         return response()->json(['success' => true]);

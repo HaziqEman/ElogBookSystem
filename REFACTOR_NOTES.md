@@ -59,6 +59,7 @@
 - Fresh attendance schemas lacked the fields written by clock-in/day-off flows and had no `attendance_files` table, causing those writes to fail. Added additive migration `2026_11_17_000003_add_student_attendance_detail_support.php`; existing migrations were not edited.
 - Attendance date lookups used exact string equality against date-cast values, causing duplicate clock-ins, clock-outs, and day-off conflicts to fail on SQLite. Updated the attendance controller's date filters to use date-aware comparisons and added focused regression coverage.
 - Fresh message schemas lacked the `type` and attachment metadata columns used by chat message creation. Added additive migration `2026_11_17_000004_add_chat_attachment_support_to_messages.php`; existing migrations were not edited.
+- Deleting a chat message only for yourself incorrectly removed its shared Cloudinary attachment, while delete-for-everyone left the asset behind. Moved attachment cleanup to the delete-for-everyone path and added regression tests.
 
 ## Cleanup completed
 
