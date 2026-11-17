@@ -9,6 +9,9 @@ use App\Models\Attendance;
 use App\Models\Student;
 use App\Services\StudentAttendanceService;
 use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -16,13 +19,18 @@ use Illuminate\Validation\ValidationException;
 
 class StudentAttendanceController extends Controller
 {
-    protected function student()
+    protected function student(): Student
     {
         return Auth::guard('student')->user();
     }
 
     /** JSON for the async forms, a normal redirect for everything else. */
-    protected function reply(Request $request, bool $ok, string $message, int $failStatus = 422)
+    protected function reply(
+        Request $request,
+        bool $ok,
+        string $message,
+        int $failStatus = 422
+    ): JsonResponse|RedirectResponse
     {
         if ($request->wantsJson()) {
             return response()->json(['message' => $message], $ok ? 200 : $failStatus);
@@ -31,7 +39,7 @@ class StudentAttendanceController extends Controller
         return back()->with($ok ? 'success' : 'error', $message);
     }
 
-    public function index(StudentAttendanceService $attendanceService)
+    public function index(StudentAttendanceService $attendanceService): View
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE);
@@ -40,7 +48,10 @@ class StudentAttendanceController extends Controller
         return view('student.attendance', array_merge(['student' => $student, 'today' => $today], $data));
     }
 
-    public function clockIn(ClockInRequest $request, StudentAttendanceService $attendanceService)
+    public function clockIn(
+        ClockInRequest $request,
+        StudentAttendanceService $attendanceService
+    ): JsonResponse|RedirectResponse
     {
         $student = $this->student();
         $todayDate = Carbon::now(Attendance::TIMEZONE)->toDateString();
@@ -57,7 +68,10 @@ class StudentAttendanceController extends Controller
         return $this->reply($request, $result['ok'], $result['message']);
     }
 
-    public function clockOut(Request $request, StudentAttendanceService $attendanceService)
+    public function clockOut(
+        Request $request,
+        StudentAttendanceService $attendanceService
+    ): JsonResponse|RedirectResponse
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
@@ -73,7 +87,10 @@ class StudentAttendanceController extends Controller
         return $this->reply($request, $result['ok'], $result['message']);
     }
 
-    public function dayOff(StudentDayOffRequest $request, StudentAttendanceService $attendanceService)
+    public function dayOff(
+        StudentDayOffRequest $request,
+        StudentAttendanceService $attendanceService
+    ): JsonResponse|RedirectResponse
     {
         $student = $this->student();
         $data = $request->validated();
@@ -99,7 +116,11 @@ class StudentAttendanceController extends Controller
         );
     }
 
-    public function cancelDayOff(Request $request, string $id, StudentAttendanceService $attendanceService)
+    public function cancelDayOff(
+        Request $request,
+        string $id,
+        StudentAttendanceService $attendanceService
+    ): JsonResponse|RedirectResponse
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
