@@ -111,4 +111,12 @@
 - Moved weekly page data, AI-summary preparation, review persistence, and week-navigation queries into `SupervisorWeekService`. Supervisor ownership checks remain in the controller.
 - Added parameter and response types to the controller.
 - Verification after this controller: **61 tests, 61 passed, 270 assertions**; Pint and level-5 PHPStan passed.
-- Next controllers remain in the requested order: `AdminController`, then `ChatController`/`MessageDeleteController`.
+- Next controller: `AdminController`, followed by `ChatController`/`MessageDeleteController`.
+
+## Controller follow-up: AdminController
+
+- Added coverage for dashboard review workload, overdue reviews, supervisor workload, and entries that cannot be reviewed because no supervisor is assigned.
+- Moved dashboard queries, calculations, and attention summaries into `AdminDashboardService`. No validation or authorization behavior was changed.
+- Added return and parameter types to the controller and extracted service helpers.
+- Verification after this controller: **62 tests, 62 passed, 277 assertions**; Pint and level-5 PHPStan passed.
+- Next controller: `ChatController` and `MessageDeleteController`.
