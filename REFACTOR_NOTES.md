@@ -31,6 +31,7 @@
 - `AdminController` contains dashboard queries and summary calculations. `StudentAttendanceController` has multiple stateful flows and validation in long methods. `SupervisorWeekController` combines weekly loading, summaries, and review flows. Add focused tests before restructuring these.
 - Similar role/participant helper logic exists in `ChatController` and `MessageDeleteController`; compare edge cases before consolidating.
 - Several methods are substantially longer than 20–30 lines and/or contain nested branching, especially controller bulk actions, student attendance, and weekly supervisor review.
+- Supervisor review validation now lives in `SupervisorReviewRequest`; focused tests lock in accepted decisions and the revision-comment requirement.
 
 ### 3. Query and view review
 
@@ -54,3 +55,9 @@
 
 - Fresh databases lacked `logbooks.supervisor_status`, causing dashboard queries to fail.
 - Admin dashboard analytics crashed when a student had no internship start date.
+
+## Cleanup completed
+
+- Applied Pint to application code, config, routes, scripts, tests, factories, and seeders. Existing migrations and the duplicated `export_context` snapshot were deliberately excluded.
+- Extracted supervisor review validation into a Form Request with unchanged rules and error text.
+- Verification after cleanup: **35 tests, 35 passed, 155 assertions**; Pint check passed on changed supervisor-review files.

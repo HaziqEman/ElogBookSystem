@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Supervisor\SupervisorReviewRequest;
 use App\Models\Feedback;
 use App\Models\Logbook;
 use App\Services\NotificationService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -45,17 +45,11 @@ class SupervisorReviewController extends Controller
         return view('supervisor.review', compact('logbook'));
     }
 
-    public function store(Request $request, $id)
+    public function store(SupervisorReviewRequest $request, $id)
     {
         $logbook = $this->ownedQuery()->findOrFail($id);
         $supervisor = Auth::guard('supervisor')->user();
-
-        $data = $request->validate([
-            'decision' => 'required|in:Validated,Revision Requested',
-            'comment' => 'required_if:decision,Revision Requested|nullable|string|max:2000',
-        ], [
-            'comment.required_if' => 'Please write what the student needs to change before requesting a revision.',
-        ]);
+        $data = $request->validated();
 
         try {
             DB::transaction(function () use ($logbook, $supervisor, $data) {
