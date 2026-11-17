@@ -6,11 +6,17 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\ChatService;
 use App\Services\ChatUploader;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MessageDeleteController extends Controller
 {
-    public function deleteForMe(Request $request, $conversationId, $messageId, ChatService $chat)
+    public function deleteForMe(
+        Request $request,
+        int|string $conversationId,
+        int|string $messageId,
+        ChatService $chat
+    ): JsonResponse
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
 
@@ -29,11 +35,11 @@ class MessageDeleteController extends Controller
 
     public function deleteForEveryone(
         Request $request,
-        $conversationId,
-        $messageId,
+        int|string $conversationId,
+        int|string $messageId,
         ChatService $chat,
         ChatUploader $uploader
-    )
+    ): JsonResponse
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
 

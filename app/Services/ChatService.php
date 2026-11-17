@@ -16,7 +16,15 @@ use Illuminate\Support\Facades\Auth;
 
 class ChatService
 {
-    public function send(Request $request, Conversation $conversation, array $participant, ChatUploader $uploader): JsonResponse
+    /**
+     * @param array{user: Student|Lecturer|Supervisor, type: string, id: int, flag: string} $participant
+     */
+    public function send(
+        Request $request,
+        Conversation $conversation,
+        array $participant,
+        ChatUploader $uploader
+    ): JsonResponse
     {
         $text = trim((string) $request->input('message', ''));
         $file = $request->file('attachment');

@@ -6,6 +6,7 @@ use App\Http\Requests\ChatMessageRequest;
 use App\Models\Conversation;
 use App\Services\ChatService;
 use App\Services\ChatUploader;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
@@ -15,7 +16,12 @@ use Illuminate\Http\Request;
 class ChatController extends Controller
 {
     /** POST /conversations/{conversation}/messages  (text and/or one attachment) */
-    public function store(Request $request, ChatUploader $uploader, $conversationId, ChatService $chat)
+    public function store(
+        Request $request,
+        ChatUploader $uploader,
+        int|string $conversationId,
+        ChatService $chat
+    ): JsonResponse
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
         $participant = $chat->participant($conversation, $chat->roleFromUrl($request)) ?? abort(403);
@@ -26,7 +32,7 @@ class ChatController extends Controller
     }
 
     /** GET /conversations/{conversation}/messages?after=ID  -> anything missed while the PWA was asleep / offline */
-    public function since(Request $request, $conversationId, ChatService $chat)
+    public function since(Request $request, int|string $conversationId, ChatService $chat): JsonResponse
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
         $participant = $chat->participant($conversation, $chat->roleFromUrl($request)) ?? abort(403);
@@ -35,7 +41,7 @@ class ChatController extends Controller
     }
 
     /** POST /conversations/{conversation}/read  -> marks the other person's messages as read and tells them */
-    public function read(Request $request, $conversationId, ChatService $chat)
+    public function read(Request $request, int|string $conversationId, ChatService $chat): JsonResponse
     {
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
         $participant = $chat->participant($conversation, $chat->roleFromUrl($request)) ?? abort(403);
