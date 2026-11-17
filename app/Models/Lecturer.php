@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lecturer extends Authenticatable
 {
@@ -19,7 +20,7 @@ class Lecturer extends Authenticatable
         'password',
     ];
 
-    public function students()
+    public function students(): HasMany
     {
         return $this->hasMany(Student::class, 'lecturer_id', 'lecturer_id');
     }

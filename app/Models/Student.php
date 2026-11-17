@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Student extends Authenticatable
 {
@@ -34,7 +36,7 @@ class Student extends Authenticatable
         'internship_start' => 'date',
     ];
 
-    public function lecturer()
+    public function lecturer(): BelongsTo
     {
         return $this->belongsTo(
             Lecturer::class,
@@ -43,7 +45,7 @@ class Student extends Authenticatable
         );
     }
 
-    public function university()
+    public function university(): BelongsTo
     {
         return $this->belongsTo(
             University::class,
@@ -52,7 +54,7 @@ class Student extends Authenticatable
         );
     }
 
-    public function supervisor()
+    public function supervisor(): BelongsTo
     {
         return $this->belongsTo(
             Supervisor::class,
@@ -61,7 +63,7 @@ class Student extends Authenticatable
         );
     }
 
-    public function logbooks()
+    public function logbooks(): HasMany
     {
         return $this->hasMany(
             Logbook::class,
@@ -69,12 +71,12 @@ class Student extends Authenticatable
         );
     }
 
-    public function todos()
+    public function todos(): HasMany
     {
         return $this->hasMany(Todo::class, 'student_id', 'student_id');
     }
 
-    public function attendances()
+    public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class, 'student_id', 'student_id');
     }

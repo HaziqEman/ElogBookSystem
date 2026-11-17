@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supervisor extends Authenticatable
 {
@@ -29,7 +30,7 @@ class Supervisor extends Authenticatable
         'must_change_password' => 'boolean',
     ];
 
-    public function students()
+    public function students(): HasMany
     {
         return $this->hasMany(Student::class, 'supervisor_id', 'supervisor_id');
     }
