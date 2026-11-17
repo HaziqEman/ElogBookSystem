@@ -142,6 +142,10 @@ class AdminController extends Controller
             ->withMax('logbooks', 'created_at')
             ->get()
             ->filter(function ($student) use ($today) {
+                if (! $student->internship_start) {
+                    return false;
+                }
+
                 $start = $student->internship_start->copy()->startOfDay();
                 $end = $start->copy()->addWeeks(max(1, (int) ($student->internship_weeks ?: 14)));
 

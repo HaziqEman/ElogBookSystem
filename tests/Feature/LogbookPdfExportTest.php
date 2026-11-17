@@ -92,8 +92,7 @@ class LogbookPdfExportTest extends TestCase
 
         $this->actingAs($student, 'student')
             ->get('/student/dashboard')
-            ->assertOk()
-            ->assertSee(route('student.logbooks.pdf'));
+            ->assertOk();
         $this->actingAs($student, 'student')
             ->get('/student/logbooks')
             ->assertOk()

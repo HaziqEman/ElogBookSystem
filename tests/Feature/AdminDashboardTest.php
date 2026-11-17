@@ -15,7 +15,7 @@ class AdminDashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_dashboard_renders_enhanced_analytics_sections(): void
+    public function test_admin_dashboard_renders_current_overview_sections(): void
     {
         $lecturer = Lecturer::create([
             'name' => 'Dr. Ali',
@@ -59,11 +59,8 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($admin, 'admin')->get('/admin/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('Logbook Analytics');
-        $response->assertSee('Recent Logbook Activity');
-        $response->assertSee('Student Insights');
-        $response->assertSee('Lecturer Insights');
-        $response->assertSee('Quick Actions');
-        $response->assertSee('System Information');
+        $response->assertSee('Review status');
+        $response->assertSee('Logbook entries, last 6 months');
+        $response->assertSee('Latest logbook entries');
     }
 }

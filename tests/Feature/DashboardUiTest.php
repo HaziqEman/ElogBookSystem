@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Lecturer;
 use App\Models\Logbook;
 use App\Models\Student;
+use App\Models\Supervisor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -15,12 +16,28 @@ class DashboardUiTest extends TestCase
 
     public function test_student_dashboard_renders_new_portal_shell(): void
     {
-        $response = $this->get('/student/dashboard');
+        $lecturer = Lecturer::create([
+            'name' => 'Dr. Lee',
+            'email' => 'lee@example.com',
+            'password' => Hash::make('password123'),
+            'faculty' => 'Computer Science',
+        ]);
+        $student = Student::create([
+            'lecturer_id' => $lecturer->lecturer_id,
+            'matric_no' => '20240000',
+            'name' => 'Test Student',
+            'email' => 'student@example.com',
+            'password' => Hash::make('password123'),
+            'phone_no' => '0123456789',
+            'course' => 'ITT626',
+        ]);
+
+        $response = $this->actingAs($student, 'student')->get('/student/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('Smart eLogBook');
         $response->assertSee('Student Portal');
-        $response->assertSee('Logbook Entries');
+        $response->assertSee('Logbook entries');
     }
 
     public function test_guest_auth_pages_render_without_dashboard_shell(): void
@@ -44,9 +61,16 @@ class DashboardUiTest extends TestCase
             'password' => Hash::make('password123'),
             'faculty' => 'Computer Science',
         ]);
+        $supervisor = Supervisor::create([
+            'name' => 'Company Supervisor',
+            'email' => 'supervisor@example.com',
+            'password' => Hash::make('password123'),
+            'must_change_password' => false,
+        ]);
 
         $assignedStudent = Student::create([
             'lecturer_id' => $lecturer->lecturer_id,
+            'supervisor_id' => $supervisor->supervisor_id,
             'matric_no' => '20240001',
             'name' => 'Aina Aziz',
             'email' => 'aina@example.com',
@@ -70,8 +94,9 @@ class DashboardUiTest extends TestCase
             'week_no' => 1,
             'title' => 'Week 1',
             'description' => 'Submitted weekly report',
-            'activity_date' => now()->toDateString(),
+            'activity_date' => now()->subWeek()->toDateString(),
             'status' => 'Pending',
+            'supervisor_status' => 'Pending',
         ]);
 
         Logbook::create([
@@ -86,14 +111,14 @@ class DashboardUiTest extends TestCase
         $response = $this->actingAs($lecturer, 'lecturer')->get('/lecturer/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('2 Students');
-        $response->assertSee('1 Submissions');
-        $response->assertSee('1 Reviewed');
+        $response->assertSee('Assigned students');
+        $response->assertSee('Showing 2 of 2 students');
+        $response->assertSee('Pending review');
         $response->assertSee('Aina Aziz');
         $response->assertSee('Nadia Rahman');
     }
 
-    public function test_lecturer_dashboard_counts_latest_submission_status_per_student(): void
+    public function test_lecturer_dashboard_shows_supervisor_revision_status(): void
     {
         $lecturer = Lecturer::create([
             'name' => 'Dr. Lim',
@@ -101,9 +126,16 @@ class DashboardUiTest extends TestCase
             'password' => Hash::make('password123'),
             'faculty' => 'Computer Science',
         ]);
+        $supervisor = Supervisor::create([
+            'name' => 'Company Supervisor',
+            'email' => 'supervisor@example.com',
+            'password' => Hash::make('password123'),
+            'must_change_password' => false,
+        ]);
 
         $student = Student::create([
             'lecturer_id' => $lecturer->lecturer_id,
+            'supervisor_id' => $supervisor->supervisor_id,
             'matric_no' => '20240003',
             'name' => 'Sara Ali',
             'email' => 'sara@example.com',
@@ -119,14 +151,14 @@ class DashboardUiTest extends TestCase
             'description' => 'Needs revision',
             'activity_date' => now()->toDateString(),
             'status' => 'Rejected',
+            'supervisor_status' => 'Revision Requested',
         ]);
 
         $response = $this->actingAs($lecturer, 'lecturer')->get('/lecturer/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('1 Reviewed');
-        $response->assertSee('Rejected');
-        $response->assertSee('Status');
+        $response->assertSee('Revision requested');
+        $response->assertSee('Sara Ali');
     }
 
     public function test_lecturer_dashboard_uses_newest_created_logbook_for_each_student(): void
@@ -148,7 +180,10 @@ class DashboardUiTest extends TestCase
             'course' => 'ITT626',
         ]);
 
-        Logbook::create([
+        $olderCreatedAt = now()->subDays(10);
+        $latestCreatedAt = now()->subDay();
+
+        $olderLogbook = Logbook::create([
             'student_id' => $student->student_id,
             'week_no' => 4,
             'title' => 'Week 4',
@@ -156,6 +191,7 @@ class DashboardUiTest extends TestCase
             'activity_date' => now()->addDay()->toDateString(),
             'status' => 'Approved',
         ]);
+        $olderLogbook->forceFill(['created_at' => $olderCreatedAt])->save();
 
         $latestLogbook = Logbook::create([
             'student_id' => $student->student_id,
@@ -165,16 +201,16 @@ class DashboardUiTest extends TestCase
             'activity_date' => now()->subDay()->toDateString(),
             'status' => 'Pending',
         ]);
+        $latestLogbook->forceFill(['created_at' => $latestCreatedAt])->save();
 
         $response = $this->actingAs($lecturer, 'lecturer')->get('/lecturer/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('Week 5');
-        $response->assertSee('Newest submission');
-        $response->assertSee('Pending');
+        $response->assertSee($latestCreatedAt->format('d M Y'));
+        $response->assertDontSee($olderCreatedAt->format('d M Y'));
     }
 
-    public function test_student_dashboard_shows_updated_status_after_lecturer_review(): void
+    public function test_student_dashboard_shows_updated_status_after_supervisor_review(): void
     {
         $lecturer = Lecturer::create([
             'name' => 'Dr. Noor',
@@ -182,9 +218,16 @@ class DashboardUiTest extends TestCase
             'password' => Hash::make('password123'),
             'faculty' => 'Computer Science',
         ]);
+        $supervisor = Supervisor::create([
+            'name' => 'Company Supervisor',
+            'email' => 'supervisor@example.com',
+            'password' => Hash::make('password123'),
+            'must_change_password' => false,
+        ]);
 
         $student = Student::create([
             'lecturer_id' => $lecturer->lecturer_id,
+            'supervisor_id' => $supervisor->supervisor_id,
             'matric_no' => '20240004',
             'name' => 'Hafiz Hamid',
             'email' => 'hafiz@example.com',
@@ -202,18 +245,17 @@ class DashboardUiTest extends TestCase
             'status' => 'Pending',
         ]);
 
-        $this->actingAs($lecturer, 'lecturer')
-            ->post('/lecturer/logbook/'.$logbook->logbook_id.'/review', [
-                'decision' => 'Approved',
-                'comment' => 'Looks good',
+        $this->actingAs($supervisor, 'supervisor')
+            ->post('/supervisor/logbook/'.$logbook->logbook_id.'/review', [
+                'decision' => 'Validated',
             ])
-            ->assertRedirect('/lecturer/dashboard');
+            ->assertRedirect('/supervisor/dashboard');
 
-        $this->assertDatabaseHas('logbooks', ['logbook_id' => $logbook->logbook_id, 'status' => 'Approved']);
+        $this->assertDatabaseHas('logbooks', ['logbook_id' => $logbook->logbook_id, 'supervisor_status' => 'Validated']);
 
         $response = $this->actingAs($student, 'student')->get('/student/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('Approved');
+        $response->assertSee('Validated');
     }
 }

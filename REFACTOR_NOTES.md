@@ -6,14 +6,16 @@
 - Baseline command: `php artisan test`.
 - Baseline result: **33 tests, 21 passed, 12 failed, 101 assertions**.
 - No production code has been changed during the audit.
+- After resolving confirmed failures, the full suite passes: **33 tests, 33 passed, 145 assertions**.
 
-### Baseline failures to resolve or review before behavior-sensitive refactors
+### Baseline failures resolved before behavior-sensitive refactors
 
-- `AdminDashboardTest::test_admin_dashboard_renders_enhanced_analytics_sections` and `DummyDataSeederTest::test_seeded_accounts_can_open_role_dashboards` fail because migrated `logbooks` has no `supervisor_status` column, although application code queries and writes it. The existing logbook migration should not be edited; assess a new migration.
-- `AdminStudentsPageTest::test_admin_students_page_renders`, `DashboardUiTest::test_student_dashboard_renders_new_portal_shell`, and all three `LogbookAiHelpTest` cases make requests to routes protected by role authentication without signing in as that role.
-- Three lecturer dashboard assertions fail because their expected dashboard text does not match the current rendered output. Inspect and update only if the intended current UI behavior is clear.
-- `DashboardUiTest::test_student_dashboard_shows_updated_status_after_lecturer_review` posts to `/lecturer/logbook/{id}/review`, for which no route exists. The current review flow is implemented for company supervisors; do not add a lecturer review route without human confirmation.
-- `LogbookPdfExportTest::test_student_lecturer_and_assigned_supervisor_can_export_logbooks` expects an old deployment-host URL rather than the current named route.
+- `logbooks.supervisor_status` was used throughout application code but missing from a fresh schema. Added an additive nullable-column migration; existing migrations remain unchanged.
+- The admin dashboard called `copy()` on a nullable `internship_start` while filtering students. Added a guard so students without dates do not crash the dashboard.
+- Several feature tests omitted the route's required authenticated role. Added appropriate authenticated test fixtures without weakening route middleware.
+- Stale assertions expected a former dashboard UI and AI endpoint/configuration. Updated them to verify the current UI, `v1beta` request payload, and current fallback response.
+- A dashboard test posted to an absent lecturer-review route. Updated it to cover the existing supervisor-review flow; no new lecturer behavior or route was added.
+- The PDF test expected an absolute URL even though the view links to a relative path; the download route itself remains exercised.
 
 ## Audit findings, ordered by impact and risk
 
@@ -45,6 +47,10 @@
 ## Needs human review
 
 - The baseline failures expose test/setup and route expectations that do not consistently match current authorization and supervisor-review behavior. Do not weaken authorization or invent lecturer review behavior just to satisfy those tests.
-- Confirm intended behavior for lecturer review before changing its stale route test or adding a route.
 - Review generated exports, deployment host references, and the large Blade templates manually before deleting or moving code.
 - Avoid migrations unless a fresh-schema failure confirms the missing field is required; do not edit deployed migrations.
+
+## Confirmed bugs fixed separately
+
+- Fresh databases lacked `logbooks.supervisor_status`, causing dashboard queries to fail.
+- Admin dashboard analytics crashed when a student had no internship start date.

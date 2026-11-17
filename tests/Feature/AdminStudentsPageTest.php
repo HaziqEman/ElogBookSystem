@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\Student;
+use App\Models\Admin;
 use App\Models\Lecturer;
+use App\Models\Student;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class AdminStudentsPageTest extends TestCase
 {
@@ -30,7 +31,13 @@ class AdminStudentsPageTest extends TestCase
             'course' => 'Test Course',
         ]);
 
-        $response = $this->get('/admin/students');
+        $admin = Admin::create([
+            'name' => 'Test Admin',
+            'email' => 'admin@example.test',
+            'password' => bcrypt('secret'),
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')->get('/admin/students');
 
         $response->assertStatus(200);
         $response->assertSee('Student Management');
