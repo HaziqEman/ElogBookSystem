@@ -6,25 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Supervisor\SupervisorWeekReviewRequest;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Models\Supervisor;
 use App\Services\SupervisorWeekService;
 use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class SupervisorWeekController extends Controller
 {
-    protected function supervisor()
+    protected function supervisor(): Supervisor
     {
         return Auth::guard('supervisor')->user();
     }
 
-    protected function ownStudent($id): Student
+    protected function ownStudent(int|string $id): Student
     {
         return Student::where('supervisor_id', $this->supervisor()->supervisor_id)->findOrFail($id);
     }
 
     /** Oldest week that is waiting, across all of this supervisor's students. */
-    public function next(SupervisorWeekService $weekService)
+    public function next(SupervisorWeekService $weekService): RedirectResponse
     {
         $next = $weekService->nextWaitingWeek($this->supervisor());
 
@@ -35,7 +39,7 @@ class SupervisorWeekController extends Controller
         return redirect('/supervisor/dashboard')->with('success', 'No weeks are waiting for your review.');
     }
 
-    public function show(Request $request, $id, SupervisorWeekService $weekService)
+    public function show(Request $request, int|string $id, SupervisorWeekService $weekService): View
     {
         $student = $this->ownStudent($id);
         $now = Carbon::now(Attendance::TIMEZONE);
@@ -49,7 +53,12 @@ class SupervisorWeekController extends Controller
     }
 
     /** Builds the AI summary card (returns HTML so the page can swap it in). */
-    public function summary(Request $request, $id, $week, SupervisorWeekService $weekService)
+    public function summary(
+        Request $request,
+        int|string $id,
+        int|string $week,
+        SupervisorWeekService $weekService
+    ): JsonResponse
     {
         $student = $this->ownStudent($id);
         $now = Carbon::now(Attendance::TIMEZONE);
@@ -73,7 +82,12 @@ class SupervisorWeekController extends Controller
      * One decision per entry in a single submit. Entries left on "Validate" are validated;
      * entries flagged "Needs revision" need a comment.
      */
-    public function review(Request $request, $id, $week, SupervisorWeekService $weekService)
+    public function review(
+        Request $request,
+        int|string $id,
+        int|string $week,
+        SupervisorWeekService $weekService
+    ): RedirectResponse
     {
         $student = $this->ownStudent($id);
         $supervisor = $this->supervisor();
