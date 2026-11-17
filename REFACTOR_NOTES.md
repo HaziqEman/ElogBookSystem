@@ -55,6 +55,7 @@
 
 - Fresh databases lacked `logbooks.supervisor_status`, causing dashboard queries to fail.
 - Admin dashboard analytics crashed when a student had no internship start date.
+- Supervisor comments could not be persisted because `feedback` lacked `supervisor_id` and required `lecturer_id`. Added supervisor attribution and made lecturer attribution nullable; existing feedback rows remain valid.
 
 ## Cleanup completed
 

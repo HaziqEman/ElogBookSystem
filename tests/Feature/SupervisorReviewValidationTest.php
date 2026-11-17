@@ -85,4 +85,26 @@ class SupervisorReviewValidationTest extends TestCase
             'supervisor_status' => null,
         ]);
     }
+
+    public function test_revision_request_saves_the_status_and_comment(): void
+    {
+        $comment = 'Please include more detail about the testing process.';
+
+        $this->actingAs($this->supervisor, 'supervisor')
+            ->post('/supervisor/logbook/'.$this->logbook->logbook_id.'/review', [
+                'decision' => 'Revision Requested',
+                'comment' => $comment,
+            ])
+            ->assertRedirect('/supervisor/dashboard');
+
+        $this->assertDatabaseHas('logbooks', [
+            'logbook_id' => $this->logbook->logbook_id,
+            'supervisor_status' => 'Revision Requested',
+        ]);
+        $this->assertDatabaseHas('feedback', [
+            'logbook_id' => $this->logbook->logbook_id,
+            'supervisor_id' => $this->supervisor->supervisor_id,
+            'comment' => $comment,
+        ]);
+    }
 }
