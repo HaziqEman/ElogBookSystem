@@ -19,34 +19,10 @@ parameters:
 			path: app/Console/Commands/CleanupDummyData.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>lecturer_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Events/MessageSent.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>supervisor_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Events/MessageSent.php
-
-		-
 			message: '#^Match expression does not handle remaining value\: string$#'
 			identifier: match.unhandled
 			count: 1
 			path: app/Exports/InternshipSheets.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
-
-		-
-			message: '#^Expression on left side of \?\? is not nullable\.$#'
-			identifier: nullCoalesce.expr
-			count: 2
-			path: app/Http/Controllers/LogbookPdfController.php
 
 		-
 			message: '#^Parameter \#1 \$boolean of function abort_unless expects bool, App\\Models\\Admin\|App\\Models\\Lecturer\|App\\Models\\Student\|App\\Models\\Supervisor\|App\\Models\\User\|null given\.$#'
@@ -65,24 +41,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Student/StudentDashboardController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Student/StudentMessageController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>timestamp" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Supervisor/SupervisorController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$logbook_id\.$#'
@@ -161,9 +119,3 @@ parameters:
 			identifier: function.alreadyNarrowedType
 			count: 1
 			path: app/Services/SupervisorRubricService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>created_at" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Support/DummyDataRegistry.php

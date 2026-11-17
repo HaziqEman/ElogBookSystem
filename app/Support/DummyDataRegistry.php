@@ -55,7 +55,7 @@ class DummyDataRegistry
             [
                 'record_type' => $modelClass,
                 'record_id' => (string) $model->getKey(),
-                'created_at' => $record?->created_at ?? $now,
+                'created_at' => $record->created_at ?? $now,
                 'updated_at' => $now,
             ]
         );

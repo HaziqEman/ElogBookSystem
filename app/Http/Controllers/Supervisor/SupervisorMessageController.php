@@ -102,7 +102,7 @@ class SupervisorMessageController extends Controller
                 'conversation_id' => $message->conversation_id,
                 'sender_type' => $message->sender_type,
                 'sender_id' => $message->sender_id,
-                'sender_name' => $message->sender?->name ?? null,
+                'sender_name' => $message->sender->name ?? null,
                 'message' => $message->message,
                 'created_at' => optional($message->created_at)->format('d M Y H:i'),
             ];

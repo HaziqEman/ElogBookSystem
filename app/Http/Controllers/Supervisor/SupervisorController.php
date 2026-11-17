@@ -56,7 +56,7 @@ class SupervisorController extends Controller
         // into the most recent one. Without this, every duplicate row doubles the KPI numbers.
         $batches = WeekSubmission::whereIn('student_id', $ids)->get()
             ->groupBy(fn ($sub) => $sub->student_id.'-'.(int) $sub->week_no)
-            ->map(fn ($group) => $group->sortByDesc(fn ($sub) => $sub->sent_at?->timestamp ?? 0)->first())
+            ->map(fn ($group) => $group->sortByDesc(fn ($sub) => $sub->sent_at->timestamp ?? 0)->first())
             ->map(function ($sub) use ($statMap, $studentsById, $today) {
                 $g = $statMap[$sub->student_id][(int) $sub->week_no] ?? [];
                 $pending = $g[Logbook::SUPERVISOR_STATUS_PENDING] ?? 0;

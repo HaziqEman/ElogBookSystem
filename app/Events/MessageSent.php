@@ -17,8 +17,8 @@ class MessageSent implements ShouldBroadcastNow
     {
         // Same payload the page uses. Files are NOT sent through Pusher, only their Cloudinary URL.
         $this->message = $message->toChatPayload() + [
-            'lecturer_id' => $message->conversation?->lecturer_id ?? null,
-            'supervisor_id' => $message->conversation?->supervisor_id ?? null,
+            'lecturer_id' => $message->conversation->lecturer_id ?? null,
+            'supervisor_id' => $message->conversation->supervisor_id ?? null,
         ];
     }
 

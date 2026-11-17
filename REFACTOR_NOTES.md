@@ -240,3 +240,9 @@
 - The remaining baseline groups are: `property.notFound` 12, `nullsafe.neverNull` 7, `argument.type` 5, `booleanAnd.alwaysFalse` 2, `function.alreadyNarrowedType` 2, `nullCoalesce.expr` 2, and one each for `identical.alwaysFalse`, `isset.offset`, and `match.unhandled`.
 - PHPStan also exposed missing `App\Models\Logbook` imports that caused student edits and report generation to fail at runtime. Added two regression tests; before the fix the student update returned **500** with a missing-class error and the progress sheet threw the same class-resolution error. Both paths now pass.
 - Verification: **82 tests passed, 377 assertions**; Pint and level-5 PHPStan passed.
+
+### Nullable and redundant fallback handling
+
+- Removed redundant nullsafe operators where the existing `??` fallback already preserves null behavior, and made image metadata handling explicitly check the `getimagesizefromstring()` result before reading its MIME value.
+- Regenerated and compared the baseline as a strict subset: **28 rules / 33 findings -> 20 rules / 24 findings**, with zero new entries.
+- Remaining baseline types: `property.notFound` 12, `argument.type` 5, `booleanAnd.alwaysFalse` 2, `function.alreadyNarrowedType` 2, and one each for `identical.alwaysFalse`, `isset.offset`, and `match.unhandled`.

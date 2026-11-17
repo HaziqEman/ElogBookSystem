@@ -123,7 +123,8 @@ class LogbookPdfController extends Controller
                 $binary = file_get_contents($full);
             }
 
-            $mime = @getimagesizefromstring($binary)['mime'] ?? null;
+            $imageInfo = @getimagesizefromstring($binary);
+            $mime = is_array($imageInfo) ? $imageInfo['mime'] : null;
 
             if (! in_array($mime, ['image/jpeg', 'image/png', 'image/gif'], true)) {
                 return null;
@@ -153,7 +154,8 @@ class LogbookPdfController extends Controller
             }
 
             $binary = $response->body();
-            $mime = @getimagesizefromstring($binary)['mime'] ?? null;
+            $imageInfo = @getimagesizefromstring($binary);
+            $mime = is_array($imageInfo) ? $imageInfo['mime'] : null;
 
             if (! in_array($mime, ['image/jpeg', 'image/png', 'image/gif'], true)) {
                 return null;
