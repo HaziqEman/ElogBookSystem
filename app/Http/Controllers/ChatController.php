@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\MessageSent;
 use App\Events\MessagesRead;
+use App\Http\Requests\ChatMessageRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\ChatUploader;
@@ -22,12 +23,7 @@ class ChatController extends Controller
         $conversation = Conversation::where('conversation_id', $conversationId)->firstOrFail();
         $me = $this->participant($conversation, $this->roleFromUrl($request)) ?? abort(403);
 
-        $request->validate([
-            'message' => ['nullable', 'string', 'max:1000'],
-            'attachment' => ['nullable', 'file', 'max:'.ChatUploader::MAX_KB, 'mimes:'.ChatUploader::ALLOWED],
-            'voice' => ['nullable', 'boolean'],
-            'duration' => ['nullable', 'integer', 'min:0', 'max:3600'],
-        ]);
+        app(ChatMessageRequest::class)->validated();
 
         $text = trim((string) $request->input('message', ''));
         $file = $request->file('attachment');
