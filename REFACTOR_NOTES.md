@@ -192,6 +192,7 @@
 
 - Scanned all **63** Blade files against `view()`, `@include`, `@extends`, component, mail, notification, and other source references; no dynamic `view($name)` or dynamic include call was found.
 - Candidate for removal after evidence was recorded: `resources/views/partials/chat-client.blade.php` has no view/include/component reference or external asset reference. The live chat pages include `partials.chat-room`; that partial contains the active chat client behavior.
+- Removed the unused legacy chat-client partial after recording the evidence: Blade file count changed from **63 to 62**. Its generic chat URLs were not used by the live role-scoped chat pages.
 - `student.university-export` is a missing view target, not an existing file candidate; its only caller is the unreferenced controller action above.
 
 ### Assets
