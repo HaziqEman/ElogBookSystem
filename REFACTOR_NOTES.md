@@ -103,3 +103,12 @@
 - Fixed date-only lookup comparisons separately after tests exposed failed duplicate-clock-in, clock-out, and day-off conflict handling on SQLite.
 - Verification after this controller: **56 tests, 56 passed, 251 assertions**; Pint and level-5 PHPStan passed.
 - Next controllers remain in the requested order: `SupervisorWeekController`, `AdminController`, then `ChatController`/`MessageDeleteController`.
+
+## Controller follow-up: SupervisorWeekController
+
+- Added characterization coverage for oldest waiting-week navigation, selected-week summaries and supervisor ownership, empty AI-summary responses, revision-comment validation, and review persistence.
+- Extracted review validation into `SupervisorWeekReviewRequest`, resolving it only after confirming a week submission exists to preserve response ordering.
+- Moved weekly page data, AI-summary preparation, review persistence, and week-navigation queries into `SupervisorWeekService`. Supervisor ownership checks remain in the controller.
+- Added parameter and response types to the controller.
+- Verification after this controller: **61 tests, 61 passed, 270 assertions**; Pint and level-5 PHPStan passed.
+- Next controllers remain in the requested order: `AdminController`, then `ChatController`/`MessageDeleteController`.
