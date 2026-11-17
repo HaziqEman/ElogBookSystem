@@ -1,0 +1,88 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Lecturer;
+use App\Models\Logbook;
+use App\Models\Student;
+use App\Models\Supervisor;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
+
+class SupervisorReviewValidationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Supervisor $supervisor;
+
+    private Logbook $logbook;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $lecturer = Lecturer::create([
+            'name' => 'Test Lecturer',
+            'email' => 'lecturer@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Computer Science',
+        ]);
+        $this->supervisor = Supervisor::create([
+            'name' => 'Test Supervisor',
+            'email' => 'supervisor@example.test',
+            'password' => Hash::make('password'),
+            'must_change_password' => false,
+        ]);
+        $student = Student::create([
+            'lecturer_id' => $lecturer->lecturer_id,
+            'supervisor_id' => $this->supervisor->supervisor_id,
+            'matric_no' => 'STU001',
+            'name' => 'Test Student',
+            'email' => 'student@example.test',
+            'password' => Hash::make('password'),
+            'phone_no' => '0123456789',
+            'course' => 'Computer Science',
+        ]);
+        $this->logbook = Logbook::create([
+            'student_id' => $student->student_id,
+            'week_no' => 1,
+            'title' => 'Week 1',
+            'description' => 'Test entry',
+            'activity_date' => now()->toDateString(),
+            'status' => 'Pending',
+        ]);
+    }
+
+    public function test_revision_request_requires_a_comment(): void
+    {
+        $this->actingAs($this->supervisor, 'supervisor')
+            ->from('/supervisor/logbook/'.$this->logbook->logbook_id)
+            ->post('/supervisor/logbook/'.$this->logbook->logbook_id.'/review', [
+                'decision' => 'Revision Requested',
+            ])
+            ->assertRedirect('/supervisor/logbook/'.$this->logbook->logbook_id)
+            ->assertSessionHasErrors('comment');
+
+        $this->assertDatabaseHas('logbooks', [
+            'logbook_id' => $this->logbook->logbook_id,
+            'supervisor_status' => null,
+        ]);
+    }
+
+    public function test_review_rejects_decisions_outside_supervisor_status_values(): void
+    {
+        $this->actingAs($this->supervisor, 'supervisor')
+            ->from('/supervisor/logbook/'.$this->logbook->logbook_id)
+            ->post('/supervisor/logbook/'.$this->logbook->logbook_id.'/review', [
+                'decision' => 'Approved',
+            ])
+            ->assertRedirect('/supervisor/logbook/'.$this->logbook->logbook_id)
+            ->assertSessionHasErrors('decision');
+
+        $this->assertDatabaseHas('logbooks', [
+            'logbook_id' => $this->logbook->logbook_id,
+            'supervisor_status' => null,
+        ]);
+    }
+}
