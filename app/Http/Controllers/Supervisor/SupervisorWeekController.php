@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Supervisor\SupervisorWeekReviewRequest;
 use App\Models\Attendance;
 use App\Models\Feedback;
 use App\Models\Logbook;
@@ -204,12 +205,8 @@ class SupervisorWeekController extends Controller
             return redirect($back)->with('error', 'This week has not been sent to you yet.');
         }
 
-        $data = $request->validate([
-            'decision' => 'required|array|min:1',
-            'decision.*' => 'in:Validated,Revision Requested',
-            'comment' => 'nullable|array',
-            'comment.*' => 'nullable|string|max:2000',
-        ]);
+        $reviewRequest = app(SupervisorWeekReviewRequest::class);
+        $data = $reviewRequest->validated();
 
         $entries = $this->pending(Logbook::where('student_id', $student->student_id)->where('week_no', $week))
             ->whereIn('logbook_id', array_keys($data['decision']))
@@ -219,15 +216,7 @@ class SupervisorWeekController extends Controller
             return redirect($back)->with('error', 'Nothing left to review in this week.');
         }
 
-        $errors = [];
-
-        foreach ($entries as $entry) {
-            $comment = trim((string) ($data['comment'][$entry->logbook_id] ?? ''));
-
-            if ($data['decision'][$entry->logbook_id] === 'Revision Requested' && $comment === '') {
-                $errors['comment.'.$entry->logbook_id] = 'Write what the student needs to change for '.Carbon::parse($entry->activity_date)->format('D, d M').'.';
-            }
-        }
+        $errors = $reviewRequest->revisionCommentErrors($entries);
 
         if ($errors) {
             return redirect($back)->withInput()->withErrors($errors);
