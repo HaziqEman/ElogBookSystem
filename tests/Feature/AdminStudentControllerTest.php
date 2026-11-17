@@ -7,12 +7,15 @@ use App\Models\Lecturer;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class AdminStudentControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    private int $lecturerSequence = 0;
 
     private int $studentSequence = 0;
 
@@ -111,6 +114,82 @@ class AdminStudentControllerTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_update_preserves_optional_values_when_they_are_omitted(): void
+    {
+        $this->authenticateAdmin();
+        $lecturer = $this->createLecturer();
+        $student = $this->createStudent($lecturer, [
+            'phone_no' => '0123456789',
+            'course' => 'Existing Course',
+        ]);
+
+        $this->put('/admin/students/'.$student->student_id, [
+            'name' => 'Updated Student',
+            'lecturer_id' => $lecturer->lecturer_id,
+        ])->assertRedirect('/admin/students');
+
+        $student->refresh();
+        $this->assertSame('Updated Student', $student->name);
+        $this->assertSame('0123456789', $student->phone_no);
+        $this->assertSame('Existing Course', $student->course);
+    }
+
+    public function test_bulk_can_assign_a_different_lecturer(): void
+    {
+        $this->authenticateAdmin();
+        $student = $this->createStudent();
+        $newLecturer = $this->createLecturer();
+
+        $this->post('/admin/students/bulk', [
+            'action' => 'assign_lecturer',
+            'ids' => [$student->student_id],
+            'lecturer_id' => $newLecturer->lecturer_id,
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame($newLecturer->lecturer_id, $student->refresh()->lecturer_id);
+    }
+
+    public function test_bulk_delete_removes_the_selected_student(): void
+    {
+        $this->authenticateAdmin();
+        $student = $this->createStudent();
+
+        $this->post('/admin/students/bulk', [
+            'action' => 'delete',
+            'ids' => [$student->student_id],
+        ])->assertRedirect('/admin/students')->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('students', ['student_id' => $student->student_id]);
+    }
+
+    public function test_admin_can_export_student_csv(): void
+    {
+        $this->authenticateAdmin();
+        $student = $this->createStudent();
+
+        $response = $this->get('/admin/students/export')->assertOk();
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString('Matric,Name,Email,Phone,Course', $content);
+        $this->assertStringContainsString($student->matric_no, $content);
+        $this->assertStringContainsString($student->name, $content);
+    }
+
+    public function test_password_reset_hashes_the_temporary_password_and_flashes_it(): void
+    {
+        $this->authenticateAdmin();
+        $student = $this->createStudent();
+
+        $this->post('/admin/students/'.$student->student_id.'/reset-password')
+            ->assertRedirect()
+            ->assertSessionHas('temp_for', $student->name)
+            ->assertSessionHas('temp_password', function ($temporary) use ($student): bool {
+                return is_string($temporary)
+                    && strlen($temporary) === 10
+                    && Hash::check($temporary, $student->fresh()->password);
+            });
+    }
+
     public function test_store_trims_student_names_and_applies_current_defaults(): void
     {
         $this->authenticateAdmin();
@@ -155,9 +234,11 @@ class AdminStudentControllerTest extends TestCase
 
     private function createLecturer(): Lecturer
     {
+        $this->lecturerSequence++;
+
         return Lecturer::create([
-            'name' => 'Test Lecturer',
-            'email' => 'lecturer@example.test',
+            'name' => 'Test Lecturer '.$this->lecturerSequence,
+            'email' => 'lecturer'.$this->lecturerSequence.'@example.test',
             'password' => bcrypt('secret'),
             'faculty' => 'Test Faculty',
         ]);
