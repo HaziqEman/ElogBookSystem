@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Supervisor;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Supervisor\SupervisorReviewRequest;
-use App\Models\Feedback;
 use App\Models\Logbook;
 use App\Services\NotificationService;
+use App\Services\SupervisorReviewService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SupervisorReviewController extends Controller
@@ -45,27 +44,19 @@ class SupervisorReviewController extends Controller
         return view('supervisor.review', compact('logbook'));
     }
 
-    public function store(SupervisorReviewRequest $request, $id)
+    public function store(SupervisorReviewRequest $request, SupervisorReviewService $reviews, $id)
     {
         $logbook = $this->ownedQuery()->findOrFail($id);
         $supervisor = Auth::guard('supervisor')->user();
         $data = $request->validated();
 
         try {
-            DB::transaction(function () use ($logbook, $supervisor, $data) {
-                $logbook->update(['supervisor_status' => $data['decision']]);
-
-                $comment = trim((string) ($data['comment'] ?? ''));
-
-                if ($comment !== '') {
-                    Feedback::create([
-                        'logbook_id' => $logbook->logbook_id,
-                        'supervisor_id' => $supervisor->supervisor_id,
-                        'comment' => $comment,
-                        'feedback_date' => now()->toDateString(),
-                    ]);
-                }
-            });
+            $reviews->save(
+                $logbook,
+                $supervisor,
+                $data['decision'],
+                $data['comment'] ?? null
+            );
         } catch (\Throwable $e) {
             Log::error('Supervisor review failed: '.$e->getMessage());
 

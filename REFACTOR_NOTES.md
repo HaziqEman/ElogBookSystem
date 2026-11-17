@@ -60,5 +60,5 @@
 ## Cleanup completed
 
 - Applied Pint to application code, config, routes, scripts, tests, factories, and seeders. Existing migrations and the duplicated `export_context` snapshot were deliberately excluded.
-- Extracted supervisor review validation into a Form Request with unchanged rules and error text.
-- Verification after cleanup: **35 tests, 35 passed, 155 assertions**; Pint check passed on changed supervisor-review files.
+- Extracted supervisor review validation into a Form Request with unchanged rules and error text; moved status/comment persistence into `SupervisorReviewService` while keeping controller response and error handling unchanged.
+- Verification after cleanup: **36 tests, 36 passed, 159 assertions**; Pint check passed on changed supervisor-review files.
