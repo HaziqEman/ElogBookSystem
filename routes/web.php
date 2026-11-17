@@ -1,39 +1,44 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\StudentDashboardController;
-use App\Http\Controllers\StudentAttendanceController;
-use App\Http\Controllers\StudentCalendarController;
-use App\Http\Controllers\StudentTodoController;
-use App\Http\Controllers\StudentLogbookEditController;
-use App\Http\Controllers\LecturerController;
-use App\Http\Controllers\SupervisorController;
-use App\Http\Controllers\SupervisorReviewController;
-use App\Http\Controllers\SupervisorEvaluationController;
+
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminLecturerController;
+use App\Http\Controllers\Admin\AdminLecturerImportController;
+use App\Http\Controllers\Admin\AdminStudentController;
+use App\Http\Controllers\Admin\AdminStudentImportController;
+use App\Http\Controllers\Admin\AdminSupervisorController;
+use App\Http\Controllers\Admin\AdminSupervisorRubricController;
+use App\Http\Controllers\Admin\AdminUniversityController;
+use App\Http\Controllers\Admin\ReportsController;
+use App\Http\Controllers\AttendanceMcController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CronController;
 use App\Http\Controllers\EvaluationViewController;
-use App\Http\Controllers\SupervisorMessageController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\AdminSupervisorController;
-use App\Http\Controllers\LogbookController;
+use App\Http\Controllers\Lecturer\LecturerController;
+use App\Http\Controllers\Lecturer\LecturerMessageController;
+use App\Http\Controllers\Lecturer\LecturerStudentController;
 use App\Http\Controllers\LogbookPdfController;
-use App\Http\Controllers\AdminStudentController;
-use App\Http\Controllers\AdminUniversityController;
-use App\Http\Controllers\AdminSupervisorRubricController;
-use App\Http\Controllers\StudentUniversityController;
-use App\Http\Controllers\StudentMessageController;
-use App\Http\Controllers\LecturerMessageController;
 use App\Http\Controllers\MessageDeleteController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Student\LogbookController;
+use App\Http\Controllers\Student\StudentAttendanceController;
+use App\Http\Controllers\Student\StudentCalendarController;
+use App\Http\Controllers\Student\StudentDashboardController;
+use App\Http\Controllers\Student\StudentLogbookEditController;
+use App\Http\Controllers\Student\StudentMessageController;
+use App\Http\Controllers\Student\StudentReminderController;
+use App\Http\Controllers\Student\StudentScheduleController;
+use App\Http\Controllers\Student\StudentTodoController;
+use App\Http\Controllers\Student\StudentUniversityController;
+use App\Http\Controllers\Supervisor\SupervisorController;
+use App\Http\Controllers\Supervisor\SupervisorEvaluationController;
+use App\Http\Controllers\Supervisor\SupervisorMessageController;
+use App\Http\Controllers\Supervisor\SupervisorReviewController;
+use App\Http\Controllers\Supervisor\SupervisorTaskController;
+use App\Http\Controllers\Supervisor\SupervisorWeekController;
 use App\Http\Middleware\EnsureSupervisorPasswordChanged;
 use App\Http\Middleware\LimitAiHelp;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\CronController;
-use App\Http\Controllers\AttendanceMcController;
-use App\Http\Controllers\LecturerStudentController;
-use App\Http\Controllers\StudentReminderController;
-use App\Http\Controllers\StudentScheduleController;
-use App\Http\Controllers\SupervisorTaskController;
-use App\Http\Controllers\SupervisorWeekController;
 
 
 // Home Page
@@ -77,7 +82,7 @@ Route::middleware('auth:student')->group(function () {
     Route::post('/student/attendance/clock-out', [StudentAttendanceController::class, 'clockOut']);
     Route::post('/student/attendance/day-off', [StudentAttendanceController::class, 'dayOff']);
     Route::post('/student/attendance/day-off/{id}/cancel', [StudentAttendanceController::class, 'cancelDayOff'])->whereNumber('id');
-    
+
     Route::post('/student/todos', [StudentTodoController::class, 'store']);
     Route::post('/student/todos/{id}/toggle', [StudentTodoController::class, 'toggle'])->whereNumber('id');
     Route::delete('/student/todos/{id}', [StudentTodoController::class, 'destroy'])->whereNumber('id');
@@ -116,28 +121,28 @@ Route::middleware('auth:supervisor')->group(function () {
 });
 
 Route::middleware(['auth:supervisor', EnsureSupervisorPasswordChanged::class])->group(function () {
-    Route::get('/supervisor/dashboard', [SupervisorController::class, 'dashboard']);
-    Route::get('/supervisor/logbook', [SupervisorReviewController::class, 'next']);
+    Route::get('/supervisor/dashboard', [SupervisorController::class, 'dashboard'])->name('supervisor.dashboard');
+    Route::get('/supervisor/logbook', [SupervisorReviewController::class, 'next'])->name('supervisor.logbook.next');
 
     // Weekly batches: one page per student and week, with the AI summary and one-submit review.
-    Route::get('/supervisor/weeks/next', [SupervisorWeekController::class, 'next']);
-    Route::get('/supervisor/students/{id}', [SupervisorWeekController::class, 'show'])->whereNumber('id');
-    Route::get('/supervisor/students/{id}/evaluation', [SupervisorEvaluationController::class, 'show'])->whereNumber('id');
-    Route::post('/supervisor/students/{id}/evaluation', [SupervisorEvaluationController::class, 'store'])->whereNumber('id');
+    Route::get('/supervisor/weeks/next', [SupervisorWeekController::class, 'next'])->name('supervisor.weeks.next');
+    Route::get('/supervisor/students/{id}', [SupervisorWeekController::class, 'show'])->whereNumber('id')->name('supervisor.students.show');
+    Route::get('/supervisor/students/{id}/evaluation', [SupervisorEvaluationController::class, 'show'])->whereNumber('id')->name('supervisor.evaluation.show');
+    Route::post('/supervisor/students/{id}/evaluation', [SupervisorEvaluationController::class, 'store'])->whereNumber('id')->name('supervisor.evaluation.store');
     Route::get('/supervisor/students/{id}/logbooks/pdf', [LogbookPdfController::class, 'supervisor'])->whereNumber('id')->name('supervisor.student.logbooks.pdf');
-    Route::post('/supervisor/students/{id}/weeks/{week}/summary', [SupervisorWeekController::class, 'summary'])->whereNumber(['id', 'week'])->middleware('throttle:8,1');
-    Route::post('/supervisor/students/{id}/weeks/{week}/review', [SupervisorWeekController::class, 'review'])->whereNumber(['id', 'week']);
+    Route::post('/supervisor/students/{id}/weeks/{week}/summary', [SupervisorWeekController::class, 'summary'])->whereNumber(['id', 'week'])->middleware('throttle:8,1')->name('supervisor.weeks.summary');
+    Route::post('/supervisor/students/{id}/weeks/{week}/review', [SupervisorWeekController::class, 'review'])->whereNumber(['id', 'week'])->name('supervisor.weeks.review');
 
-    Route::get('/supervisor/logbook/{id}', [SupervisorReviewController::class, 'show'])->whereNumber('id');
-    Route::post('/supervisor/logbook/{id}/review', [SupervisorReviewController::class, 'store'])->whereNumber('id');
+    Route::get('/supervisor/logbook/{id}', [SupervisorReviewController::class, 'show'])->whereNumber('id')->name('supervisor.logbook.show');
+    Route::post('/supervisor/logbook/{id}/review', [SupervisorReviewController::class, 'store'])->whereNumber('id')->name('supervisor.logbook.review');
     Route::get('/supervisor/messages', [SupervisorMessageController::class, 'index'])->name('supervisor.messages.index');
     Route::get('/supervisor/messages/with/{student}', [SupervisorMessageController::class, 'start'])->whereNumber('student')->name('supervisor.messages.start');
     Route::get('/supervisor/messages/{conversation}', [SupervisorMessageController::class, 'show'])->whereNumber('conversation')->name('supervisor.messages.show');
     Route::post('/supervisor/messages/{conversation}', [SupervisorMessageController::class, 'store'])->whereNumber('conversation')->name('supervisor.messages.store');
-    Route::get('/supervisor/tasks', [SupervisorTaskController::class, 'index']);
-    Route::post('/supervisor/tasks', [SupervisorTaskController::class, 'store']);
-    Route::put('/supervisor/tasks/{id}', [SupervisorTaskController::class, 'update'])->whereNumber('id');
-    Route::delete('/supervisor/tasks/{id}', [SupervisorTaskController::class, 'destroy'])->whereNumber('id');
+    Route::get('/supervisor/tasks', [SupervisorTaskController::class, 'index'])->name('supervisor.tasks.index');
+    Route::post('/supervisor/tasks', [SupervisorTaskController::class, 'store'])->name('supervisor.tasks.store');
+    Route::put('/supervisor/tasks/{id}', [SupervisorTaskController::class, 'update'])->whereNumber('id')->name('supervisor.tasks.update');
+    Route::delete('/supervisor/tasks/{id}', [SupervisorTaskController::class, 'destroy'])->whereNumber('id')->name('supervisor.tasks.destroy');
 });
 
 // Chat endpoints per role. The role is part of the URL so a browser that is logged in as
@@ -156,11 +161,11 @@ Route::middleware('auth:student,lecturer,supervisor')->group(function () {
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
     Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'store'])
-    ->whereNumber('conversation')->middleware('throttle:60,1')->name('chat.store');
-Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])
-    ->whereNumber('conversation')->name('chat.since');
-Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatController::class, 'read'])
-    ->whereNumber('conversation')->name('chat.read');
+        ->whereNumber('conversation')->middleware('throttle:60,1')->name('chat.store');
+    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])
+        ->whereNumber('conversation')->name('chat.since');
+    Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatController::class, 'read'])
+        ->whereNumber('conversation')->name('chat.read');
 });
 
 Route::middleware('auth:admin')->group(function () {
@@ -174,17 +179,17 @@ Route::middleware('auth:admin')->group(function () {
     // Extra admin tools. These must come BEFORE the resource routes below,
     // otherwise /admin/students/export would be read as /admin/students/{id}.
     Route::get('/admin/students/export', [AdminStudentController::class, 'export']);
-    Route::get('/admin/students/import', [App\Http\Controllers\AdminStudentImportController::class, 'show']);
-    Route::get('/admin/students/import/template', [App\Http\Controllers\AdminStudentImportController::class, 'template']);
-    Route::post('/admin/students/import', [App\Http\Controllers\AdminStudentImportController::class, 'store']);
+    Route::get('/admin/students/import', [AdminStudentImportController::class, 'show']);
+    Route::get('/admin/students/import/template', [AdminStudentImportController::class, 'template']);
+    Route::post('/admin/students/import', [AdminStudentImportController::class, 'store']);
     Route::post('/admin/students/bulk', [AdminStudentController::class, 'bulk']);
     Route::post('/admin/students/{id}/reset-password', [AdminStudentController::class, 'resetPassword'])->whereNumber('id');
 
-    Route::get('/admin/lecturers/import', [App\Http\Controllers\AdminLecturerImportController::class, 'show']);
-    Route::get('/admin/lecturers/import/template', [App\Http\Controllers\AdminLecturerImportController::class, 'template']);
-    Route::post('/admin/lecturers/import', [App\Http\Controllers\AdminLecturerImportController::class, 'store']);
-    Route::post('/admin/lecturers/bulk', [App\Http\Controllers\AdminLecturerController::class, 'bulk']);
-    Route::post('/admin/lecturers/{id}/reset-password', [App\Http\Controllers\AdminLecturerController::class, 'resetPassword'])->whereNumber('id');
+    Route::get('/admin/lecturers/import', [AdminLecturerImportController::class, 'show']);
+    Route::get('/admin/lecturers/import/template', [AdminLecturerImportController::class, 'template']);
+    Route::post('/admin/lecturers/import', [AdminLecturerImportController::class, 'store']);
+    Route::post('/admin/lecturers/bulk', [AdminLecturerController::class, 'bulk']);
+    Route::post('/admin/lecturers/{id}/reset-password', [AdminLecturerController::class, 'resetPassword'])->whereNumber('id');
 
     Route::post('/admin/supervisors/bulk', [AdminSupervisorController::class, 'bulk']);
     Route::post('/admin/supervisors/{id}/reset-password', [AdminSupervisorController::class, 'resetPassword'])->whereNumber('id');
@@ -194,20 +199,20 @@ Route::middleware('auth:admin')->group(function () {
     Route::resource('admin/universities', AdminUniversityController::class)->except(['show']);
 
     Route::resource('admin/students', AdminStudentController::class);
-    Route::resource('admin/lecturers', App\Http\Controllers\AdminLecturerController::class);
+    Route::resource('admin/lecturers', AdminLecturerController::class);
     Route::resource('admin/supervisors', AdminSupervisorController::class);
-    Route::get('/admin/reports', [App\Http\Controllers\ReportsController::class, 'index']);
-    Route::get('/admin/reports/export/excel', [App\Http\Controllers\ReportsController::class, 'exportExcel']);
-    Route::get('/admin/reports/export/pdf', [App\Http\Controllers\ReportsController::class, 'exportPdf']);
-    Route::get('/admin/reports/export/dashboard', [App\Http\Controllers\ReportsController::class, 'exportDashboard']);
-    Route::get('/admin/reports/export/csv/{type}', [App\Http\Controllers\ReportsController::class, 'exportCsv'])->whereIn('type', ['progress', 'marks', 'weekly', 'attention', 'lecturers', 'supervisors', 'companies']);
+    Route::get('/admin/reports', [ReportsController::class, 'index']);
+    Route::get('/admin/reports/export/excel', [ReportsController::class, 'exportExcel']);
+    Route::get('/admin/reports/export/pdf', [ReportsController::class, 'exportPdf']);
+    Route::get('/admin/reports/export/dashboard', [ReportsController::class, 'exportDashboard']);
+    Route::get('/admin/reports/export/csv/{type}', [ReportsController::class, 'exportCsv'])->whereIn('type', ['progress', 'marks', 'weekly', 'attention', 'lecturers', 'supervisors', 'companies']);
 });
 
 // Notifications for students, lecturers and company supervisors.
 foreach (['student', 'lecturer', 'supervisor'] as $notificationRole) {
     $guards = $notificationRole === 'supervisor'
         ? ['auth:supervisor', EnsureSupervisorPasswordChanged::class]
-        : ['auth:'.$notificationRole];
+        : ['auth:' . $notificationRole];
 
     Route::middleware($guards)->group(function () use ($notificationRole) {
         Route::get("/{$notificationRole}/notifications", [NotificationController::class, 'index']);

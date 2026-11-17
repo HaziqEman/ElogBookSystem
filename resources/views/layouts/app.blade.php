@@ -321,36 +321,105 @@
                 @endphp
 
                 {{-- Sidebar: slide-out drawer on phones, fixed column on laptops --}}
+                {{-- Sidebar: slide-out drawer on phones, fixed column on laptops --}}
                 <aside
                     id="sidebar"
-                    class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 -translate-x-full flex-col overflow-hidden bg-gradient-to-b from-[#1e3a8a] via-[#1d2f7a] to-[#0f1646] text-white shadow-2xl transition-transform duration-200 ease-out md:static md:z-auto md:max-w-none md:translate-x-0"
+                    class="fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 -translate-x-full flex-col overflow-hidden bg-gradient-to-b from-[#4968c8] via-[#3d59b2] to-[#34458f] text-white shadow-xl shadow-indigo-950/10 transition-transform duration-200 ease-out md:static md:z-auto md:max-w-none md:translate-x-0"
                     style="padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);"
                 >
 
                     <div class="relative flex min-h-0 flex-1 flex-col">
                         {{-- Soft decorative glows --}}
                         <div
-                            class="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-blue-400/15 blur-3xl"
+                            class="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-sky-300/20 blur-3xl"
                             aria-hidden="true"
                         ></div>
                         <div
-                            class="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl"
+                            class="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-violet-300/15 blur-3xl"
                             aria-hidden="true"
                         ></div>
+
+                        {{-- Decorative bottom wave background --}}
+                        <div
+                            class="pointer-events-none absolute bottom-0 left-0 z-0 h-40 w-full overflow-hidden"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                class="absolute bottom-0 h-full w-full"
+                                viewBox="0 0 288 160"
+                                preserveAspectRatio="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <defs>
+                                    <linearGradient
+                                        id="sidebarWave1"
+                                        x1="0"
+                                        y1="0"
+                                        x2="1"
+                                        y2="1"
+                                    >
+                                        <stop
+                                            offset="0%"
+                                            stop-color="#C7D2FE"
+                                            stop-opacity="0.30"
+                                        />
+                                        <stop
+                                            offset="100%"
+                                            stop-color="#A5B4FC"
+                                            stop-opacity="0.04"
+                                        />
+                                    </linearGradient>
+                                    <linearGradient
+                                        id="sidebarWave2"
+                                        x1="0"
+                                        y1="0"
+                                        x2="1"
+                                        y2="0"
+                                    >
+                                        <stop
+                                            offset="0%"
+                                            stop-color="#DDD6FE"
+                                            stop-opacity="0.28"
+                                        />
+                                        <stop
+                                            offset="100%"
+                                            stop-color="#BFDBFE"
+                                            stop-opacity="0.07"
+                                        />
+                                    </linearGradient>
+                                </defs>
+
+                                <path
+                                    d="M0 85 C65 65 95 115 145 105 C205 92 225 35 288 45 L288 160 L0 160 Z"
+                                    fill="url(#sidebarWave1)"
+                                />
+                                <path
+                                    d="M0 115 C55 80 95 95 140 125 C195 160 235 95 288 85 L288 160 L0 160 Z"
+                                    fill="url(#sidebarWave2)"
+                                />
+                                <path
+                                    d="M0 85 C65 65 95 115 145 105 C205 92 225 35 288 45"
+                                    fill="none"
+                                    stroke="white"
+                                    stroke-opacity="0.16"
+                                    stroke-width="1.5"
+                                />
+                            </svg>
+                        </div>
 
                         {{-- Brand --}}
                         <div
                             class="relative flex flex-none items-center gap-3 border-b border-white/10 px-5 py-5">
                             <div
-                                class="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg shadow-blue-950/40 ring-1 ring-white/20">
+                                class="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-sky-300 to-indigo-400 text-white shadow-md shadow-indigo-950/20 ring-1 ring-white/25">
                                 <i class="fa-solid fa-book-bookmark text-lg"></i>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <h1
-                                    class="truncate text-[17px] font-extrabold leading-tight tracking-tight text-white">
+                                    class="truncate text-[17px] font-bold leading-tight tracking-tight text-white">
                                     Smart eLogBook</h1>
                                 <p
-                                    class="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-200/70">
+                                    class="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-100/75">
                                     Internship Management</p>
                             </div>
                             <button
@@ -369,15 +438,19 @@
 
                             {{-- Profile card --}}
                             <div
-                                class="rounded-2xl border border-white/10 bg-white/[0.06] p-3.5 shadow-inner backdrop-blur-sm">
+                                class="relative overflow-hidden rounded-2xl border border-white/25 bg-white/15 p-3.5 shadow-lg shadow-indigo-950/10 backdrop-blur-md"
+                                style="background: linear-gradient(135deg, rgba(255,255,255,.20) 0%, rgba(190,205,255,.22) 48%, rgba(158,178,255,.30) 100%);"
+                            >
+                                {{-- class="relative overflow-hidden rounded-3xl px-6 py-6 text-white shadow-[0_14px_34px_rgba(47,91,255,0.20)] md:px-9 md:py-7" --}}
+
                                 <div class="flex items-center gap-3">
                                     <div class="relative flex-none">
                                         <div
-                                            class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 text-base font-bold text-white ring-2 ring-white/25">
+                                            class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-sky-300 to-indigo-400 text-base font-bold text-white shadow-md shadow-indigo-900/15 ring-2 ring-white/40">
                                             {{ strtoupper(substr($displayName ?? 'S', 0, 1)) }}
                                         </div>
                                         <span
-                                            class="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#1d2f7a] bg-emerald-400"
+                                            class="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#5269b2] bg-emerald-400"
                                             title="Online"
                                         ></span>
                                     </div>
@@ -385,22 +458,22 @@
                                         <h4
                                             class="truncate text-sm font-bold leading-tight text-white">
                                             {{ $displayName }}</h4>
-                                        <p class="mt-0.5 truncate text-xs text-blue-200/80">
+                                        <p class="mt-0.5 truncate text-xs text-indigo-50/85">
                                             {{ $roleShort }}</p>
                                     </div>
                                 </div>
 
                                 @if (request()->is('student*') && ($supervisorName || $industryName))
-                                    <div class="mt-3 space-y-1.5 border-t border-white/10 pt-3">
+                                    <div class="mt-3 space-y-1.5 border-t border-white/20 pt-3">
                                         @if ($supervisorName)
                                             <div
-                                                class="flex items-center gap-2.5 rounded-xl bg-white/5 px-2.5 py-2">
+                                                class="flex items-center gap-2.5 rounded-xl bg-white/10 px-2.5 py-2">
                                                 <span
                                                     class="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-indigo-400/20 text-xs text-indigo-200"
                                                 ><i class="fa-solid fa-user-graduate"></i></span>
                                                 <div class="min-w-0">
                                                     <p
-                                                        class="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-200/60">
+                                                        class="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-100/65">
                                                         Faculty Evaluator</p>
                                                     <p
                                                         class="truncate text-[13px] font-semibold text-white">
@@ -410,13 +483,13 @@
                                         @endif
                                         @if ($industryName)
                                             <div
-                                                class="flex items-center gap-2.5 rounded-xl bg-white/5 px-2.5 py-2">
+                                                class="flex items-center gap-2.5 rounded-xl bg-white/10 px-2.5 py-2">
                                                 <span
                                                     class="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-emerald-400/20 text-xs text-emerald-200"
                                                 ><i class="fa-solid fa-building-user"></i></span>
                                                 <div class="min-w-0">
                                                     <p
-                                                        class="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-200/60">
+                                                        class="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-100/65">
                                                         Industry Supervisor</p>
                                                     <p
                                                         class="truncate text-[13px] font-semibold text-white">
@@ -428,15 +501,15 @@
                                 @endif
 
                                 @if (request()->is('supervisor*') && $currentSupervisor && $currentSupervisor->company_name)
-                                    <div class="mt-3 border-t border-white/10 pt-3">
+                                    <div class="mt-3 border-t border-white/20 pt-3">
                                         <div
-                                            class="flex items-center gap-2.5 rounded-xl bg-white/5 px-2.5 py-2">
+                                            class="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 shadow-inner">
                                             <span
                                                 class="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-emerald-400/20 text-xs text-emerald-200"
                                             ><i class="fa-solid fa-building"></i></span>
                                             <div class="min-w-0">
                                                 <p
-                                                    class="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-200/60">
+                                                    class="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-100/65">
                                                     Company</p>
                                                 <p
                                                     class="truncate text-[13px] font-semibold text-white">
@@ -449,7 +522,7 @@
 
                             {{-- Menu --}}
                             <p
-                                class="mb-2 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-200/50">
+                                class="mb-2 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-100/60">
                                 Menu</p>
 
                             <nav
@@ -461,24 +534,24 @@
                                     @php $isActive = request()->is(...\Illuminate\Support\Arr::flatten($item['match'])); @endphp
                                     <a
                                         href="{{ $item['href'] }}"
-                                        class="{{ $isActive ? 'bg-white/10 text-white ring-1 ring-white/10' : 'text-blue-100/80 hover:bg-white/5 hover:text-white' }} group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition"
+                                        class="{{ $isActive ? 'bg-white/15 text-white ring-1 ring-white/20 shadow-sm shadow-indigo-950/10' : 'text-indigo-50/85 hover:bg-white/10 hover:text-white' }} group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition"
                                         @if ($isActive) aria-current="page" @endif
                                     >
                                         @if ($isActive)
                                             <span
-                                                class="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-sky-400"
+                                                class="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-sky-300"
                                                 aria-hidden="true"
                                             ></span>
                                         @endif
                                         <span
-                                            class="{{ $isActive ? 'bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-md shadow-blue-950/40' : 'bg-white/5 text-blue-200 group-hover:bg-white/10 group-hover:text-white' }} flex h-8 w-8 flex-none items-center justify-center rounded-lg text-[13px] transition"
+                                            class="{{ $isActive ? 'bg-gradient-to-br from-sky-300 to-blue-500 text-white shadow-md shadow-indigo-950/20' : 'bg-white/10 text-indigo-100 group-hover:bg-white/15 group-hover:text-white' }} flex h-8 w-8 flex-none items-center justify-center rounded-lg text-[13px] transition"
                                         >
                                             <i class="fa-solid {{ $item['icon'] }}"></i>
                                         </span>
                                         <span class="truncate">{{ $item['label'] }}</span>
                                         @if ($isActive)
                                             <i
-                                                class="fa-solid fa-chevron-right ml-auto text-[10px] text-blue-200/70"></i>
+                                                class="fa-solid fa-chevron-right ml-auto text-[10px] text-indigo-100/75"></i>
                                         @endif
                                     </a>
                                 @endforeach
@@ -486,18 +559,18 @@
                         </div>
 
                         {{-- Pinned footer: log out + version --}}
-                        <div class="relative flex-none border-t border-white/10 px-3 pb-3 pt-3">
+                        <div class="relative flex-none border-t border-white/15 px-3 pb-3 pt-3">
                             <a
                                 href="/logout"
-                                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/15 hover:text-white"
+                                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-100/90 transition hover:bg-rose-300/15 hover:text-white"
                             >
                                 <span
-                                    class="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-rose-400/10 text-[13px] text-rose-200 transition group-hover:bg-rose-500/30 group-hover:text-white"
+                                    class="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-rose-300/15 text-[13px] text-rose-100 transition group-hover:bg-rose-300/25 group-hover:text-white"
                                 ><i class="fa-solid fa-arrow-right-from-bracket"></i></span>
                                 Log out
                             </a>
                             <div
-                                class="mt-2 flex items-center justify-between px-3 text-[11px] text-blue-200/50">
+                                class="mt-2 flex items-center justify-between px-3 text-[11px] text-indigo-100/60">
                                 <span>v2.5 Full-Routing</span>
                                 <span class="inline-flex items-center gap-1.5">
                                     <span
@@ -509,11 +582,107 @@
                     </div>
                 </aside>
 
+                {{-- TOP BAR + MAIN CONTENT --}}
                 <main class="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
                     <header
-                        class="shadow-xs sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:h-[4.5rem] md:px-8"
+                        class="sticky top-0 isolate z-20 flex h-16 shrink-0 items-center justify-between gap-3 overflow-visible border-b border-indigo-100/70 bg-gradient-to-r from-white via-indigo-50/70 to-blue-50/80 px-4 shadow-sm backdrop-blur-xl md:h-[4.5rem] md:px-8"
                     >
-                        <div class="flex min-w-0 items-center gap-3">
+
+                        {{-- Decorative blue and lavender wave background --}}
+                        <div
+                            class="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+                            aria-hidden="true"
+                        >
+                            <svg
+                                class="absolute inset-0 h-full w-full"
+                                viewBox="0 0 1200 100"
+                                preserveAspectRatio="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <defs>
+                                    {{-- Soft blue gradient --}}
+                                    <linearGradient
+                                        id="headerWaveBlue"
+                                        x1="0"
+                                        y1="0"
+                                        x2="1"
+                                        y2="1"
+                                    >
+                                        <stop
+                                            offset="0%"
+                                            stop-color="#93C5FD"
+                                            stop-opacity="0.25"
+                                        />
+                                        <stop
+                                            offset="100%"
+                                            stop-color="#6366F1"
+                                            stop-opacity="0.04"
+                                        />
+                                    </linearGradient>
+
+                                    {{-- Lavender gradient --}}
+                                    <linearGradient
+                                        id="headerWavePurple"
+                                        x1="0"
+                                        y1="0"
+                                        x2="1"
+                                        y2="0"
+                                    >
+                                        <stop
+                                            offset="0%"
+                                            stop-color="#C4B5FD"
+                                            stop-opacity="0.05"
+                                        />
+                                        <stop
+                                            offset="55%"
+                                            stop-color="#A5B4FC"
+                                            stop-opacity="0.22"
+                                        />
+                                        <stop
+                                            offset="100%"
+                                            stop-color="#93C5FD"
+                                            stop-opacity="0.10"
+                                        />
+                                    </linearGradient>
+                                </defs>
+
+                                {{-- Back wave --}}
+                                <path
+                                    d="M0 0 H1200 V100 H0 Z"
+                                    fill="url(#headerWaveBlue)"
+                                />
+
+                                {{-- Main flowing wave --}}
+                                <path
+                                    d="M0 0 H730
+               C690 15 680 48 625 72
+               C570 98 480 100 400 100
+               H0 Z"
+                                    fill="url(#headerWavePurple)"
+                                />
+
+                                {{-- Right-side soft wave --}}
+                                <path
+                                    d="M680 0
+               C750 15 780 65 860 78
+               C980 100 1080 50 1200 35
+               V0 Z"
+                                    fill="#818CF8"
+                                    fill-opacity="0.07"
+                                />
+
+                                {{-- Soft curved highlight --}}
+                                <path
+                                    d="M730 0 C690 30 680 65 625 85"
+                                    fill="none"
+                                    stroke="#A5B4FC"
+                                    stroke-opacity="0.18"
+                                    stroke-width="2"
+                                />
+                            </svg>
+                        </div>
+
+                        <div class="relative z-10 flex min-w-0 items-center gap-3">
                             <button
                                 type="button"
                                 id="sidebar-toggle"
@@ -538,7 +707,7 @@
                             </div>
                         </div>
 
-                        <div class="flex shrink-0 items-center gap-2 md:gap-3">
+                        <div class="relative z-10 flex shrink-0 items-center gap-2 md:gap-3">
                             {{-- Today's date --}}
                             <span
                                 class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 lg:inline-flex"
@@ -1111,39 +1280,57 @@
                     showSpinner();
 
                     fetch(url, {
-                            credentials: 'same-origin', signal: controller.signal,
-                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' }
+                            credentials: 'same-origin',
+                            signal: controller.signal,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'text/html'
+                            }
                         })
                         .then(function(res) {
                             if (!res.ok) throw new Error('hard: HTTP ' + res.status);
-                            if ((res.headers.get('content-type') || '').indexOf('text/html') === -1) throw new Error('hard: not html');
-                            return res.text().then(function(html) { return { html: html, url: res.url }; });
+                            if ((res.headers.get('content-type') || '').indexOf('text/html') === -1)
+                                throw new Error('hard: not html');
+                            return res.text().then(function(html) {
+                                return {
+                                    html: html,
+                                    url: res.url
+                                };
+                            });
                         })
                         .then(function(r) {
                             var doc = new DOMParser().parseFromString(r.html, 'text/html');
                             var next = doc.getElementById('page-content');
                             if (!next) throw new Error('hard: no #page-content');
                             if (doc.getElementById('cm-root')) throw new Error('hard: chat page');
-                            if (next.querySelector('[data-hard-load]')) throw new Error('hard: data-hard-load');
-                            if (seg(new URL(r.url).pathname) !== seg(location.pathname)) throw new Error('hard: different portal');
+                            if (next.querySelector('[data-hard-load]')) throw new Error(
+                                'hard: data-hard-load');
+                            if (seg(new URL(r.url).pathname) !== seg(location.pathname))
+                                throw new Error('hard: different portal');
 
                             if (push) history.pushState({}, '', r.url);
                             document.title = doc.title;
 
-                            var t = doc.getElementById('page-title'), ct = document.getElementById('page-title');
+                            var t = doc.getElementById('page-title'),
+                                ct = document.getElementById('page-title');
                             if (t && ct) ct.textContent = t.textContent;
-                            var n = doc.getElementById('sidebar-nav'), cn = document.getElementById('sidebar-nav');
+                            var n = doc.getElementById('sidebar-nav'),
+                                cn = document.getElementById('sidebar-nav');
                             if (n && cn) cn.innerHTML = n.innerHTML;
 
-                            content.innerHTML = next.innerHTML;     // also removes the spinner
+                            content.innerHTML = next.innerHTML; // also removes the spinner
                             runScripts(content);
 
-                            if (samePath) main.scrollTop = savedTop;  // stay where you were
-                            else main.scrollTo(0, 0);                 // new page -> start at top
+                            if (samePath) main.scrollTop = savedTop; // stay where you were
+                            else main.scrollTo(0, 0); // new page -> start at top
 
                             var ov = document.getElementById('sidebar-overlay');
-                            if (ov && window.innerWidth < 768) ov.click();   // close mobile drawer
-                            document.dispatchEvent(new CustomEvent('page:loaded', { detail: { url: r.url } }));
+                            if (ov && window.innerWidth < 768) ov.click(); // close mobile drawer
+                            document.dispatchEvent(new CustomEvent('page:loaded', {
+                                detail: {
+                                    url: r.url
+                                }
+                            }));
                             progress('done');
                         })
                         .catch(function(err) {
