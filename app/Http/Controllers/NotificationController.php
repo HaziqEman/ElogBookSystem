@@ -26,7 +26,7 @@ class NotificationController extends Controller
     {
         $user = Auth::guard($role)->user();
 
-        abort_unless($user, 403);
+        abort_unless($user !== null, 403);
 
         return $user;
     }

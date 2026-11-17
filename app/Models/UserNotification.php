@@ -4,6 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $notification_id
+ * @property int $merged_count
+ * @property \Illuminate\Support\Carbon|null $read_at
+ */
 class UserNotification extends Model
 {
     protected $table = 'user_notifications';

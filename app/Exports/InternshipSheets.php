@@ -12,6 +12,7 @@ class InternshipSheets
 {
     public const TYPES = ['progress', 'marks', 'weekly', 'attention', 'lecturers', 'supervisors', 'companies'];
 
+    /** @param value-of<self::TYPES> $type */
     public static function make(string $type, array $report, bool $csv = false): ReportArraySheet
     {
         return match ($type) {

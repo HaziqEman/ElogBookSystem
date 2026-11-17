@@ -14,8 +14,9 @@ class SupervisorRubricService
         if (Schema::hasTable('supervisor_rubrics')) {
             $record = SupervisorRubric::query()->where('is_active', true)->latest('id')->first();
 
-            if ($record && is_array($record->rubric)) {
-                return $record->rubric;
+            $rubric = $record?->getAttribute('rubric');
+            if (is_array($rubric)) {
+                return $rubric;
             }
         }
 

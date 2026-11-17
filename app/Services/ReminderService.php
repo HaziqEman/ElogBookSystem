@@ -220,7 +220,7 @@ class ReminderService
         $soonKey = $todayStart->copy()->addDays(2)->toDateString();
 
         if (! $dayOff) {
-            $dated = $open->filter(fn ($task) => $task->due_date);
+            $dated = $open->filter(fn (Todo $task): bool => (bool) $task->due_date);
             $overdue = $dated->filter(fn ($task) => $task->due_date->toDateString() < $todayKey)->sortBy(fn ($task) => $task->due_date->toDateString());
             $dueToday = $dated->filter(fn ($task) => $task->due_date->toDateString() === $todayKey);
             $soon = $dated->filter(fn ($task) => $task->due_date->toDateString() > $todayKey && $task->due_date->toDateString() <= $soonKey);

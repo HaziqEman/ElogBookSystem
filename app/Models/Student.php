@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $email
  * @property string $phone_no
  * @property string $course
+ * @property string|null $internship_role
  * @property \Illuminate\Support\Carbon|null $internship_start
  * @property int|null $internship_weeks
  * @property string|null $working_days

@@ -106,7 +106,8 @@ class StudentsImport implements SkipsEmptyRows, ToCollection, WithHeadingRow
             $seenMatric[$matric] = true;
             $seenEmail[$email] = true;
 
-            $plain = filled($r['password'] ?? null) ? (string) $r['password'] : null;
+            $hasPassword = filled($r['password'] ?? null);
+            $plain = $hasPassword ? (string) $r['password'] : null;
 
             if ($plain !== null && strlen($plain) < 6) {
                 $this->failures[] = ['row' => $line, 'matric' => $matric, 'message' => 'Password must be at least 6 characters.'];
@@ -146,7 +147,7 @@ class StudentsImport implements SkipsEmptyRows, ToCollection, WithHeadingRow
                 $this->created++;
             } catch (\Throwable $e) {
                 // Roll back the generated password for this row, it was never saved.
-                if (! filled($r['password'] ?? null)) {
+                if (! $hasPassword) {
                     array_pop($this->generated);
                 }
                 $this->failures[] = ['row' => $line, 'matric' => $matric, 'message' => 'Could not save this row.'];

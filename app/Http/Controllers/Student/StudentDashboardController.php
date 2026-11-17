@@ -427,7 +427,7 @@ class StudentDashboardController extends Controller
             $from = $planner->firstMonday()->toDateString();
             $to = $planner->weekStart($planner->totalWeeks())->addDays(6)->toDateString();
             $logbooksByDate = $logbooks
-                ->filter(fn ($logbook) => $logbook->activity_date)
+                ->filter(fn (Logbook $logbook): bool => (bool) $logbook->activity_date)
                 ->groupBy(fn ($logbook) => Carbon::parse($logbook->activity_date)->toDateString());
             $attendanceByDate = Schema::hasTable('attendances')
                 ? Attendance::where('student_id', $student->student_id)

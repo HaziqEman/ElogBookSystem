@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $student_id
  * @property int|null $lecturer_id
  * @property int|null $supervisor_id
+ * @property-read int|null $unread_count
  */
 class Conversation extends Model
 {

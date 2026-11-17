@@ -16,6 +16,7 @@ use Illuminate\View\View;
 
 class SupervisorReviewController extends Controller
 {
+    /** @return Builder<Logbook> */
     protected function ownedQuery(): Builder
     {
         $supervisor = Auth::guard('supervisor')->user();

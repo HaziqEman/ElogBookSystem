@@ -86,7 +86,7 @@
 ## Continuation: tooling
 
 - Added `larastan/larastan` `^3.15` (locked at `3.15.0`), PHPStan `2.3.6`, and its SQL parser dependency. The Composer update added these three packages without updating existing package versions or upgrading a major version.
-- Added [phpstan.neon](./phpstan.neon) at level 5 for `app`, including Larastan and [phpstan-baseline.neon](./phpstan-baseline.neon). The generated baseline contains 136 ignore entries for existing findings; `vendor/bin/phpstan analyse --no-progress` passes with the baseline.
+- Added [phpstan.neon](./phpstan.neon) at level 5 for `app`, including Larastan and an initial generated baseline of 136 ignore entries for existing findings. Subsequent baseline reduction is recorded in Phase 5 below.
 - Machine Composer `2.2.24` does not provide `composer audit`. Used a checksum-verified Composer `2.11.2` PHAR in a temporary directory, without changing the machine-wide installation.
 - The audit reported **39 advisories across 10 locked packages**: 1 critical, 17 high, 10 medium, 5 low, and 6 unrated. Package versions and issue summaries are recorded in [SECURITY-REVIEW.md](./SECURITY-REVIEW.md). No dependency versions were changed to address the advisories.
 - After installing the analysis tools and generating the baseline, the full suite passed (**36 tests, 159 assertions**) and the maintained-PHP Pint check passed.
@@ -246,3 +246,10 @@
 - Removed redundant nullsafe operators where the existing `??` fallback already preserves null behavior, and made image metadata handling explicitly check the `getimagesizefromstring()` result before reading its MIME value.
 - Regenerated and compared the baseline as a strict subset: **28 rules / 33 findings -> 20 rules / 24 findings**, with zero new entries.
 - Remaining baseline types: `property.notFound` 12, `argument.type` 5, `booleanAnd.alwaysFalse` 2, `function.alreadyNarrowedType` 2, and one each for `identical.alwaysFalse`, `isset.offset`, and `match.unhandled`.
+
+### Remaining types and baseline removal
+
+- Added the remaining model/property and Eloquent builder types, made collection filter callbacks explicitly return booleans, preserved the existing password-presence check in the student importer, and retained the rubric fallback while reading its cast attribute as `mixed`.
+- Removed a statically unreachable cleanup-command condition. Student notification ownership is still checked by the separate notification-specific guard; the deletion scope and authorization behavior are unchanged.
+- Re-ran PHPStan against `app` with the baseline excluded: **0 errors**. The remaining baseline was therefore a strict subset of the prior baseline, with **20 rules / 24 findings -> 0 / 0** and no new entries. Removed the now-unnecessary baseline file and its include from `phpstan.neon`.
+- Final verification for Phase 5: **82 tests passed, 377 assertions**; Pint and PHPStan passed.

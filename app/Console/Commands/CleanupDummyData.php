@@ -90,7 +90,7 @@ class CleanupDummyData extends Command
                 ];
 
                 foreach ($deleteOrder as $modelClass) {
-                    if (! isset($owned[$modelClass], self::MODEL_TABLES[$modelClass])) {
+                    if (! isset($owned[$modelClass])) {
                         continue;
                     }
 
@@ -141,9 +141,6 @@ class CleanupDummyData extends Command
             }
 
             $query = DB::table($table)->whereIn($foreignKey, $owned[$parent]);
-            if ($parent === Student::class && $table === 'user_notifications' && Schema::hasColumn($table, 'recipient_type')) {
-                $query->where('recipient_type', Student::class);
-            }
             $childIds = $query->pluck($primaryKey)->map(fn ($id) => (string) $id)->all();
             $unregistered = array_diff($childIds, $owned[$child] ?? []);
 

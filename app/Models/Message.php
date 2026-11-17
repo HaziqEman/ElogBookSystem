@@ -42,6 +42,7 @@ class Message extends Model
         'deleted_at' => 'datetime',
     ];
 
+    /** @return BelongsTo<Conversation, $this> */
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(Conversation::class, 'conversation_id', 'conversation_id');
