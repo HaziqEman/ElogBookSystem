@@ -93,6 +93,24 @@ class AdminStudentControllerTest extends TestCase
         );
     }
 
+    public function test_bulk_returns_empty_selection_before_validating_action_details(): void
+    {
+        $this->authenticateAdmin();
+
+        $this->post('/admin/students/bulk', ['action' => 'shift_start'])
+            ->assertRedirect()
+            ->assertSessionHas('error', 'No students were selected.')
+            ->assertSessionMissing('errors');
+    }
+
+    public function test_update_returns_not_found_before_validating_request_data(): void
+    {
+        $this->authenticateAdmin();
+
+        $this->put('/admin/students/999999', [])
+            ->assertNotFound();
+    }
+
     public function test_store_trims_student_names_and_applies_current_defaults(): void
     {
         $this->authenticateAdmin();
