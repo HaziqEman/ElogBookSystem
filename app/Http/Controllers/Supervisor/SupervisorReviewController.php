@@ -7,12 +7,16 @@ use App\Http\Requests\Supervisor\SupervisorReviewRequest;
 use App\Models\Logbook;
 use App\Services\NotificationService;
 use App\Services\SupervisorReviewService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class SupervisorReviewController extends Controller
 {
-    protected function ownedQuery()
+    protected function ownedQuery(): Builder
     {
         $supervisor = Auth::guard('supervisor')->user();
 
@@ -21,7 +25,7 @@ class SupervisorReviewController extends Controller
         });
     }
 
-    public function next()
+    public function next(): RedirectResponse
     {
         $logbook = $this->ownedQuery()
             ->where('supervisor_status', 'Pending')
@@ -35,7 +39,7 @@ class SupervisorReviewController extends Controller
         return redirect('/supervisor/logbook/'.$logbook->logbook_id);
     }
 
-    public function show($id)
+    public function show(int $id): View
     {
         $logbook = $this->ownedQuery()
             ->with(['student', 'attachments', 'feedbacks.lecturer', 'feedbacks.supervisor'])
@@ -44,7 +48,11 @@ class SupervisorReviewController extends Controller
         return view('supervisor.review', compact('logbook'));
     }
 
-    public function store(SupervisorReviewRequest $request, SupervisorReviewService $reviews, $id)
+    public function store(
+        SupervisorReviewRequest $request,
+        SupervisorReviewService $reviews,
+        int $id
+    ): JsonResponse|RedirectResponse
     {
         $logbook = $this->ownedQuery()->findOrFail($id);
         $supervisor = Auth::guard('supervisor')->user();
