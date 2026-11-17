@@ -1,0 +1,817 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Offset ''App\\\\Models\\\\Admin''\|''App\\\\Models\\\\Attachment''\|''App\\\\Models\\\\Attendance''\|''App\\\\Models\\\\Conversation''\|''App\\\\Models\\\\Feedback''\|''App\\\\Models\\\\Lecturer''\|''App\\\\Models\\\\Logbook''\|''App\\\\Models\\\\Message''\|''App\\\\Models\\\\Student''\|''App\\\\Models\\\\Supervisor''\|''App\\\\Models\\\\Todo''\|''App\\\\Models\\\\UserNotification'' on array\{App\\Models\\Admin\: array\{''admins'', ''admin_id''\}, App\\Models\\Lecturer\: array\{''lecturers'', ''lecturer_id''\}, App\\Models\\Supervisor\: array\{''supervisors'', ''supervisor_id''\}, App\\Models\\Student\: array\{''students'', ''student_id''\}, App\\Models\\Logbook\: array\{''logbooks'', ''logbook_id''\}, App\\Models\\Attachment\: array\{''attachments'', ''attachment_id''\}, App\\Models\\Feedback\: array\{''feedback'', ''feedback_id''\}, App\\Models\\Conversation\: array\{''conversations'', ''conversation_id''\}, \.\.\.\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Console/Commands/CleanupDummyData.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 2
+			path: app/Console/Commands/CleanupDummyData.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between \*NEVER\* and ''user_notifications'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Console/Commands/CleanupDummyData.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>lecturer_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Events/MessageSent.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>supervisor_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Events/MessageSent.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$activity_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Exports/AcademicReportExport.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Exports/AcademicReportExport.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$week_no\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Exports/AcademicReportExport.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Exports/InternshipSheets.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$internship_start\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$internship_weeks\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$logbooks_max_created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Supervisor\:\:\$waiting_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$internship_start\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Admin/AdminStudentController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$internship_weeks\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminStudentController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$working_days\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminStudentController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Student\>\:\:\$working_days\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminStudentController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\University\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\University\>\:\:\$students_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Admin/AdminUniversityController.php
+
+		-
+			message: '#^Relation ''creator'' is not found in App\\Models\\University model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Admin/AdminUniversityController.php
+
+		-
+			message: '#^Relation ''students'' is not found in App\\Models\\University model\.$#'
+			identifier: larastan.relationExistence
+			count: 3
+			path: app/Http/Controllers/Admin/AdminUniversityController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AttendanceMcController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Attendance\>\:\:\$file\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AttendanceMcController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Attendance\>\:\:\$mc_file_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AttendanceMcController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\|Illuminate\\Database\\Eloquent\\Collection\<int, App\\Models\\Attendance\>\:\:\$mc_mime\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AttendanceMcController.php
+
+		-
+			message: '#^Relation ''file'' is not found in App\\Models\\Attendance model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/AttendanceMcController.php
+
+		-
+			message: '#^Relation ''student'' is not found in App\\Models\\Attendance model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/AttendanceMcController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:toChatPayload\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array, Closure\(App\\Models\\Message\)\: array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:reject\(\) expects bool\|\(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|Illuminate\\Database\\Eloquent\\Model, Closure\(App\\Models\\Message\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$conversation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$deleted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$deleted_for_lecturer\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lecturer_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Lecturer/LecturerStudentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$logo_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/LogbookPdfController.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: app/Http/Controllers/LogbookPdfController.php
+
+		-
+			message: '#^Parameter \#1 \$boolean of function abort_unless expects bool, App\\Models\\Admin\|App\\Models\\Lecturer\|App\\Models\\Student\|App\\Models\\Supervisor\|App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$internship_role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/LogbookController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\:\:\$attachments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/LogbookController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\:\:\$logbook_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/LogbookController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$logbook_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/LogbookController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\:\:isEditableByStudent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Student/LogbookController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$day_off_type\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$latitude\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$location_accuracy\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$location_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$location_status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$longitude\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$mc_file_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$mc_mime\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$work_mode\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentAttendanceController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Todo\:\:\$supervisor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentDashboardController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$comment\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentDashboardController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lecturer\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentDashboardController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$supervisor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentDashboardController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\Logbook\>\:\:filter\(\) expects \(callable\(App\\Models\\Logbook, int\)\: bool\)\|null, Closure\(mixed\)\: string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Student/StudentDashboardController.php
+
+		-
+			message: '#^Relation ''logbook'' is not found in App\\Models\\Attachment model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Student/StudentDashboardController.php
+
+		-
+			message: '#^Relation ''supervisor'' is not found in App\\Models\\Todo model\.$#'
+			identifier: larastan.relationExistence
+			count: 4
+			path: app/Http/Controllers/Student/StudentDashboardController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\:\:\$logbook_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Student/StudentLogbookEditController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\:\:attachments\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentLogbookEditController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\:\:isEditableByStudent\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Http/Controllers/Student/StudentLogbookEditController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$conversation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$deleted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$deleted_for_student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Parameter \#2 \$lecturer of method App\\Http\\Controllers\\Student\\StudentMessageController\:\:lecturerConversation\(\) expects App\\Models\\Lecturer, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Parameter \#2 \$supervisor of method App\\Http\\Controllers\\Student\\StudentMessageController\:\:supervisorConversation\(\) expects App\\Models\\Supervisor, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Student/StudentMessageController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$working_days\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentScheduleController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$working_schedule\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Student/StudentScheduleController.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Student/StudentUniversityController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Logbook\:\:\$c\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorController.php
+
+		-
+			message: '#^Relation ''student'' is not found in App\\Models\\Todo model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>timestamp" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$conversation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$deleted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$deleted_for_supervisor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sender_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorMessageController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$logbook_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorReviewController.php
+
+		-
+			message: '#^Parameter \#1 \$logbook of method App\\Services\\NotificationService\:\:reviewGiven\(\) expects App\\Models\\Logbook, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorReviewController.php
+
+		-
+			message: '#^Parameter \#1 \$logbook of method App\\Services\\SupervisorReviewService\:\:save\(\) expects App\\Models\\Logbook, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorReviewController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Todo\:\:\$student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorTaskController.php
+
+		-
+			message: '#^Relation ''student'' is not found in App\\Models\\Todo model\.$#'
+			identifier: larastan.relationExistence
+			count: 2
+			path: app/Http/Controllers/Supervisor/SupervisorTaskController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Logbook\:\:\$c\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Supervisor/SupervisorWeekController.php
+
+		-
+			message: '#^Call to function filled\(\) with mixed will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Imports/StudentsImport.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$day_off_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$latitude\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Models/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$location_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$location_status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$longitude\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Models/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$mc_file_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Attendance\:\:\$work_mode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$attachment_duration\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$attachment_mime\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$attachment_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Message.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$attachment_size\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$attachment_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Message.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Conversation\:\:\$unread_count\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ChatContacts.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ChatContacts.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ChatContacts.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Conversation\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/ChatContacts.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\Conversation\>\:\:filter\(\) expects \(callable\(App\\Models\\Conversation, int\)\: bool\)\|null, Closure\(mixed\)\: \(Illuminate\\Database\\Eloquent\\Model\|null\) given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ChatContacts.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$attachment_public_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ChatUploader.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Message\:\:\$attachment_resource_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ChatUploader.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\UserNotification\:\:\$merged_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/NotificationService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\UserNotification\:\:\$read_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/NotificationService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$conversation_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/NotificationService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lecturer\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/NotificationService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/NotificationService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$supervisor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/NotificationService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Todo\:\:\$supervisor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/ReminderService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\Todo\>\:\:filter\(\) expects \(callable\(App\\Models\\Todo, int\)\: bool\)\|null, Closure\(mixed\)\: \(Carbon\\Carbon\|null\) given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ReminderService.php
+
+		-
+			message: '#^Relation ''supervisor'' is not found in App\\Models\\Todo model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Services/ReminderService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/SupervisorRubricService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\WeekSubmission\:\:\$student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WeekBatchService.php
+
+		-
+			message: '#^Parameter \#1 \$supervisor of method App\\Services\\NotificationService\:\:weekSent\(\) expects App\\Models\\Supervisor, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/WeekBatchService.php
+
+		-
+			message: '#^Relation ''student'' is not found in App\\Models\\WeekSubmission model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Services/WeekBatchService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$internship_start\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WeekPlanner.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Student\:\:\$internship_weeks\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WeekPlanner.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>created_at" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Support/DummyDataRegistry.php

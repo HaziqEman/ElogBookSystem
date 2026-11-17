@@ -74,5 +74,13 @@
 - Pint check passed for `app`, `config`, `routes`, `scripts`, `tests`, `database/factories`, and `database/seeders`.
 - `php artisan route:list` succeeded and listed **158 routes**.
 - `php artisan optimize:clear` succeeded with the process-level `CACHE_STORE=array` override to avoid the configured database cache store.
-- PHPStan was not run because `vendor/bin/phpstan` is not installed.
+- PHPStan was unavailable at this checkpoint; the follow-up tooling setup and analysis results are recorded below.
 - Relative to `refactor/best-practices`, the branch contains **905 insertions and 471 deletions across 116 files**.
+
+## Continuation: tooling
+
+- Added `larastan/larastan` `^3.15` (locked at `3.15.0`), PHPStan `2.3.6`, and its SQL parser dependency. The Composer update added these three packages without updating existing package versions or upgrading a major version.
+- Added [phpstan.neon](./phpstan.neon) at level 5 for `app`, including Larastan and [phpstan-baseline.neon](./phpstan-baseline.neon). The generated baseline contains 136 ignore entries for existing findings; `vendor/bin/phpstan analyse --no-progress` passes with the baseline.
+- Machine Composer `2.2.24` does not provide `composer audit`. Used a checksum-verified Composer `2.11.2` PHAR in a temporary directory, without changing the machine-wide installation.
+- The audit reported **39 advisories across 10 locked packages**: 1 critical, 17 high, 10 medium, 5 low, and 6 unrated. Package versions and issue summaries are recorded in [SECURITY-REVIEW.md](./SECURITY-REVIEW.md). No dependency versions were changed to address the advisories.
+- After installing the analysis tools and generating the baseline, the full suite passed (**36 tests, 159 assertions**) and the maintained-PHP Pint check passed.
