@@ -94,4 +94,12 @@
 - Extracted listing/filter calculations to `AdminStudentDirectoryService`, persistence and password operations to `AdminStudentService`, bulk mutations to `BulkStudentAction`, and CSV generation to `ExportStudentCsv`. Controller methods now delegate and preserve existing response/flash behavior.
 - Added parameter and response types to the controller and extracted workflow methods.
 - Verification after this controller: **47 tests, 47 passed, 204 assertions**; maintained-PHP Pint check and level-5 PHPStan both passed.
-- Next controllers remain in the requested order: `StudentAttendanceController`, `SupervisorWeekController`, `AdminController`, then `ChatController`/`MessageDeleteController`.
+
+## Controller follow-up: StudentAttendanceController
+
+- Added characterization tests for monthly summaries, location rounding, clock-in/out transitions, day-off validation and conflicts, note trimming, and cancellation.
+- Extracted clock-in and day-off validation into Form Requests while preserving the original rules and validation messages.
+- Moved monthly attendance queries, state transitions, day-off persistence, MC-file handling, and reverse geocoding into `StudentAttendanceService`; added explicit controller response and parameter types.
+- Fixed date-only lookup comparisons separately after tests exposed failed duplicate-clock-in, clock-out, and day-off conflict handling on SQLite.
+- Verification after this controller: **56 tests, 56 passed, 251 assertions**; Pint and level-5 PHPStan passed.
+- Next controllers remain in the requested order: `SupervisorWeekController`, `AdminController`, then `ChatController`/`MessageDeleteController`.
