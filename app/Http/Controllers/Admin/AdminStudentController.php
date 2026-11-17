@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Concerns\ChecksUniqueEmail;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\BulkStudentActionRequest;
+use App\Http\Requests\Admin\StoreStudentRequest;
+use App\Http\Requests\Admin\UpdateStudentRequest;
 use App\Models\Lecturer;
 use App\Models\Student;
 use App\Models\Supervisor;
@@ -17,8 +19,6 @@ use Illuminate\Support\Str;
 
 class AdminStudentController extends Controller
 {
-    use ChecksUniqueEmail;
-
     private const PER_PAGE = [10, 25, 50, 100];
 
     // ------------------------------------------------------------------
@@ -96,12 +96,8 @@ class AdminStudentController extends Controller
     // Bulk actions
     // ------------------------------------------------------------------
 
-    public function bulk(Request $request)
+    public function bulk(BulkStudentActionRequest $request)
     {
-        $request->validate([
-            'action' => 'required|in:set_internship,shift_start,assign_lecturer,assign_supervisor,delete',
-        ]);
-
         // "Apply to all matching" re-uses the filters that came along in the query string.
         $ids = $request->boolean('apply_to_all')
             ? $this->filteredQuery($request)->pluck('student_id')
@@ -119,10 +115,7 @@ class AdminStudentController extends Controller
                 return back()->with($this->setInternship($request, $ids));
 
             case 'shift_start':
-                $data = $request->validate([
-                    'shift_amount' => 'required|integer|not_in:0|between:-365,365',
-                    'shift_unit' => 'required|in:days,weeks',
-                ]);
+                $data = $request->validatedShiftStart();
 
                 $days = (int) $data['shift_amount'] * ($data['shift_unit'] === 'weeks' ? 7 : 1);
                 $moved = 0;
@@ -140,13 +133,13 @@ class AdminStudentController extends Controller
                     .($skipped > 0 ? ' '.$skipped.' skipped because no start date was set.' : ''));
 
             case 'assign_lecturer':
-                $data = $request->validate(['lecturer_id' => 'required|integer|exists:lecturers,lecturer_id']);
+                $data = $request->validatedLecturerAssignment();
                 Student::whereIn('student_id', $ids)->update(['lecturer_id' => $data['lecturer_id']]);
 
                 return back()->with('success', 'Assigned '.optional(Lecturer::find($data['lecturer_id']))->name.' to '.$count.' '.$noun.'.');
 
             case 'assign_supervisor':
-                $data = $request->validate(['supervisor_id' => 'required']);
+                $data = $request->validatedSupervisorAssignment();
                 $supervisorId = $data['supervisor_id'] === 'none' ? null : (int) $data['supervisor_id'];
 
                 if ($supervisorId !== null && ! Supervisor::whereKey($supervisorId)->exists()) {
@@ -169,18 +162,13 @@ class AdminStudentController extends Controller
     }
 
     /** Blank fields are left unchanged, so one form can change just the start date, just the weeks, or both. */
-    protected function setInternship(Request $request, $ids): array
+    protected function setInternship(BulkStudentActionRequest $request, $ids): array
     {
         if (! Schema::hasColumn('students', 'internship_start')) {
             return ['error' => 'The internship date columns do not exist yet. Run the database update first.'];
         }
 
-        $data = $request->validate([
-            'start_date' => 'nullable|date|after_or_equal:2020-01-01|before_or_equal:2100-12-31',
-            'weeks' => 'nullable|integer|between:1,52',
-            'working_days' => 'nullable|array',
-            'working_days.*' => 'integer|between:1,7',
-        ]);
+        $data = $request->validatedInternshipDetails();
 
         $updates = [];
         $changes = [];
@@ -293,21 +281,9 @@ class AdminStudentController extends Controller
         return view('admin.students.create', compact('lecturers', 'supervisors', 'universities'));
     }
 
-    public function store(Request $request)
+    public function store(StoreStudentRequest $request)
     {
-        $data = $request->validate(array_merge([
-            'matric_no' => 'required|string|max:255|unique:students,matric_no',
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'email', 'max:255', $this->uniqueEmailRule()],
-            'password' => 'required|string|min:6',
-            'phone_no' => 'nullable|string|max:50',
-            'course' => 'nullable|string|max:255',
-            'lecturer_id' => 'required|integer|exists:lecturers,lecturer_id',
-            'supervisor_id' => 'nullable|integer|exists:supervisors,supervisor_id',
-            'university_id' => 'nullable|integer|exists:universities,university_id',
-            'department' => 'nullable|string|max:255',
-            'organization_address' => 'nullable|string|max:500',
-        ], $this->internshipRules()));
+        $data = $request->validated();
 
         $ready = Schema::hasColumn('students', 'internship_start');
 
@@ -358,17 +334,7 @@ class AdminStudentController extends Controller
     public function update(Request $request, $id)
     {
         $student = Student::findOrFail($id);
-
-        $data = $request->validate(array_merge([
-            'name' => 'required|string|max:255',
-            'phone_no' => 'nullable|string|max:50',
-            'course' => 'nullable|string|max:255',
-            'lecturer_id' => 'required|integer|exists:lecturers,lecturer_id',
-            'supervisor_id' => 'nullable|integer|exists:supervisors,supervisor_id',
-            'university_id' => 'nullable|integer|exists:universities,university_id',
-            'department' => 'nullable|string|max:255',
-            'organization_address' => 'nullable|string|max:500',
-        ], $this->internshipRules()));
+        $data = app(UpdateStudentRequest::class)->validated();
 
         $ready = Schema::hasColumn('students', 'internship_start');
 
@@ -490,16 +456,6 @@ class AdminStudentController extends Controller
         $week = min($weeks, intdiv((int) $start->diffInDays($today), 7) + 1);
 
         return ['key' => 'in_progress', 'label' => 'Week '.$week.' of '.$weeks, 'detail' => null];
-    }
-
-    protected function internshipRules(): array
-    {
-        return [
-            'internship_start' => 'nullable|date|after_or_equal:2020-01-01|before_or_equal:2100-12-31',
-            'internship_weeks' => 'nullable|integer|between:1,52',
-            'working_days' => 'nullable|array',
-            'working_days.*' => 'integer|between:1,7',
-        ];
     }
 
     /** No working day ticked means the usual Monday to Friday. */
