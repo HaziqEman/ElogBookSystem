@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Lecturer;
+use App\Models\Attachment;
+use App\Models\Feedback;
 use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
@@ -38,6 +40,69 @@ class DashboardUiTest extends TestCase
         $response->assertSee('Smart eLogBook');
         $response->assertSee('Student Portal');
         $response->assertSee('Logbook entries');
+    }
+
+    public function test_student_logbook_query_count_does_not_scale_with_twenty_entries(): void
+    {
+        $lecturer = Lecturer::create([
+            'name' => 'Logbook Query Lecturer',
+            'email' => 'logbook-query-lecturer@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Test Faculty',
+        ]);
+        $student = Student::create([
+            'lecturer_id' => $lecturer->lecturer_id,
+            'matric_no' => 'LOGBOOKQUERY001',
+            'name' => 'Logbook Query Student',
+            'email' => 'logbook-query-student@example.test',
+            'password' => Hash::make('password'),
+            'phone_no' => '0000000000',
+            'course' => 'Test Course',
+        ]);
+        $this->actingAs($student, 'student');
+
+        $createEntryWithRelations = function (int $sequence) use ($student, $lecturer): void {
+            $entry = Logbook::create([
+                'student_id' => $student->student_id,
+                'week_no' => 1,
+                'title' => 'Week 1',
+                'description' => 'Query-count logbook entry '.$sequence,
+                'activity_date' => '2026-11-16',
+                'status' => 'Pending',
+                'supervisor_status' => 'Pending',
+            ]);
+            Attachment::create([
+                'logbook_id' => $entry->logbook_id,
+                'file_name' => 'entry-'.$sequence.'.pdf',
+                'file_path' => 'uploads/entry-'.$sequence.'.pdf',
+                'upload_date' => '2026-11-16',
+            ]);
+            Feedback::create([
+                'logbook_id' => $entry->logbook_id,
+                'lecturer_id' => $lecturer->lecturer_id,
+                'comment' => 'Reviewed entry '.$sequence,
+                'feedback_date' => '2026-11-16',
+            ]);
+        };
+
+        $createEntryWithRelations(1);
+        $singleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/student/logbooks')->assertOk()
+        );
+
+        for ($sequence = 2; $sequence <= 20; $sequence++) {
+            $createEntryWithRelations($sequence);
+        }
+
+        $multipleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/student/logbooks')->assertOk()
+        );
+
+        $this->assertLessThanOrEqual(
+            $singleCount + 4,
+            $multipleCount,
+            "Student-logbook queries grew from {$singleCount} to {$multipleCount} for 20 entries."
+        );
     }
 
     public function test_guest_auth_pages_render_without_dashboard_shell(): void

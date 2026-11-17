@@ -157,3 +157,18 @@
 - No endpoint required a behavior-preserving configuration change. `.env.example` is absent in this checkout, and no new environment keys were added; `.env` was not inspected or modified.
 - The first full-suite validation hit an existing timezone-boundary flake in `DashboardUiTest`: test timestamps created late in UTC were rendered on the next calendar date in Malaysia time. Stabilized only the test fixtures at 08:00 UTC; application code and behavior are unchanged.
 - Verification after this phase: full tests, Pint, and PHPStan passed. No source URL, CDN, or provider behavior was changed.
+
+## Phase 2: N+1 query checks
+
+- Enabled `Model::preventLazyLoading()` in `tests/TestCase.php` only; no production setting was changed. The complete suite and the 20-row page tests pass with the guard enabled.
+- Added query-log growth tests using one-row and 20-row datasets. Each assertion allows a small fixed query-count variance for authentication or polymorphic relation types and detects query growth proportional to rows.
+- Measured database queries per page request (one row -> 20 rows):
+  - Admin dashboard, 20 distinct students with logbooks: **32 -> 32**.
+  - Supervisor week, 20 entries with attachments: **7 -> 7**.
+  - Student directory, 20 students assigned to lecturer/supervisor: **12 -> 12**.
+  - Attendance history, 20 records: **3 -> 2**.
+  - Student logbook page, 20 entries with attachments and feedback: **6 -> 5**.
+  - Chat message history, 20 messages from two sender types: **4 -> 5** (the additional sender-type eager-load query is constant, not per message).
+  - Lecturer chat contact list, 20 student conversations with messages: **3 -> 3**.
+- No confirmed N+1 was demonstrated, so no production query was changed. The listed counts are the characterization results, not before/after counts of a code fix.
+- Verification: **77 tests passed, 350 assertions**; Pint and level-5 PHPStan passed.

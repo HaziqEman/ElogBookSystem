@@ -140,6 +140,54 @@ class AdminDashboardTest extends TestCase
         $this->assertDatabaseHas('logbooks', ['logbook_id' => $overdue->logbook_id]);
     }
 
+    public function test_admin_dashboard_query_count_does_not_scale_with_twenty_recent_students(): void
+    {
+        $lecturer = Lecturer::create([
+            'name' => 'Query Count Lecturer',
+            'email' => 'query-count-lecturer@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Test Faculty',
+        ]);
+        $admin = Admin::create([
+            'name' => 'Query Count Admin',
+            'email' => 'query-count-admin@example.test',
+            'password' => Hash::make('password'),
+        ]);
+
+        $createStudentWithEntry = function (int $sequence) use ($lecturer): void {
+            $student = Student::create([
+                'lecturer_id' => $lecturer->lecturer_id,
+                'matric_no' => 'QADMIN'.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT),
+                'name' => 'Query Student '.$sequence,
+                'email' => 'query-student-'.$sequence.'@example.test',
+                'password' => Hash::make('password'),
+                'phone_no' => '0000000000',
+                'course' => 'Test Course',
+            ]);
+
+            $this->createEntry($student, 'Entry '.$sequence, now()->subDays($sequence));
+        };
+
+        $createStudentWithEntry(1);
+        $singleCount = $this->countDatabaseQueries(
+            fn () => $this->actingAs($admin, 'admin')->get('/admin/dashboard')->assertOk()
+        );
+
+        for ($sequence = 2; $sequence <= 20; $sequence++) {
+            $createStudentWithEntry($sequence);
+        }
+
+        $multipleCount = $this->countDatabaseQueries(
+            fn () => $this->actingAs($admin, 'admin')->get('/admin/dashboard')->assertOk()
+        );
+
+        $this->assertLessThanOrEqual(
+            $singleCount + 5,
+            $multipleCount,
+            "Admin dashboard queries grew from {$singleCount} to {$multipleCount} for 20 students."
+        );
+    }
+
     private function createEntry(Student $student, string $title, Carbon $createdAt): Logbook
     {
         $entry = Logbook::create([

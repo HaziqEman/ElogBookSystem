@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\Lecturer;
 use App\Models\Student;
+use App\Models\Supervisor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Hash;
@@ -43,6 +44,41 @@ class AdminStudentControllerTest extends TestCase
             ->assertViewHas('students', fn ($students) => $students->perPage() === 25
                 && $students->total() === 1
                 && $students->first()->student_id === $matching->student_id);
+    }
+
+    public function test_student_directory_query_count_does_not_scale_with_twenty_students(): void
+    {
+        $this->authenticateAdmin();
+        $lecturer = $this->createLecturer();
+        $supervisor = Supervisor::create([
+            'name' => 'Directory Supervisor',
+            'email' => 'directory-supervisor@example.test',
+            'password' => bcrypt('secret'),
+            'must_change_password' => false,
+        ]);
+
+        $createStudent = fn () => $this->createStudent($lecturer, [
+            'supervisor_id' => $supervisor->supervisor_id,
+        ]);
+
+        $createStudent();
+        $singleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/admin/students?per_page=1')->assertOk()
+        );
+
+        for ($sequence = 2; $sequence <= 20; $sequence++) {
+            $createStudent();
+        }
+
+        $multipleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/admin/students?per_page=50')->assertOk()
+        );
+
+        $this->assertLessThanOrEqual(
+            $singleCount + 5,
+            $multipleCount,
+            "Student-directory queries grew from {$singleCount} to {$multipleCount} for 20 students."
+        );
     }
 
     public function test_admin_can_bulk_shift_start_dates_and_skips_students_without_dates(): void

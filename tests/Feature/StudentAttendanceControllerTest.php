@@ -40,6 +40,32 @@ class StudentAttendanceControllerTest extends TestCase
             ->assertViewHas('records', fn ($records) => $records->count() === 2);
     }
 
+    public function test_attendance_history_query_count_does_not_scale_with_twenty_records(): void
+    {
+        $today = Carbon::parse('2026-11-17 12:00:00', Attendance::TIMEZONE);
+        $this->travelTo($today);
+        $student = $this->authenticateStudent();
+        $this->createAttendance($student, $today->toDateString());
+
+        $singleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/student/attendance')->assertOk()
+        );
+
+        for ($offset = 1; $offset < 20; $offset++) {
+            $this->createAttendance($student, $today->copy()->subDays($offset)->toDateString());
+        }
+
+        $multipleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/student/attendance')->assertOk()
+        );
+
+        $this->assertLessThanOrEqual(
+            $singleCount + 3,
+            $multipleCount,
+            "Attendance queries grew from {$singleCount} to {$multipleCount} for 20 records."
+        );
+    }
+
     public function test_clock_in_rounds_shared_coordinates_and_rejects_a_duplicate(): void
     {
         $this->travelTo(Carbon::parse('2026-11-17 09:00:00', Attendance::TIMEZONE));

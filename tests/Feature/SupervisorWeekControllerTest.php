@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lecturer;
+use App\Models\Attachment;
 use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
@@ -73,6 +74,42 @@ class SupervisorWeekControllerTest extends TestCase
         $this->actingAs($anotherSupervisor, 'supervisor')
             ->get('/supervisor/students/'.$student->student_id)
             ->assertNotFound();
+    }
+
+    public function test_supervisor_week_query_count_does_not_scale_with_twenty_entries(): void
+    {
+        $supervisor = $this->createSupervisor();
+        $student = $this->createStudent($supervisor);
+        $this->createSubmission($student, 1, '2026-11-16 09:00:00');
+        $entry = $this->createEntry($student, 1, '2026-11-16', null);
+        Attachment::create([
+            'logbook_id' => $entry->logbook_id,
+            'file_name' => 'entry-1.pdf',
+            'file_path' => 'uploads/entry-1.pdf',
+            'upload_date' => '2026-11-16',
+        ]);
+        $this->actingAs($supervisor, 'supervisor');
+        $url = '/supervisor/students/'.$student->student_id.'?week=1';
+
+        $singleCount = $this->countDatabaseQueries(fn () => $this->get($url)->assertOk());
+
+        for ($sequence = 2; $sequence <= 20; $sequence++) {
+            $entry = $this->createEntry($student, 1, '2026-11-16', null);
+            Attachment::create([
+                'logbook_id' => $entry->logbook_id,
+                'file_name' => 'entry-'.$sequence.'.pdf',
+                'file_path' => 'uploads/entry-'.$sequence.'.pdf',
+                'upload_date' => '2026-11-16',
+            ]);
+        }
+
+        $multipleCount = $this->countDatabaseQueries(fn () => $this->get($url)->assertOk());
+
+        $this->assertLessThanOrEqual(
+            $singleCount + 4,
+            $multipleCount,
+            "Supervisor-week queries grew from {$singleCount} to {$multipleCount} for 20 entries."
+        );
     }
 
     public function test_summary_returns_422_when_the_week_has_no_entries(): void

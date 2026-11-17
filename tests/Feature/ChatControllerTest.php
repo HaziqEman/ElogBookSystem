@@ -83,6 +83,78 @@ class ChatControllerTest extends TestCase
             ->assertJsonCount(2, 'messages');
     }
 
+    public function test_chat_message_query_count_does_not_scale_with_twenty_messages(): void
+    {
+        [$student, $lecturer, $conversation] = $this->createConversation();
+        $this->createMessage($conversation, $lecturer, 'Message 1');
+        $this->actingAs($student, 'student');
+        $url = '/chat/student/conversations/'.$conversation->conversation_id.'/messages';
+
+        $singleCount = $this->countDatabaseQueries(fn () => $this->getJson($url)->assertOk());
+
+        for ($sequence = 2; $sequence <= 20; $sequence++) {
+            $sender = $sequence % 2 === 0 ? $student : $lecturer;
+            $this->createMessage($conversation, $sender, 'Message '.$sequence);
+        }
+
+        $multipleCount = $this->countDatabaseQueries(
+            fn () => $this->getJson($url)->assertOk()->assertJsonCount(20, 'messages')
+        );
+
+        $this->assertLessThanOrEqual(
+            $singleCount + 4,
+            $multipleCount,
+            "Chat queries grew from {$singleCount} to {$multipleCount} for 20 messages."
+        );
+    }
+
+    public function test_chat_contact_list_query_count_does_not_scale_with_twenty_students(): void
+    {
+        $lecturer = Lecturer::create([
+            'name' => 'Chat List Lecturer',
+            'email' => 'chat-list-lecturer@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Test Faculty',
+        ]);
+        $this->actingAs($lecturer, 'lecturer');
+
+        $createConversation = function (int $sequence) use ($lecturer): void {
+            $student = Student::create([
+                'lecturer_id' => $lecturer->lecturer_id,
+                'matric_no' => 'CHATLIST'.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT),
+                'name' => 'Chat List Student '.$sequence,
+                'email' => 'chat-list-student-'.$sequence.'@example.test',
+                'password' => Hash::make('password'),
+                'phone_no' => '0000000000',
+                'course' => 'Test Course',
+            ]);
+            $conversation = Conversation::create([
+                'student_id' => $student->student_id,
+                'lecturer_id' => $lecturer->lecturer_id,
+            ]);
+            $this->createMessage($conversation, $student, 'Message '.$sequence);
+        };
+
+        $createConversation(1);
+        $singleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/lecturer/messages')->assertOk()
+        );
+
+        for ($sequence = 2; $sequence <= 20; $sequence++) {
+            $createConversation($sequence);
+        }
+
+        $multipleCount = $this->countDatabaseQueries(
+            fn () => $this->get('/lecturer/messages')->assertOk()
+        );
+
+        $this->assertLessThanOrEqual(
+            $singleCount + 4,
+            $multipleCount,
+            "Chat-contact queries grew from {$singleCount} to {$multipleCount} for 20 students."
+        );
+    }
+
     public function test_read_marks_other_messages_and_broadcasts_the_read_cursor(): void
     {
         [$student, $lecturer, $conversation] = $this->createConversation();
