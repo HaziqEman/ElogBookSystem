@@ -58,6 +58,7 @@
 - Supervisor comments could not be persisted because `feedback` lacked `supervisor_id` and required `lecturer_id`. Added supervisor attribution and made lecturer attribution nullable; existing feedback rows remain valid.
 - Fresh attendance schemas lacked the fields written by clock-in/day-off flows and had no `attendance_files` table, causing those writes to fail. Added additive migration `2026_11_17_000003_add_student_attendance_detail_support.php`; existing migrations were not edited.
 - Attendance date lookups used exact string equality against date-cast values, causing duplicate clock-ins, clock-outs, and day-off conflicts to fail on SQLite. Updated the attendance controller's date filters to use date-aware comparisons and added focused regression coverage.
+- Fresh message schemas lacked the `type` and attachment metadata columns used by chat message creation. Added additive migration `2026_11_17_000004_add_chat_attachment_support_to_messages.php`; existing migrations were not edited.
 
 ## Cleanup completed
 
