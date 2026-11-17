@@ -56,6 +56,7 @@
 - Fresh databases lacked `logbooks.supervisor_status`, causing dashboard queries to fail.
 - Admin dashboard analytics crashed when a student had no internship start date.
 - Supervisor comments could not be persisted because `feedback` lacked `supervisor_id` and required `lecturer_id`. Added supervisor attribution and made lecturer attribution nullable; existing feedback rows remain valid.
+- Fresh attendance schemas lacked the fields written by clock-in/day-off flows and had no `attendance_files` table, causing those writes to fail. Added additive migration `2026_11_17_000003_add_student_attendance_detail_support.php`; existing migrations were not edited.
 
 ## Cleanup completed
 
