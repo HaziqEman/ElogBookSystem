@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\WeekSubmission;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -46,7 +47,7 @@ class SupervisorWeekService
     /**
      * @return array{chips: array, total: int, current: ?int, selected: ?array}
      */
-    public function pageData(Student $student, Supervisor $supervisor, Carbon $now, ?string $requestedWeek): array
+    public function pageData(Student $student, Supervisor $supervisor, Carbon $now, mixed $requestedWeek): array
     {
         $planner = new WeekPlanner($student, $now);
         $batch = app(WeekBatchService::class);
@@ -350,7 +351,7 @@ class SupervisorWeekService
             ->all();
     }
 
-    private function pending($query)
+    private function pending(Builder $query): Builder
     {
         return $query->where(fn ($builder) => $builder->where('supervisor_status', 'Pending')
             ->orWhereNull('supervisor_status'));

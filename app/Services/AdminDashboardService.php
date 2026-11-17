@@ -9,6 +9,8 @@ use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -273,7 +275,7 @@ class AdminDashboardService
         );
     }
 
-    private function pending($query, string $column = 'supervisor_status')
+    private function pending(EloquentBuilder|QueryBuilder $query, string $column = 'supervisor_status'): EloquentBuilder|QueryBuilder
     {
         return $query->where(function ($where) use ($column) {
             $where->whereNull($column)->orWhere($column, 'Pending');
@@ -283,7 +285,10 @@ class AdminDashboardService
     /**
      * @return array{int, string}
      */
-    private function summarise($query): array
+    /**
+     * @return array{int, string}
+     */
+    private function summarise(EloquentBuilder|QueryBuilder $query): array
     {
         $count = (clone $query)->count();
         $names = $count > 0 ? (clone $query)->orderBy('name')->limit(3)->pluck('name') : collect();
@@ -291,7 +296,7 @@ class AdminDashboardService
         return [$count, $this->nameList($names, $count)];
     }
 
-    private function nameList($names, int $total): string
+    private function nameList(iterable $names, int $total): string
     {
         $names = collect($names)->take(3)->values();
         $more = $total - $names->count();
