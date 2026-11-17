@@ -94,7 +94,6 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/student/dashboard/reminders', [StudentReminderController::class, 'index']);
     Route::post('/student/dashboard/working-days', [StudentScheduleController::class, 'update']);
 
-    Route::get('/student/university/export', [StudentUniversityController::class, 'exportForm']);
     Route::post('/student/university', [StudentUniversityController::class, 'update'])->middleware('throttle:10,1');
     Route::get('/student/university/search', [StudentUniversityController::class, 'search'])->middleware('throttle:30,1');
 });
