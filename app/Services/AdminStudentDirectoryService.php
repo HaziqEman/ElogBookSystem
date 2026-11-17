@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Models\Supervisor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class AdminStudentDirectoryService
 {
@@ -102,7 +103,7 @@ class AdminStudentDirectoryService
         return $query;
     }
 
-    private function applyAssignmentFilter(Builder $query, string $column, $value): void
+    private function applyAssignmentFilter(Builder $query, string $column, mixed $value): void
     {
         if ($value === 'none') {
             $query->whereNull($column);
@@ -111,7 +112,7 @@ class AdminStudentDirectoryService
         }
     }
 
-    private function idsForState(string $state)
+    private function idsForState(string $state): Collection
     {
         return Student::whereNotNull('internship_start')
             ->get(['student_id', 'internship_start', 'internship_weeks'])
@@ -119,6 +120,7 @@ class AdminStudentDirectoryService
             ->pluck('student_id');
     }
 
+    /** @return array{key: string, label: string, detail: string|null} */
     private function stateOf(Student $student): array
     {
         if (! $student->internship_start) {

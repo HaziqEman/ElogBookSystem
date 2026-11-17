@@ -9,6 +9,7 @@ use App\Models\Supervisor;
 use App\Services\AdminStudentDirectoryService;
 use App\Services\WeekPlanner;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
 class BulkStudentAction
@@ -17,6 +18,9 @@ class BulkStudentAction
     {
     }
 
+    /**
+     * @return array{redirect: string, flash: array<string, string>}
+     */
     public function handle(BulkStudentActionRequest $request): array
     {
         $ids = $request->boolean('apply_to_all')
@@ -90,7 +94,11 @@ class BulkStudentAction
         return ['redirect' => 'back', 'flash' => []];
     }
 
-    private function setInternship(BulkStudentActionRequest $request, $ids): array
+    /**
+     * @param Collection<int, mixed> $ids
+     * @return array<string, string>
+     */
+    private function setInternship(BulkStudentActionRequest $request, Collection $ids): array
     {
         if (! Schema::hasColumn('students', 'internship_start')) {
             return ['error' => 'The internship date columns do not exist yet. Run the database update first.'];

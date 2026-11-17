@@ -5,6 +5,7 @@ namespace App\Actions\Admin;
 use App\Services\AdminStudentDirectoryService;
 use App\Services\WeekPlanner;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportStudentCsv
 {
@@ -12,7 +13,7 @@ class ExportStudentCsv
     {
     }
 
-    public function handle(Request $request)
+    public function handle(Request $request): StreamedResponse
     {
         $query = $this->directory->filteredQuery($request)
             ->with(['lecturer', 'supervisor'])

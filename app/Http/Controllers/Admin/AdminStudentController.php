@@ -11,16 +11,19 @@ use App\Http\Requests\Admin\UpdateStudentRequest;
 use App\Models\Student;
 use App\Services\AdminStudentDirectoryService;
 use App\Services\AdminStudentService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminStudentController extends Controller
 {
-    public function index(Request $request, AdminStudentDirectoryService $directory)
+    public function index(Request $request, AdminStudentDirectoryService $directory): View
     {
         return view('admin.students.index', $directory->indexData($request));
     }
 
-    public function bulk(BulkStudentActionRequest $request, BulkStudentAction $action)
+    public function bulk(BulkStudentActionRequest $request, BulkStudentAction $action): RedirectResponse
     {
         $result = $action->handle($request);
         $redirect = $result['redirect'] === 'students' ? redirect('/admin/students') : back();
@@ -32,12 +35,12 @@ class AdminStudentController extends Controller
     // Export + password reset
     // ------------------------------------------------------------------
 
-    public function export(Request $request, ExportStudentCsv $export)
+    public function export(Request $request, ExportStudentCsv $export): StreamedResponse
     {
         return $export->handle($request);
     }
 
-    public function resetPassword($id, AdminStudentService $students)
+    public function resetPassword(int $id, AdminStudentService $students): RedirectResponse
     {
         $student = Student::findOrFail($id);
         $temporary = $students->resetPassword($student);
@@ -53,12 +56,12 @@ class AdminStudentController extends Controller
     // Create / edit / delete (same behaviour as before)
     // ------------------------------------------------------------------
 
-    public function create(AdminStudentService $students)
+    public function create(AdminStudentService $students): View
     {
         return view('admin.students.create', $students->createFormData());
     }
 
-    public function store(StoreStudentRequest $request, AdminStudentService $students)
+    public function store(StoreStudentRequest $request, AdminStudentService $students): RedirectResponse
     {
         $data = $request->validated();
 
@@ -71,14 +74,14 @@ class AdminStudentController extends Controller
         return redirect('/admin/students')->with('success', 'Student created.'.$students->datesMessage($student->getAttributes()));
     }
 
-    public function edit($id, AdminStudentService $students)
+    public function edit(int $id, AdminStudentService $students): View
     {
         $student = Student::findOrFail($id);
 
         return view('admin.students.edit', $students->editFormData($student));
     }
 
-    public function update(Request $request, $id, AdminStudentService $students)
+    public function update(Request $request, int $id, AdminStudentService $students): RedirectResponse
     {
         $student = Student::findOrFail($id);
         $data = app(UpdateStudentRequest::class)->validated();
@@ -92,7 +95,7 @@ class AdminStudentController extends Controller
         return redirect('/admin/students')->with('success', 'Student updated.'.$students->datesMessage($payload));
     }
 
-    public function destroy($id, AdminStudentService $students)
+    public function destroy(int $id, AdminStudentService $students): RedirectResponse
     {
         $students->delete(Student::findOrFail($id));
 
