@@ -180,8 +180,8 @@ class DashboardUiTest extends TestCase
             'course' => 'ITT626',
         ]);
 
-        $olderCreatedAt = now()->subDays(10);
-        $latestCreatedAt = now()->subDay();
+        $olderCreatedAt = now()->subDays(10)->setTime(8, 0);
+        $latestCreatedAt = now()->subDay()->setTime(8, 0);
 
         $olderLogbook = Logbook::create([
             'student_id' => $student->student_id,
