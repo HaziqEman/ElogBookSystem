@@ -27,7 +27,7 @@
 
 ### 2. Maintainability work with moderate risk
 
-- `AdminStudentController` combines listing/filtering, bulk actions, student CRUD, and internship calculations; it is a high-impact candidate for carefully separated requests/actions.
+- `AdminStudentController` combined listing/filtering, bulk actions, student CRUD, and internship calculations. It was characterized and refactored during the continuation documented below.
 - `AdminController` contains dashboard queries and summary calculations. `StudentAttendanceController` has multiple stateful flows and validation in long methods. `SupervisorWeekController` combines weekly loading, summaries, and review flows. Add focused tests before restructuring these.
 - Similar role/participant helper logic exists in `ChatController` and `MessageDeleteController`; compare edge cases before consolidating.
 - Several methods are substantially longer than 20–30 lines and/or contain nested branching, especially controller bulk actions, student attendance, and weekly supervisor review.
@@ -65,7 +65,7 @@
 - Added query, route-ID, view, redirect, and JSON response types to the supervisor review controller after confirming the actual return paths.
 - No confirmed dead code was removed. No route or Blade behavior was changed; the initial scans did not establish an unused route or a specific N+1 query.
 - No Laravel `env()` calls outside config were found, so no config change was needed.
-- Broader controller extraction, Blade calculation cleanup, role-value centralization, and chat-helper consolidation remain deferred until focused characterization tests can establish behavior.
+- `AdminStudentController` is now covered by focused characterization tests and delegates to requests/actions/services. Remaining controller extraction, Blade calculation cleanup, role-value centralization, and chat-helper consolidation remain deferred until focused characterization tests can establish behavior.
 
 ## Final verification
 
@@ -84,3 +84,12 @@
 - Machine Composer `2.2.24` does not provide `composer audit`. Used a checksum-verified Composer `2.11.2` PHAR in a temporary directory, without changing the machine-wide installation.
 - The audit reported **39 advisories across 10 locked packages**: 1 critical, 17 high, 10 medium, 5 low, and 6 unrated. Package versions and issue summaries are recorded in [SECURITY-REVIEW.md](./SECURITY-REVIEW.md). No dependency versions were changed to address the advisories.
 - After installing the analysis tools and generating the baseline, the full suite passed (**36 tests, 159 assertions**) and the maintained-PHP Pint check passed.
+
+## Controller follow-up: AdminStudentController
+
+- Added characterization tests before changing controller behavior, covering directory filtering and page size, bulk date changes and assignment/deletion, create/update behavior, CSV export, password reset, and validation ordering. The test class adds the optional internship columns to its test schema only; no migration was edited.
+- Moved store/update validation into `StoreStudentRequest` and `UpdateStudentRequest`; moved bulk validation into `BulkStudentActionRequest`. The update request is resolved after `findOrFail` to preserve the existing 404-before-validation order, and bulk detail validation remains after the empty-selection check.
+- Extracted listing/filter calculations to `AdminStudentDirectoryService`, persistence and password operations to `AdminStudentService`, bulk mutations to `BulkStudentAction`, and CSV generation to `ExportStudentCsv`. Controller methods now delegate and preserve existing response/flash behavior.
+- Added parameter and response types to the controller and extracted workflow methods.
+- Verification after this controller: **47 tests, 47 passed, 204 assertions**; maintained-PHP Pint check and level-5 PHPStan both passed.
+- Next controllers remain in the requested order: `StudentAttendanceController`, `SupervisorWeekController`, `AdminController`, then `ChatController`/`MessageDeleteController`.
