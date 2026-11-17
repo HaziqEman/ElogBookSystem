@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Models\Logbook;
+
 /**
  * Builds each table sheet from the data returned by InternshipReportService::build().
  * Used by the Excel dashboard (all sheets) and by the CSV downloads (one sheet).

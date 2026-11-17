@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class Attachment extends Model
@@ -16,7 +17,8 @@ class Attachment extends Model
         'upload_date',
     ];
 
-    public function logbook()
+    /** @return BelongsTo<Logbook, $this> */
+    public function logbook(): BelongsTo
     {
         return $this->belongsTo(Logbook::class, 'logbook_id');
     }

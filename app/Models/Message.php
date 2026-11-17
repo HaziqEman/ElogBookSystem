@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property-read Student|Lecturer|Supervisor|null $sender
+ */
 class Message extends Model
 {
     protected $primaryKey = 'message_id';
@@ -44,6 +47,7 @@ class Message extends Model
         return $this->belongsTo(Conversation::class, 'conversation_id', 'conversation_id');
     }
 
+    /** @return MorphTo<Model, $this> */
     public function sender(): MorphTo
     {
         return $this->morphTo(__FUNCTION__, 'sender_type', 'sender_id');

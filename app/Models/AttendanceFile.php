@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $attendance_id
+ * @property string $content_base64
+ */
 class AttendanceFile extends Model
 {
     protected $table = 'attendance_files';

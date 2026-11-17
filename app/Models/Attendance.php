@@ -6,6 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $attendance_id
+ * @property int $student_id
+ * @property \Illuminate\Support\Carbon $attendance_date
+ * @property \Illuminate\Support\Carbon|null $check_in
+ * @property \Illuminate\Support\Carbon|null $check_out
+ * @property string|null $status
+ * @property string|null $note
+ * @property string|null $day_off_type
+ * @property string|null $work_mode
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property int|null $location_accuracy
+ * @property string|null $location_name
+ * @property string|null $location_status
+ * @property string|null $mc_file_name
+ * @property string|null $mc_mime
+ */
 class Attendance extends Model
 {
     /** Dates and clock times are shown in Malaysia time. */
@@ -51,11 +69,13 @@ class Attendance extends Model
         'location_accuracy' => 'integer',
     ];
 
+    /** @return BelongsTo<Student, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id', 'student_id');
     }
 
+    /** @return HasOne<AttendanceFile, $this> */
     public function file(): HasOne
     {
         return $this->hasOne(AttendanceFile::class, 'attendance_id', 'attendance_id');

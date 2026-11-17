@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $logbook_id
+ * @property int $student_id
+ * @property int $week_no
+ * @property string|null $status
+ * @property string|null $supervisor_status
+ * @property-read int $c
+ */
 class Logbook extends Model
 {
     use HasFactory;
@@ -35,16 +43,19 @@ class Logbook extends Model
         'supervisor_status',
     ];
 
+    /** @return BelongsTo<Student, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id');
     }
 
+    /** @return HasMany<Attachment, $this> */
     public function attachments(): HasMany
     {
         return $this->hasMany(Attachment::class, 'logbook_id');
     }
 
+    /** @return HasMany<Feedback, $this> */
     public function feedbacks(): HasMany
     {
         return $this->hasMany(Feedback::class, 'logbook_id');

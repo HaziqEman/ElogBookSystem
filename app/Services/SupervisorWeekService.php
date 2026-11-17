@@ -351,6 +351,10 @@ class SupervisorWeekService
             ->all();
     }
 
+    /**
+     * @param Builder<Logbook> $query
+     * @return Builder<Logbook>
+     */
     private function pending(Builder $query): Builder
     {
         return $query->where(fn ($builder) => $builder->where('supervisor_status', Logbook::SUPERVISOR_STATUS_PENDING)

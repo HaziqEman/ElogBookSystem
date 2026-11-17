@@ -29,7 +29,7 @@ class WeekPlanner
         $raw = $student->internship_start;
 
         if ($raw) {
-            $date = $raw instanceof Carbon ? $raw->toDateString() : substr((string) $raw, 0, 10);
+            $date = $raw->toDateString();
             $this->start = Carbon::parse($date, Attendance::TIMEZONE)->startOfDay();
         }
     }

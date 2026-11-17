@@ -6,6 +6,24 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $student_id
+ * @property int $lecturer_id
+ * @property int|null $supervisor_id
+ * @property int|null $university_id
+ * @property string $matric_no
+ * @property string $name
+ * @property string $email
+ * @property string $phone_no
+ * @property string $course
+ * @property \Illuminate\Support\Carbon|null $internship_start
+ * @property int|null $internship_weeks
+ * @property string|null $working_days
+ * @property string|null $working_schedule
+ * @property-read int|null $logbooks_count
+ * @property-read \Illuminate\Support\Carbon|null $logbooks_max_created_at
+ * @property-read array{key: string, label: string, detail: string|null}|null $internship_state
+ */
 class Student extends Authenticatable
 {
     protected $primaryKey = 'student_id';
@@ -36,6 +54,7 @@ class Student extends Authenticatable
         'internship_start' => 'date',
     ];
 
+    /** @return BelongsTo<Lecturer, $this> */
     public function lecturer(): BelongsTo
     {
         return $this->belongsTo(
@@ -45,6 +64,7 @@ class Student extends Authenticatable
         );
     }
 
+    /** @return BelongsTo<University, $this> */
     public function university(): BelongsTo
     {
         return $this->belongsTo(
@@ -54,6 +74,7 @@ class Student extends Authenticatable
         );
     }
 
+    /** @return BelongsTo<Supervisor, $this> */
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(
@@ -63,6 +84,7 @@ class Student extends Authenticatable
         );
     }
 
+    /** @return HasMany<Logbook, $this> */
     public function logbooks(): HasMany
     {
         return $this->hasMany(
@@ -71,11 +93,13 @@ class Student extends Authenticatable
         );
     }
 
+    /** @return HasMany<Todo, $this> */
     public function todos(): HasMany
     {
         return $this->hasMany(Todo::class, 'student_id', 'student_id');
     }
 
+    /** @return HasMany<Attendance, $this> */
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class, 'student_id', 'student_id');

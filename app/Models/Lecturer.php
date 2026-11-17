@@ -20,6 +20,7 @@ class Lecturer extends Authenticatable
         'password',
     ];
 
+    /** @return HasMany<Student, $this> */
     public function students(): HasMany
     {
         return $this->hasMany(Student::class, 'lecturer_id', 'lecturer_id');

@@ -72,6 +72,7 @@ class AdminStudentDirectoryService
         return compact('students', 'chips', 'activeChip', 'courses', 'lecturers', 'supervisors', 'perPage');
     }
 
+    /** @return Builder<Student> */
     public function filteredQuery(Request $request): Builder
     {
         $query = Student::query();
@@ -103,6 +104,7 @@ class AdminStudentDirectoryService
         return $query;
     }
 
+    /** @param Builder<Student> $query */
     private function applyAssignmentFilter(Builder $query, string $column, mixed $value): void
     {
         if ($value === 'none') {

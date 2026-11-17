@@ -61,6 +61,7 @@
 - Attendance date lookups used exact string equality against date-cast values, causing duplicate clock-ins, clock-outs, and day-off conflicts to fail on SQLite. Updated the attendance controller's date filters to use date-aware comparisons and added focused regression coverage.
 - Fresh message schemas lacked the `type` and attachment metadata columns used by chat message creation. Added additive migration `2026_11_17_000004_add_chat_attachment_support_to_messages.php`; existing migrations were not edited.
 - Deleting a chat message only for yourself incorrectly removed its shared Cloudinary attachment, while delete-for-everyone left the asset behind. Moved attachment cleanup to the delete-for-everyone path and added regression tests.
+- `StudentLogbookEditController` and `InternshipSheets` referenced `Logbook` constants without importing `App\Models\Logbook`, causing student updates and progress-sheet generation to fail at runtime. Added the explicit imports and regression tests in a separate `fix:` commit.
 
 ## Cleanup completed
 
@@ -215,3 +216,27 @@
 - Removed the unused `historyNote()` method; no call site existed in app code, views, routes, tests, or other project files. Added explicit `BelongsTo` and `HasOne` return types to the model's relationships.
 - Kept the remaining attendance methods: they are side-effect-free derived values/labels used across controllers, services, and several role-specific views, rather than workflows. Moving them would require adding view-data plumbing across those existing contexts; there is no existing shared attendance presentation service. This broader extraction is deferred under "Needs human review" rather than introducing a new abstraction or changing rendered behavior.
 - No migration, relationship name, or stored value was changed.
+
+## Phase 5: PHPStan baseline reduction
+
+### Baseline before fixes
+
+- The baseline contained **136 rules / 174 findings**:
+  - `property.notFound`: 95 rules / 121 findings.
+  - `larastan.relationExistence`: 10 / 16.
+  - `argument.type`: 12 / 14.
+  - `nullsafe.neverNull`: 7 / 7.
+  - `method.notFound`: 4 / 6.
+  - `booleanAnd.alwaysFalse`: 1 / 2.
+  - `function.alreadyNarrowedType`: 2 / 2.
+  - `nullCoalesce.expr`: 1 / 2.
+  - `argument.unresolvableType`, `isset.offset`, `identical.alwaysFalse`, and `match.unhandled`: 1 rule / finding each.
+- No baseline entries were for missing parameter or return types, so that first category required no code changes.
+
+### Undefined properties and relationship types
+
+- Added model PHPDoc for persisted fields and query aliases, generic related-model types for Eloquent relationships, and generic query-builder/collection types where services consume model results.
+- Regenerated the baseline with the old ignore file excluded and compared exact message/identifier/path keys against the old baseline. The candidate was a strict subset: **zero new entries**, from 136 to **28 rules / 33 findings** (108 rules and 141 findings removed).
+- The remaining baseline groups are: `property.notFound` 12, `nullsafe.neverNull` 7, `argument.type` 5, `booleanAnd.alwaysFalse` 2, `function.alreadyNarrowedType` 2, `nullCoalesce.expr` 2, and one each for `identical.alwaysFalse`, `isset.offset`, and `match.unhandled`.
+- PHPStan also exposed missing `App\Models\Logbook` imports that caused student edits and report generation to fail at runtime. Added two regression tests; before the fix the student update returned **500** with a missing-class error and the progress sheet threw the same class-resolution error. Both paths now pass.
+- Verification: **82 tests passed, 377 assertions**; Pint and level-5 PHPStan passed.

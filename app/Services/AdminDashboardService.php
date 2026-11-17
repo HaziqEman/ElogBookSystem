@@ -278,6 +278,10 @@ class AdminDashboardService
         );
     }
 
+    /**
+     * @param EloquentBuilder<Logbook>|QueryBuilder $query
+     * @return EloquentBuilder<Logbook>|QueryBuilder
+     */
     private function pending(EloquentBuilder|QueryBuilder $query, string $column = 'supervisor_status'): EloquentBuilder|QueryBuilder
     {
         return $query->where(function ($where) use ($column) {

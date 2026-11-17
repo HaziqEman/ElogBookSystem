@@ -55,4 +55,11 @@ class InternshipMarksReportTest extends TestCase
         $this->assertNull($rows[1][8]);
         $this->assertNull($rows[1][11]);
     }
+
+    public function test_student_progress_sheet_builds_its_status_rules(): void
+    {
+        $sheet = InternshipSheets::progress(['students' => []]);
+
+        $this->assertSame('Student Progress', $sheet->title());
+    }
 }

@@ -22,16 +22,19 @@ class Feedback extends Model
         'feedback_date',
     ];
 
+    /** @return BelongsTo<Logbook, $this> */
     public function logbook(): BelongsTo
     {
         return $this->belongsTo(Logbook::class, 'logbook_id');
     }
 
+    /** @return BelongsTo<Lecturer, $this> */
     public function lecturer(): BelongsTo
     {
         return $this->belongsTo(Lecturer::class, 'lecturer_id');
     }
 
+    /** @return BelongsTo<Supervisor, $this> */
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(Supervisor::class, 'supervisor_id');

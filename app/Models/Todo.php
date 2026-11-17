@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Todo extends Model
 {
@@ -21,13 +22,15 @@ class Todo extends Model
         'is_done' => 'boolean',
     ];
 
-    public function student()
+    /** @return BelongsTo<Student, $this> */
+    public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id', 'student_id');
     }
 
     /** The company supervisor who assigned this task (null for the student's own tasks). */
-    public function supervisor()
+    /** @return BelongsTo<Supervisor, $this> */
+    public function supervisor(): BelongsTo
     {
         return $this->belongsTo(Supervisor::class, 'supervisor_id', 'supervisor_id');
     }

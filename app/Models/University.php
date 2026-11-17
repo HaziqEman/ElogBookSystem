@@ -3,7 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $university_id
+ * @property string $name
+ * @property string|null $logo_url
+ * @property-read int|null $students_count
+ */
 class University extends Model
 {
     protected $primaryKey = 'university_id';
@@ -20,12 +28,14 @@ class University extends Model
         'is_verified' => 'boolean',
     ];
 
-    public function students()
+    /** @return HasMany<Student, $this> */
+    public function students(): HasMany
     {
         return $this->hasMany(Student::class, 'university_id', 'university_id');
     }
 
-    public function creator()
+    /** @return BelongsTo<Student, $this> */
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'created_by_student_id', 'student_id');
     }

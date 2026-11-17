@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SupervisorEvaluation extends Model
 {
@@ -24,7 +25,8 @@ class SupervisorEvaluation extends Model
         'rubric_snapshot' => 'array',
     ];
 
-    public function student()
+    /** @return BelongsTo<Student, $this> */
+    public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id', 'student_id');
     }

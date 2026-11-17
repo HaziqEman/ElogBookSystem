@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
+use App\Models\Logbook;
 use App\Services\AttachmentStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

@@ -56,7 +56,7 @@ class ChatContacts
             ->where('lecturer_id', $lecturer->lecturer_id)
             ->withCount(['messages as unread_count' => fn ($q) => $q->where('sender_type', Student::class)->whereNull('read_at')])
             ->get()
-            ->filter(fn ($c) => $c->student);
+            ->filter(fn ($c): bool => $c->student !== null);
 
         $last = $this->lastMessages($convs->pluck('conversation_id'));
 
