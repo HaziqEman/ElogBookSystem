@@ -11,6 +11,18 @@ class Logbook extends Model
 {
     use HasFactory;
 
+    public const STATUS_PENDING = 'Pending';
+
+    public const STATUS_APPROVED = 'Approved';
+
+    public const STATUS_REJECTED = 'Rejected';
+
+    public const SUPERVISOR_STATUS_PENDING = 'Pending';
+
+    public const SUPERVISOR_STATUS_VALIDATED = 'Validated';
+
+    public const SUPERVISOR_STATUS_REVISION_REQUESTED = 'Revision Requested';
+
     protected $primaryKey = 'logbook_id';
 
     protected $fillable = [
@@ -41,12 +53,12 @@ class Logbook extends Model
     /** Only the company supervisor reviews entries now. */
     public function needsRevision(): bool
     {
-        return $this->supervisor_status === 'Revision Requested';
+        return $this->supervisor_status === self::SUPERVISOR_STATUS_REVISION_REQUESTED;
     }
 
     /** An entry stays editable until the company supervisor validates it. */
     public function isEditableByStudent(): bool
     {
-        return $this->supervisor_status !== 'Validated';
+        return $this->supervisor_status !== self::SUPERVISOR_STATUS_VALIDATED;
     }
 }

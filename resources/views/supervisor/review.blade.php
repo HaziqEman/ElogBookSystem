@@ -22,14 +22,14 @@
     @endif
 
     @php
-        $mine = $logbook->supervisor_status ?? 'Pending';
-        $mineBadge = $mine === 'Validated'
+        $mine = $logbook->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING;
+        $mineBadge = $mine === \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED
             ? 'bg-[#D1FAE5] text-[#065F46]'
-            : ($mine === 'Revision Requested' ? 'bg-[#FFE4E6] text-[#9F1239]' : 'bg-[#FEF3C7] text-[#92400E]');
-        $lec = $logbook->status ?? 'Pending';
-        $lecBadge = $lec === 'Approved'
+            : ($mine === \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED ? 'bg-[#FFE4E6] text-[#9F1239]' : 'bg-[#FEF3C7] text-[#92400E]');
+        $lec = $logbook->status ?? \App\Models\Logbook::STATUS_PENDING;
+        $lecBadge = $lec === \App\Models\Logbook::STATUS_APPROVED
             ? 'bg-[#D1FAE5] text-[#065F46]'
-            : ($lec === 'Rejected' ? 'bg-[#FFE4E6] text-[#9F1239]' : 'bg-[#FEF3C7] text-[#92400E]');
+            : ($lec === \App\Models\Logbook::STATUS_REJECTED ? 'bg-[#FFE4E6] text-[#9F1239]' : 'bg-[#FEF3C7] text-[#92400E]');
     @endphp
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
@@ -103,7 +103,7 @@
                     <button type="submit" name="decision" value="Validated" class="review-btn rounded-xl bg-[#10B981] px-3 py-2.5 text-sm font-bold text-white transition hover:bg-[#059669] disabled:opacity-60">
                         <i class="fa-solid fa-check"></i> Validate
                     </button>
-                    <button type="submit" name="decision" value="Revision Requested" class="review-btn rounded-xl bg-[#F59E0B] px-3 py-2.5 text-sm font-bold text-[#1F2937] transition hover:bg-[#D97706] disabled:opacity-60">
+                    <button type="submit" name="decision" value="{{ \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED }}" class="review-btn rounded-xl bg-[#F59E0B] px-3 py-2.5 text-sm font-bold text-[#1F2937] transition hover:bg-[#D97706] disabled:opacity-60">
                         <i class="fa-solid fa-rotate-left"></i> Request revision
                     </button>
                 </div>
@@ -119,7 +119,7 @@
     form.addEventListener('submit', function (e) {
         var submitter = e.submitter;
         var comment = document.getElementById('comment');
-        if (submitter && submitter.value === 'Revision Requested' && comment && comment.value.trim() === '') {
+        if (submitter && submitter.value === @json(\App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED) && comment && comment.value.trim() === '') {
             e.preventDefault();
             comment.focus();
             comment.classList.add('border-rose-400');

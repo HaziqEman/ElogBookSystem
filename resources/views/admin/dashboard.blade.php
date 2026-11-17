@@ -74,9 +74,9 @@
         ];
 
         $statusBadge = [
-            'Validated' => 'bg-emerald-100 text-emerald-700',
-            'Revision Requested' => 'bg-rose-100 text-rose-700',
-            'Pending' => 'bg-amber-100 text-amber-800',
+            \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED => 'bg-emerald-100 text-emerald-700',
+            \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED => 'bg-rose-100 text-rose-700',
+            \App\Models\Logbook::SUPERVISOR_STATUS_PENDING => 'bg-amber-100 text-amber-800',
         ];
 
         // 2. Needs attention: merge all "assignment" problems into ONE item
@@ -431,7 +431,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white text-slate-700">
                         @forelse($latestEntries->take(5) as $entry)
-                            @php $status = $entry->supervisor_status ?: 'Pending'; @endphp
+                            @php $status = $entry->supervisor_status ?: \App\Models\Logbook::SUPERVISOR_STATUS_PENDING; @endphp
                             <tr>
                                 <td class="px-6 py-3.5 font-medium text-slate-800">
                                     {{ optional($entry->student)->name ?? 'Unknown' }}</td>

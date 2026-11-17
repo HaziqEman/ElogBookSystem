@@ -23,9 +23,9 @@
             'locked' => 'Not open yet',
         ];
         $statusBadge = [
-            'Pending' => 'bg-[#FEF3C7] text-[#92400E]',
-            'Validated' => 'bg-[#D1FAE5] text-[#065F46]',
-            'Revision Requested' => 'bg-[#FFE4E6] text-[#9F1239]',
+            \App\Models\Logbook::SUPERVISOR_STATUS_PENDING => 'bg-[#FEF3C7] text-[#92400E]',
+            \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED => 'bg-[#D1FAE5] text-[#065F46]',
+            \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED => 'bg-[#FFE4E6] text-[#9F1239]',
         ];
         $card =
             'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
@@ -223,12 +223,12 @@
                                     @if ($day['state'] === 'entries')
                                         @foreach ($day['entries'] as $entry)
                                             @php
-                                                $status = $entry->supervisor_status ?? 'Pending';
-                                                $isPending = $status === 'Pending';
+                                                $status = $entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING;
+                                                $isPending = $status === \App\Models\Logbook::SUPERVISOR_STATUS_PENDING;
                                                 $canDecide = $selected['sent'] && $isPending;
                                                 $choice = old(
                                                     'decision.' . $entry->logbook_id,
-                                                    'Validated',
+                                                    \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED,
                                                 );
                                                 $long =
                                                     mb_strlen((string) $entry->description) > 260;
@@ -242,8 +242,8 @@
                                             >
                                                 <div class="mb-1.5 flex flex-wrap items-center gap-2">
                                                     <span
-                                                        class="{{ $statusBadge[$status] ?? $statusBadge['Pending'] }} rounded-full px-2.5 py-1 text-xs font-bold"
-                                                    >{{ $status === 'Pending' && !$selected['sent'] ? 'Not sent yet' : $status }}</span>
+                                                        class="{{ $statusBadge[$status] ?? $statusBadge[\App\Models\Logbook::SUPERVISOR_STATUS_PENDING] }} rounded-full px-2.5 py-1 text-xs font-bold"
+                                                    >{{ $status === \App\Models\Logbook::SUPERVISOR_STATUS_PENDING && !$selected['sent'] ? 'Not sent yet' : $status }}</span>
                                                     <a
                                                         href="/supervisor/logbook/{{ $entry->logbook_id }}"
                                                         class="text-xs font-bold text-[#5B6478] hover:text-[#1F45D6] hover:underline"
@@ -297,8 +297,8 @@
                                                                     type="radio"
                                                                     class="peer sr-only"
                                                                     name="decision[{{ $entry->logbook_id }}]"
-                                                                    value="Validated"
-                                                                    {{ $choice === 'Validated' ? 'checked' : '' }}
+                                                                    value="{{ \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED }}"
+                                                                    {{ $choice === \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED ? 'checked' : '' }}
                                                                 >
                                                                 <span
                                                                     class="flex min-h-9 items-center gap-1.5 px-3.5 text-[#334155] transition peer-checked:bg-[#10B981] peer-checked:text-white"
@@ -312,8 +312,8 @@
                                                                     type="radio"
                                                                     class="peer sr-only"
                                                                     name="decision[{{ $entry->logbook_id }}]"
-                                                                    value="Revision Requested"
-                                                                    {{ $choice === 'Revision Requested' ? 'checked' : '' }}
+                                                                    value="{{ \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED }}"
+                                                                    {{ $choice === \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED ? 'checked' : '' }}
                                                                 >
                                                                 <span
                                                                     class="flex min-h-9 items-center gap-1.5 px-3.5 text-[#334155] transition peer-checked:bg-[#F59E0B] peer-checked:text-[#1F2937]"
@@ -323,7 +323,7 @@
                                                         </div>
                                                         <div
                                                             data-comment-box
-                                                            class="{{ $choice === 'Revision Requested' ? '' : 'hidden' }} mt-2"
+                                                            class="{{ $choice === \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED ? '' : 'hidden' }} mt-2"
                                                         >
                                                             <textarea
                                                                 name="comment[{{ $entry->logbook_id }}]"
@@ -469,7 +469,7 @@
 
                 boxes.forEach(function(box) {
                     var picked = box.querySelector('input[type="radio"]:checked');
-                    var isRevise = picked && picked.value === 'Revision Requested';
+                    var isRevise = picked && picked.value === @json(\App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED);
                     var comment = box.querySelector('[data-comment-box]');
                     if (isRevise) revise++;
                     if (comment) comment.classList.toggle('hidden', !isRevise);
@@ -495,7 +495,7 @@
 
             var reset = document.getElementById('reset-decisions');
             if (reset) reset.addEventListener('click', function() {
-                form.querySelectorAll('input[type="radio"][value="Validated"]').forEach(
+                form.querySelectorAll('input[type="radio"][value="{{ \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED }}"]').forEach(
                     function(radio) {
                         radio.checked = true;
                     });
@@ -509,7 +509,7 @@
                     var picked = box.querySelector('input[type="radio"]:checked');
                     var area = box.querySelector('textarea');
 
-                    if (picked && picked.value === 'Revision Requested' && area &&
+                    if (picked && picked.value === @json(\App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED) && area &&
                         area.value.trim() === '' && !missing) missing = area;
                 });
 

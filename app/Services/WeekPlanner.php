@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attendance;
+use App\Models\Logbook;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -262,7 +263,7 @@ class WeekPlanner
                 $status = 'incomplete';
             } else {
                 $allValidated = $assigned
-                    ? $entries->every(fn ($entry) => ($entry->supervisor_status ?? 'Pending') === 'Validated')
+                    ? $entries->every(fn ($entry) => ($entry->supervisor_status ?? Logbook::SUPERVISOR_STATUS_PENDING) === Logbook::SUPERVISOR_STATUS_VALIDATED)
                     : $entries->isEmpty();
 
                 $status = $allValidated ? 'validated' : 'waiting';
@@ -283,7 +284,13 @@ class WeekPlanner
                 'last_working' => $lastWorking,
                 'entry_count' => $entries->count(),
                 'supervisor' => $assigned
-                    ? $this->reviewLabel($entries, 'supervisor_status', 'Validated', 'Revision Requested', $closed)
+                    ? $this->reviewLabel(
+                        $entries,
+                        'supervisor_status',
+                        Logbook::SUPERVISOR_STATUS_VALIDATED,
+                        Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED,
+                        $closed
+                    )
                     : 'Not assigned',
             ];
         }
@@ -297,7 +304,7 @@ class WeekPlanner
             return 'Not sent yet';
         }
 
-        $values = $entries->map(fn ($entry) => $entry->{$field} ?? 'Pending');
+        $values = $entries->map(fn ($entry) => $entry->{$field} ?? Logbook::SUPERVISOR_STATUS_PENDING);
 
         if ($values->contains($bad)) {
             return 'Revision needed';

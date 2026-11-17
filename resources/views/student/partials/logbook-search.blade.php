@@ -77,8 +77,8 @@
                     <time
                         class="text-xs font-bold text-[#5B6478]">{{ $entry->activity_date ? \Carbon\Carbon::parse($entry->activity_date)->format('D, d M Y') : 'Date not set' }}</time>
                     <span
-                        class="{{ $pill($entry->supervisor_status ?? 'Pending') }} rounded-full px-2.5 py-1 text-xs font-bold"
-                    >Supervisor: {{ $entry->supervisor_status ?? 'Pending' }}</span>
+                        class="{{ $pill($entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING) }} rounded-full px-2.5 py-1 text-xs font-bold"
+                    >Supervisor: {{ $entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING }}</span>
                     @if ($entry->isEditableByStudent())
                         <a
                             href="/student/logbook/edit/{{ $entry->logbook_id }}"

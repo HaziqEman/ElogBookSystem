@@ -124,7 +124,7 @@
                                     @endif
 
                                     @if ($attendance)
-                                        @if ($attendance->status === 'Leave')
+                                        @if ($attendance->status === \App\Models\Attendance::STATUS_LEAVE)
                                             <div
                                                 class="flex items-center gap-1.5 rounded-lg bg-amber-50 px-1.5 py-1 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-100 sm:text-[11px]"
                                                 title="{{ $attendance->note }}"

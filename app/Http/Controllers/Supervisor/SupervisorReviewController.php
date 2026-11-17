@@ -28,7 +28,7 @@ class SupervisorReviewController extends Controller
     public function next(): RedirectResponse
     {
         $logbook = $this->ownedQuery()
-            ->where('supervisor_status', 'Pending')
+            ->where('supervisor_status', Logbook::SUPERVISOR_STATUS_PENDING)
             ->orderBy('created_at')
             ->first();
 

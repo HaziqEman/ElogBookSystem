@@ -10,6 +10,10 @@ class Attendance extends Model
     /** Dates and clock times are shown in Malaysia time. */
     public const TIMEZONE = 'Asia/Kuala_Lumpur';
 
+    public const STATUS_PRESENT = 'Present';
+
+    public const STATUS_LEAVE = 'Leave';
+
     public const DAY_OFF_TYPES = ['MC', 'Leave', 'Public holiday'];
 
     public const WORK_MODES = [
@@ -89,12 +93,12 @@ class Attendance extends Model
     /** MC, leave and public holiday are all stored with status "Leave"; day_off_type tells them apart. */
     public function isDayOff(): bool
     {
-        return $this->status === 'Leave';
+        return $this->status === self::STATUS_LEAVE;
     }
 
     public function dayOffLabel(): string
     {
-        return $this->day_off_type ?: 'Leave';
+        return $this->day_off_type ?: self::STATUS_LEAVE;
     }
 
     public function dayOffTitle(): string

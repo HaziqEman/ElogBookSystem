@@ -118,7 +118,7 @@ class WeekBatchService
 
             $pending = Logbook::where('student_id', $student->student_id)
                 ->where('week_no', $submission->week_no)
-                ->where(fn ($q) => $q->where('supervisor_status', 'Pending')->orWhereNull('supervisor_status'))
+                ->where(fn ($q) => $q->where('supervisor_status', Logbook::SUPERVISOR_STATUS_PENDING)->orWhereNull('supervisor_status'))
                 ->count();
 
             $submission->update(['reminded_at' => $now]);

@@ -44,7 +44,7 @@ class ReminderService
         $attendance = $attendanceReady
             ? Attendance::where('student_id', $id)->where('attendance_date', $todayKey)->first()
             : null;
-        $dayOff = $attendance && $attendance->status === 'Leave';
+        $dayOff = $attendance && $attendance->status === Attendance::STATUS_LEAVE;
 
         // On MC, leave or a holiday only a new task from the supervisor is shown.
         if (! $dayOff) {
@@ -124,7 +124,7 @@ class ReminderService
             ->flip();
 
         $offDates = $attendanceReady
-            ? Attendance::where('student_id', $id)->where('status', 'Leave')
+            ? Attendance::where('student_id', $id)->where('status', Attendance::STATUS_LEAVE)
                 ->pluck('attendance_date')
                 ->map(fn ($date) => Carbon::parse($date)->toDateString())
                 ->flip()
@@ -174,7 +174,7 @@ class ReminderService
     protected function revisions(): void
     {
         $revisions = Logbook::where('student_id', $this->student->student_id)
-            ->where('supervisor_status', 'Revision Requested')
+            ->where('supervisor_status', Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED)
             ->orderByDesc('activity_date')
             ->get(['logbook_id', 'week_no', 'activity_date']);
 

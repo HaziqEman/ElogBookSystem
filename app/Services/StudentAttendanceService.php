@@ -22,7 +22,9 @@ class StudentAttendanceService
      *     monthPresent: int,
      *     monthLeave: int,
      *     monthMinutes: int,
-     *     records: Collection<int, Attendance>
+     *     records: Collection<int, Attendance>,
+     *     presentCount: int,
+     *     offCount: int
      * }
      */
     public function indexData(Student $student, Carbon $today): array
@@ -34,19 +36,24 @@ class StudentAttendanceService
 
         $todayKey = $today->toDateString();
         $attendance = $monthRecords->first(fn ($record) => $record->attendance_date->toDateString() === $todayKey);
-        $monthPresent = $monthRecords->where('status', 'Present')->count();
-        $monthLeave = $monthRecords->where('status', 'Leave')->count();
+        $monthPresent = $monthRecords->where('status', Attendance::STATUS_PRESENT)->count();
+        $monthLeave = $monthRecords->where('status', Attendance::STATUS_LEAVE)->count();
         $monthMinutes = (int) $monthRecords->sum(fn ($record) => $record->workedMinutes() ?? 0);
+
+        $records = Attendance::where('student_id', $student->student_id)
+            ->orderByDesc('attendance_date')
+            ->take(60)
+            ->get();
+        $offCount = $records->where('status', Attendance::STATUS_LEAVE)->count();
 
         return [
             'attendance' => $attendance,
             'monthPresent' => $monthPresent,
             'monthLeave' => $monthLeave,
             'monthMinutes' => $monthMinutes,
-            'records' => Attendance::where('student_id', $student->student_id)
-                ->orderByDesc('attendance_date')
-                ->take(60)
-                ->get(),
+            'records' => $records,
+            'presentCount' => $records->count() - $offCount,
+            'offCount' => $offCount,
         ];
     }
 
@@ -94,7 +101,7 @@ class StudentAttendanceService
         $latitude = $shared ? round((float) $data['latitude'], 4) : null;
         $longitude = $shared ? round((float) $data['longitude'], 4) : null;
 
-        $attendance->status = 'Present';
+        $attendance->status = Attendance::STATUS_PRESENT;
         $attendance->day_off_type = null;
         $attendance->note = null;
         $attendance->work_mode = $data['work_mode'];
@@ -163,7 +170,7 @@ class StudentAttendanceService
                 ]);
             }
 
-            $attendance->status = 'Leave';
+            $attendance->status = Attendance::STATUS_LEAVE;
             $attendance->day_off_type = $data['day_off_type'];
             $attendance->note = isset($data['note']) ? trim($data['note']) : null;
             $attendance->check_in = null;
@@ -196,7 +203,7 @@ class StudentAttendanceService
     {
         $attendance = Attendance::where('student_id', $student->student_id)
             ->where('attendance_id', $id)
-            ->where('status', 'Leave')
+            ->where('status', Attendance::STATUS_LEAVE)
             ->firstOrFail();
 
         if ($attendance->attendance_date->toDateString() < $today) {

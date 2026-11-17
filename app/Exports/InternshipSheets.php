@@ -28,7 +28,13 @@ class InternshipSheets
         return [
             ['col' => $column, 'op' => 'equal', 'value' => 'On track', 'fill' => 'C6EFCE', 'font' => '006100'],
             ['col' => $column, 'op' => 'equal', 'value' => 'Completed', 'fill' => 'C6EFCE', 'font' => '006100'],
-            ['col' => $column, 'op' => 'equal', 'value' => 'Validated', 'fill' => 'C6EFCE', 'font' => '006100'],
+            [
+                'col' => $column,
+                'op' => 'equal',
+                'value' => Logbook::SUPERVISOR_STATUS_VALIDATED,
+                'fill' => 'C6EFCE',
+                'font' => '006100',
+            ],
             ['col' => $column, 'op' => 'equal', 'value' => 'Behind', 'fill' => 'FFEB9C', 'font' => '9C5700'],
             ['col' => $column, 'op' => 'equal', 'value' => 'Incomplete', 'fill' => 'FFEB9C', 'font' => '9C5700'],
             ['col' => $column, 'op' => 'equal', 'value' => 'Waiting for review', 'fill' => 'FFEB9C', 'font' => '9C5700'],

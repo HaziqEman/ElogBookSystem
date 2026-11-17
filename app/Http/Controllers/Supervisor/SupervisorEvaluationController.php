@@ -51,8 +51,8 @@ class SupervisorEvaluationController extends Controller
 
         $stats = [
             'entries' => (clone $entries)->count(),
-            'validated' => (clone $entries)->where('supervisor_status', 'Validated')->count(),
-            'pending' => (clone $entries)->where(fn ($q) => $q->where('supervisor_status', 'Pending')->orWhereNull('supervisor_status'))->count(),
+            'validated' => (clone $entries)->where('supervisor_status', Logbook::SUPERVISOR_STATUS_VALIDATED)->count(),
+            'pending' => (clone $entries)->where(fn ($q) => $q->where('supervisor_status', Logbook::SUPERVISOR_STATUS_PENDING)->orWhereNull('supervisor_status'))->count(),
         ];
 
         return view('supervisor.evaluation', [

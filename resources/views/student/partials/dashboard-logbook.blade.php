@@ -554,9 +554,9 @@
 
                                     @if ($supervisorAssigned)
                                         <span
-                                            class="{{ $pill($entry->supervisor_status ?? 'Pending') }} rounded-full px-2.5 py-1 text-xs font-bold"
+                                            class="{{ $pill($entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING) }} rounded-full px-2.5 py-1 text-xs font-bold"
                                         >Supervisor:
-                                            {{ $entry->supervisor_status ?? 'Pending' }}</span>
+                                            {{ $entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING }}</span>
                                     @endif
                                 </div>
 
@@ -577,17 +577,17 @@
                                                     : optional($feedback->lecturer)->name ??
                                                         'Lecturer';
                                                 $feedbackStatus = $fromSupervisor
-                                                    ? $entry->supervisor_status ?? 'Pending'
-                                                    : $entry->status ?? 'Pending';
+                                                    ? $entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING
+                                                    : $entry->status ?? \App\Models\Logbook::STATUS_PENDING;
                                                 $feedbackClass = in_array(
                                                     $feedbackStatus,
-                                                    ['Validated', 'Approved'],
+                                                    [\App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED, \App\Models\Logbook::STATUS_APPROVED],
                                                     true,
                                                 )
                                                     ? 'bg-[#D1FAE5] text-[#065F46]'
                                                     : (in_array(
                                                         $feedbackStatus,
-                                                        ['Revision Requested', 'Rejected'],
+                                                        [\App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED, \App\Models\Logbook::STATUS_REJECTED],
                                                         true,
                                                     )
                                                         ? 'bg-[#FFEDD5] text-[#9A3412]'

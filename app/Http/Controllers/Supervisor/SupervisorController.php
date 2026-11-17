@@ -48,7 +48,7 @@ class SupervisorController extends Controller
             ->selectRaw('student_id, week_no, supervisor_status, COUNT(*) as c')
             ->groupBy('student_id', 'week_no', 'supervisor_status')
             ->get() as $row) {
-            $statMap[$row->student_id][(int) $row->week_no][$row->supervisor_status ?: 'Pending'] = (int) $row->c;
+            $statMap[$row->student_id][(int) $row->week_no][$row->supervisor_status ?: Logbook::SUPERVISOR_STATUS_PENDING] = (int) $row->c;
         }
 
         // Weeks that were sent to this supervisor. Only these count as "waiting".
@@ -59,15 +59,15 @@ class SupervisorController extends Controller
             ->map(fn ($group) => $group->sortByDesc(fn ($sub) => $sub->sent_at?->timestamp ?? 0)->first())
             ->map(function ($sub) use ($statMap, $studentsById, $today) {
                 $g = $statMap[$sub->student_id][(int) $sub->week_no] ?? [];
-                $pending = $g['Pending'] ?? 0;
+                $pending = $g[Logbook::SUPERVISOR_STATUS_PENDING] ?? 0;
                 $waitDays = $sub->sent_at ? (int) abs($sub->sent_at->diffInDays($today)) : 0;
 
                 return [
                     'student' => $studentsById->get($sub->student_id),
                     'week' => (int) $sub->week_no,
                     'pending' => $pending,
-                    'validated' => $g['Validated'] ?? 0,
-                    'revision' => $g['Revision Requested'] ?? 0,
+                    'validated' => $g[Logbook::SUPERVISOR_STATUS_VALIDATED] ?? 0,
+                    'revision' => $g[Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED] ?? 0,
                     'total' => array_sum($g),
                     'sent_at' => $sub->sent_at,
                     'wait_days' => $waitDays,
@@ -172,7 +172,10 @@ class SupervisorController extends Controller
 
             $counts = (clone $base)
                 ->whereBetween('activity_date', [$from->toDateString(), $to->toDateString()])
-                ->selectRaw("COUNT(*) as total, SUM(CASE WHEN COALESCE(supervisor_status, 'Pending') <> 'Pending' THEN 1 ELSE 0 END) as reviewed")
+                ->selectRaw(
+                    'COUNT(*) as total, SUM(CASE WHEN COALESCE(supervisor_status, ?) <> ? THEN 1 ELSE 0 END) as reviewed',
+                    [Logbook::SUPERVISOR_STATUS_PENDING, Logbook::SUPERVISOR_STATUS_PENDING]
+                )
                 ->first();
 
             $total = (int) ($counts->total ?? 0);

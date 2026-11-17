@@ -130,4 +130,12 @@
 - Centralized role resolution, participant matching, message sending/read state, and deletion workflows in `ChatService`; role-specific ownership checks remain enforced.
 - Fixed fresh-schema support for message type/attachment metadata and corrected attachment cleanup on the separate `fix:` commits noted above.
 - Verification after these controllers: **70 tests, 70 passed, 319 assertions**; Pint and level-5 PHPStan passed.
-- Next: review non-presentational Blade calculations and safely centralize repeated status/page-size values.
+- Next: complete the remaining Blade review and safely centralize repeated status values; page-size values remain context-specific.
+
+## Remaining notes cleanup
+
+- Moved recent attendance-history present/off counts from the attendance Blade template into `StudentAttendanceService`; added view-data assertions to the existing attendance feature test.
+- Passed the student ID explicitly to the reminder partial instead of resolving the student guard inside that view.
+- Centralized persisted logbook review and attendance status values in `Logbook` and `Attendance` constants and reused them in models, services, controllers, requests, commands, exports, and Blade templates. Stored values and rendered labels are unchanged; no enum conversion or migration was introduced.
+- Reviewed the remaining Blade `@php` blocks. They are presentational composition (formatting, selected-state calculation, small display groupings/counts, and styles); no further business logic or direct database queries were identified for extraction. Repeated page-size values remain context-specific and were not centralized.
+- Verification: **70 tests passed, 321 assertions**; Pint check and level-5 PHPStan passed; `php artisan route:list` succeeded with **158 routes**; `php artisan optimize:clear` succeeded using `CACHE_STORE=array` for the process.

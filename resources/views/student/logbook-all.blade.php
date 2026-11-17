@@ -7,10 +7,10 @@
     >
     @php
         $pill = function (string $status) {
-            if (in_array($status, ['Approved', 'Validated'], true)) {
+            if (in_array($status, [\App\Models\Logbook::STATUS_APPROVED, \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED], true)) {
                 return 'bg-[#D1FAE5] text-[#065F46]';
             }
-            if (in_array($status, ['Rejected', 'Revision Requested', 'Revision needed'], true)) {
+            if (in_array($status, [\App\Models\Logbook::STATUS_REJECTED, \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED, 'Revision needed'], true)) {
                 return 'bg-[#FFEDD5] text-[#9A3412]';
             }
             if ($status === 'Waiting for review') {
@@ -184,8 +184,8 @@
                                     {{ $entry->activity_date ? \Carbon\Carbon::parse($entry->activity_date)->format('D, d M Y') : 'Date not set' }}
                                 </time>
                                 <span
-                                    class="{{ $pill($entry->supervisor_status ?? 'Pending') }} rounded-full px-2.5 py-1 text-xs font-bold"
-                                >Supervisor: {{ $entry->supervisor_status ?? 'Pending' }}</span>
+                                    class="{{ $pill($entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING) }} rounded-full px-2.5 py-1 text-xs font-bold"
+                                >Supervisor: {{ $entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING }}</span>
                             </div>
                             <p
                                 class="mt-2.5 whitespace-pre-line break-words text-sm leading-relaxed text-[#334155]">

@@ -144,8 +144,8 @@ class LogbookController extends Controller
                     'title' => 'Week '.$data['week_no'],
                     'description' => $data['description'],
                     'activity_date' => $date->toDateString(),
-                    'status' => 'Pending',
-                    'supervisor_status' => 'Pending',
+                    'status' => Logbook::STATUS_PENDING,
+                    'supervisor_status' => Logbook::SUPERVISOR_STATUS_PENDING,
                 ]);
 
                 if ($request->hasFile('attachment')) {

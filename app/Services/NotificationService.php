@@ -94,13 +94,16 @@ class NotificationService
             $who = $reviewerRole === 'supervisor' ? 'Your company supervisor' : 'Your lecturer';
 
             $titles = [
-                'Approved' => "{$who} approved Week {$week}",
-                'Rejected' => "{$who} rejected Week {$week} - action needed",
-                'Validated' => "{$who} validated Week {$week}",
-                'Revision Requested' => "{$who} asked for a revision on Week {$week}",
+                Logbook::STATUS_APPROVED => "{$who} approved Week {$week}",
+                Logbook::STATUS_REJECTED => "{$who} rejected Week {$week} - action needed",
+                Logbook::SUPERVISOR_STATUS_VALIDATED => "{$who} validated Week {$week}",
+                Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED => "{$who} asked for a revision on Week {$week}",
             ];
 
-            $needsAction = in_array($decision, ['Rejected', 'Revision Requested'], true);
+            $needsAction = in_array($decision, [
+                Logbook::STATUS_REJECTED,
+                Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED,
+            ], true);
             $body = $reviewerName.(filled($comment) ? ': '.Str::limit(trim($comment), 120) : '');
             $url = $needsAction ? '/student/logbook/edit/'.$logbook->logbook_id : '/student/feedback';
 

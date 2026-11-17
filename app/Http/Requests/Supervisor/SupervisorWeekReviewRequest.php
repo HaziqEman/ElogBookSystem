@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Supervisor;
 
+use App\Models\Logbook;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 
 class SupervisorWeekReviewRequest extends FormRequest
 {
@@ -21,7 +23,10 @@ class SupervisorWeekReviewRequest extends FormRequest
     {
         return [
             'decision' => 'required|array|min:1',
-            'decision.*' => 'in:Validated,Revision Requested',
+            'decision.*' => [Rule::in([
+                Logbook::SUPERVISOR_STATUS_VALIDATED,
+                Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED,
+            ])],
             'comment' => 'nullable|array',
             'comment.*' => 'nullable|string|max:2000',
         ];
@@ -40,7 +45,7 @@ class SupervisorWeekReviewRequest extends FormRequest
         foreach ($entries as $entry) {
             $comment = trim((string) ($comments[$entry->logbook_id] ?? ''));
 
-            if (($decisions[$entry->logbook_id] ?? null) === 'Revision Requested' && $comment === '') {
+            if (($decisions[$entry->logbook_id] ?? null) === Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED && $comment === '') {
                 $errors['comment.'.$entry->logbook_id] = 'Write what the student needs to change for '.Carbon::parse($entry->activity_date)->format('D, d M').'.';
             }
         }

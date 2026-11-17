@@ -58,7 +58,7 @@ class SupervisorWeekService
             ->selectRaw('week_no, supervisor_status, COUNT(*) as c')
             ->groupBy('week_no', 'supervisor_status')
             ->get() as $row) {
-            $stats[(int) $row->week_no][$row->supervisor_status ?: 'Pending'] = (int) $row->c;
+            $stats[(int) $row->week_no][$row->supervisor_status ?: Logbook::SUPERVISOR_STATUS_PENDING] = (int) $row->c;
         }
 
         $total = $planner->hasStart() ? $planner->totalWeeks() : 0;
@@ -67,8 +67,8 @@ class SupervisorWeekService
 
         for ($number = 1; $number <= $total; $number++) {
             $group = $stats[$number] ?? [];
-            $pending = $group['Pending'] ?? 0;
-            $revision = $group['Revision Requested'] ?? 0;
+            $pending = $group[Logbook::SUPERVISOR_STATUS_PENDING] ?? 0;
+            $revision = $group[Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED] ?? 0;
             $entries = array_sum($group);
             $sent = $submissions->has($number);
 
@@ -117,9 +117,9 @@ class SupervisorWeekService
                 'submission' => $submission,
                 'sent' => (bool) $submission,
                 'entries' => $entries,
-                'pending' => $entries->filter(fn ($entry) => ($entry->supervisor_status ?? 'Pending') === 'Pending')->count(),
-                'validated' => $entries->where('supervisor_status', 'Validated')->count(),
-                'revision' => $entries->where('supervisor_status', 'Revision Requested')->count(),
+                'pending' => $entries->filter(fn ($entry) => ($entry->supervisor_status ?? Logbook::SUPERVISOR_STATUS_PENDING) === Logbook::SUPERVISOR_STATUS_PENDING)->count(),
+                'validated' => $entries->where('supervisor_status', Logbook::SUPERVISOR_STATUS_VALIDATED)->count(),
+                'revision' => $entries->where('supervisor_status', Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED)->count(),
                 'summary' => ($summary && ! $stale) ? $summary : null,
                 'missing' => $this->missingLabels($days),
             ];
@@ -234,7 +234,7 @@ class SupervisorWeekService
                     $decision = $data['decision'][$entry->logbook_id];
                     $comment = trim((string) ($data['comment'][$entry->logbook_id] ?? ''));
                     $entry->update(['supervisor_status' => $decision]);
-                    $decision === 'Validated' ? $validated++ : $revisions++;
+                    $decision === Logbook::SUPERVISOR_STATUS_VALIDATED ? $validated++ : $revisions++;
 
                     if ($comment !== '') {
                         Feedback::create([
@@ -302,7 +302,7 @@ class SupervisorWeekService
             ->groupBy(fn ($logbook) => Carbon::parse($logbook->activity_date)->toDateString());
 
         $off = Attendance::where('student_id', $student->student_id)
-            ->where('status', 'Leave')
+            ->where('status', Attendance::STATUS_LEAVE)
             ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy(fn ($attendance) => $attendance->attendance_date->toDateString());
@@ -353,7 +353,7 @@ class SupervisorWeekService
 
     private function pending(Builder $query): Builder
     {
-        return $query->where(fn ($builder) => $builder->where('supervisor_status', 'Pending')
+        return $query->where(fn ($builder) => $builder->where('supervisor_status', Logbook::SUPERVISOR_STATUS_PENDING)
             ->orWhereNull('supervisor_status'));
     }
 }

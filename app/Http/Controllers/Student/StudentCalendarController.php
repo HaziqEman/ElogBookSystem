@@ -77,7 +77,9 @@ class StudentCalendarController extends Controller
 
         $monthKey = $month->format('Y-m');
         $monthLogs = $logsByDate->filter(fn ($group, $key) => str_starts_with($key, $monthKey))->sum(fn ($group) => $group->count());
-        $monthPresent = $attendanceByDate->filter(fn ($record, $key) => str_starts_with($key, $monthKey) && $record->status === 'Present')->count();
+        $monthPresent = $attendanceByDate->filter(
+            fn ($record, $key) => str_starts_with($key, $monthKey) && $record->status === Attendance::STATUS_PRESENT
+        )->count();
         $monthTasks = $todosByDate->filter(fn ($group, $key) => str_starts_with($key, $monthKey))
             ->sum(fn ($group) => $group->where('is_done', false)->count());
 

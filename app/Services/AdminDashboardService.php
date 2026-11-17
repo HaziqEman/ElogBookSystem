@@ -44,8 +44,8 @@ class AdminDashboardService
         $entriesToday = Logbook::whereDate('created_at', today())->count();
         $entriesThisWeek = Logbook::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
 
-        $validated = Logbook::where('supervisor_status', 'Validated')->count();
-        $revision = Logbook::where('supervisor_status', 'Revision Requested')->count();
+        $validated = Logbook::where('supervisor_status', Logbook::SUPERVISOR_STATUS_VALIDATED)->count();
+        $revision = Logbook::where('supervisor_status', Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED)->count();
         $pending = max(0, $logbooks - $validated - $revision);
         $validatedPercent = $logbooks > 0 ? (int) round($validated / $logbooks * 100) : 0;
 
@@ -78,7 +78,10 @@ class AdminDashboardService
 
             $inWeek = $weekRows->filter(fn ($row) => $row->created_at >= $start && $row->created_at <= $end);
             $total = $inWeek->count();
-            $reviewed = $inWeek->whereIn('supervisor_status', ['Validated', 'Revision Requested'])->count();
+            $reviewed = $inWeek->whereIn('supervisor_status', [
+                Logbook::SUPERVISOR_STATUS_VALIDATED,
+                Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED,
+            ])->count();
 
             return [
                 'label' => $start->format('d M').' - '.$end->format('d M'),
@@ -278,7 +281,7 @@ class AdminDashboardService
     private function pending(EloquentBuilder|QueryBuilder $query, string $column = 'supervisor_status'): EloquentBuilder|QueryBuilder
     {
         return $query->where(function ($where) use ($column) {
-            $where->whereNull($column)->orWhere($column, 'Pending');
+            $where->whereNull($column)->orWhere($column, Logbook::SUPERVISOR_STATUS_PENDING);
         });
     }
 

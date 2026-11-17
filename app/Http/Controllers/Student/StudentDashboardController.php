@@ -68,8 +68,8 @@ class StudentDashboardController extends Controller
                 ->get();
 
             $attendance = $monthRecords->first(fn ($record) => $record->attendance_date->toDateString() === $todayKey);
-            $monthPresent = $monthRecords->where('status', 'Present')->count();
-            $monthLeave = $monthRecords->where('status', 'Leave')->count();
+            $monthPresent = $monthRecords->where('status', Attendance::STATUS_PRESENT)->count();
+            $monthLeave = $monthRecords->where('status', Attendance::STATUS_LEAVE)->count();
 
             $openCount = Todo::where('student_id', $student->student_id)->where('is_done', false)->count();
             $doneCount = Todo::where('student_id', $student->student_id)->where('is_done', true)->count();
@@ -395,17 +395,17 @@ class StudentDashboardController extends Controller
         };
 
         $reviewMatches = fn (Logbook $logbook): bool => match ($review) {
-            'action' => $logbook->supervisor_status === 'Revision Requested',
-            'pending' => ($logbook->supervisor_status ?? 'Pending') === 'Pending',
-            'validated' => $logbook->supervisor_status === 'Validated',
+            'action' => $logbook->supervisor_status === Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED,
+            'pending' => ($logbook->supervisor_status ?? Logbook::SUPERVISOR_STATUS_PENDING) === Logbook::SUPERVISOR_STATUS_PENDING,
+            'validated' => $logbook->supervisor_status === Logbook::SUPERVISOR_STATUS_VALIDATED,
             default => true,
         };
 
         $counts = [
             'all' => $logbooks->count(),
-            'action' => $logbooks->filter(fn ($logbook) => $logbook->supervisor_status === 'Revision Requested')->count(),
-            'pending' => $logbooks->filter(fn ($logbook) => ($logbook->supervisor_status ?? 'Pending') === 'Pending')->count(),
-            'validated' => $logbooks->filter(fn ($logbook) => $logbook->supervisor_status === 'Validated')->count(),
+            'action' => $logbooks->filter(fn ($logbook) => $logbook->supervisor_status === Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED)->count(),
+            'pending' => $logbooks->filter(fn ($logbook) => ($logbook->supervisor_status ?? Logbook::SUPERVISOR_STATUS_PENDING) === Logbook::SUPERVISOR_STATUS_PENDING)->count(),
+            'validated' => $logbooks->filter(fn ($logbook) => $logbook->supervisor_status === Logbook::SUPERVISOR_STATUS_VALIDATED)->count(),
         ];
         $visibleLogbookIds = $logbooks
             ->filter(fn ($logbook) => $matchesSearch($logbook) && $reviewMatches($logbook))

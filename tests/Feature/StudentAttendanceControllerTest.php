@@ -35,6 +35,8 @@ class StudentAttendanceControllerTest extends TestCase
             ->assertViewHas('monthPresent', 1)
             ->assertViewHas('monthLeave', 1)
             ->assertViewHas('monthMinutes', 90)
+            ->assertViewHas('presentCount', 1)
+            ->assertViewHas('offCount', 1)
             ->assertViewHas('records', fn ($records) => $records->count() === 2);
     }
 

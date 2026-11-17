@@ -40,7 +40,7 @@ class SendLogbookReminders extends Command
         $onLeave = collect();
         if (Schema::hasTable('attendances')) {
             $onLeave = Attendance::where('attendance_date', $today)
-                ->where('status', 'Leave')
+                ->where('status', Attendance::STATUS_LEAVE)
                 ->pluck('student_id')
                 ->flip();
         }

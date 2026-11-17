@@ -150,7 +150,7 @@
                     @endif
                 </td>
                 <td class="col-sv">
-                    @if(($logbook->supervisor_status ?? '') === 'Validated')
+                    @if(($logbook->supervisor_status ?? '') === \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED)
                         <strong>VERIFIED</strong>
                         @if($svFeedback->isNotEmpty())
                             @php $last = $svFeedback->last(); @endphp
@@ -160,7 +160,7 @@
                             @endif
                         @endif
                     @else
-                        <div class="status">{{ $logbook->supervisor_status ?: 'Pending' }}</div>
+                        <div class="status">{{ $logbook->supervisor_status ?: \App\Models\Logbook::SUPERVISOR_STATUS_PENDING }}</div>
                     @endif
                 </td>
             </tr>

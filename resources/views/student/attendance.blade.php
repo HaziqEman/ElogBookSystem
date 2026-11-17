@@ -34,12 +34,9 @@
             'flex items-center gap-3.5 rounded-[20px] border border-[#E3E8F2] bg-white px-4 py-4 shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
         $todayKey = $today->toDateString();
 
-        $offCount = $records->filter(fn($r) => $r->status === 'Leave')->count();
-        $presentCount = $records->count() - $offCount;
-
         // Colored pill for each row of the history table
         $statusPill = function ($record) {
-            if ($record->status === 'Leave') {
+            if ($record->status === \App\Models\Attendance::STATUS_LEAVE) {
                 $label = $record->dayOffLabel();
                 $class = match ($label) {
                     'MC' => 'bg-[#FFE4E6] text-[#9F1239]',
@@ -251,7 +248,7 @@
                             @forelse($records as $record)
                                 @php
                                     [$pillText, $pillClass] = $statusPill($record);
-                                    $isOff = $record->status === 'Leave';
+                                    $isOff = $record->status === \App\Models\Attendance::STATUS_LEAVE;
                                     $isToday =
                                         $record->attendance_date->toDateString() === $todayKey;
                                     $mode = $record->workModeLabel();

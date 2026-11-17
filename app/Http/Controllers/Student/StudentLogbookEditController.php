@@ -68,8 +68,8 @@ class StudentLogbookEditController extends Controller
                     'title' => 'Week '.$data['week_no'],
                     'description' => $data['description'],
                     'activity_date' => $data['activity_date'],
-                    'status' => 'Pending',
-                    'supervisor_status' => 'Pending',
+                    'status' => Logbook::STATUS_PENDING,
+                    'supervisor_status' => Logbook::SUPERVISOR_STATUS_PENDING,
                 ]);
 
                 foreach ($data['attachments'] ?? [] as $file) {
@@ -122,8 +122,8 @@ class StudentLogbookEditController extends Controller
             $storage->delete($attachment);
             $attachment->delete();
             $logbook->update([
-                'status' => 'Pending',
-                'supervisor_status' => 'Pending',
+                'status' => Logbook::STATUS_PENDING,
+                'supervisor_status' => Logbook::SUPERVISOR_STATUS_PENDING,
             ]);
         } catch (\Throwable $e) {
             Log::error('Logbook attachment deletion failed: '.$e->getMessage(), [

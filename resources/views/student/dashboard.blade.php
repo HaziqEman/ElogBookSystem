@@ -10,10 +10,10 @@
 
 @php
     $pill = function (string $status) {
-        if (in_array($status, ['Approved', 'Validated'], true)) {
+        if (in_array($status, [\App\Models\Logbook::STATUS_APPROVED, \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED], true)) {
             return 'bg-[#D1FAE5] text-[#065F46]';
         }
-        if (in_array($status, ['Rejected', 'Revision Requested', 'Revision needed'], true)) {
+        if (in_array($status, [\App\Models\Logbook::STATUS_REJECTED, \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED, 'Revision needed'], true)) {
             return 'bg-[#FFEDD5] text-[#9A3412]';
         }
         if ($status === 'Waiting for review') {
@@ -76,7 +76,7 @@
     @endif
 
 
-    @include('partials.reminder-popup')
+    @include('partials.reminder-popup', ['reminderStudentId' => $student->student_id])
 
     @include('student.partials.dashboard-overview')
     <!-- @include('student.partials.dashboard-logbook') -->

@@ -181,8 +181,8 @@ class InternshipReportService
         $weekStartKey = $this->today->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
         $staleKey = $this->today->copy()->subDays(7)->toDateString();
 
-        $revision = $entries->where('supervisor_status', 'Revision Requested')->count();
-        $pending = $entries->filter(fn ($entry) => ($entry->supervisor_status ?? 'Pending') === 'Pending');
+        $revision = $entries->where('supervisor_status', Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED)->count();
+        $pending = $entries->filter(fn ($entry) => ($entry->supervisor_status ?? Logbook::SUPERVISOR_STATUS_PENDING) === Logbook::SUPERVISOR_STATUS_PENDING);
         $pendingOld = $pending->filter(fn ($entry) => Carbon::parse($entry->activity_date)->toDateString() < $weekStartKey)->count();
         $stale = $pending->filter(fn ($entry) => Carbon::parse($entry->activity_date)->toDateString() < $staleKey)->count();
 
@@ -190,7 +190,7 @@ class InternshipReportService
         $mc = $leave = $holiday = $wfh = 0;
 
         foreach ($attendance as $record) {
-            if ($record->status === 'Leave') {
+            if ($record->status === Attendance::STATUS_LEAVE) {
                 match ($record->day_off_type) {
                     'MC' => $mc++,
                     'Public holiday' => $holiday++,
@@ -331,7 +331,7 @@ class InternshipReportService
                 $key = $d->toDateString();
                 $att = $attByDate->get($key);
 
-                if ($att && $att->status === 'Leave') {
+                if ($att && $att->status === Attendance::STATUS_LEAVE) {
                     continue;
                 }
 

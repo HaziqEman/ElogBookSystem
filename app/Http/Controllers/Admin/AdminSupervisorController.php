@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Concerns\ChecksUniqueEmail;
 use App\Http\Controllers\Controller;
+use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
 use Illuminate\Http\Request;
@@ -261,7 +262,8 @@ class AdminSupervisorController extends Controller
             ->join('students', 'students.student_id', '=', 'logbooks.student_id')
             ->whereNotNull('students.supervisor_id')
             ->where(function ($where) {
-                $where->whereNull('logbooks.supervisor_status')->orWhere('logbooks.supervisor_status', 'Pending');
+                $where->whereNull('logbooks.supervisor_status')
+                    ->orWhere('logbooks.supervisor_status', Logbook::SUPERVISOR_STATUS_PENDING);
             })
             ->select('students.supervisor_id', DB::raw('COUNT(*) as waiting'))
             ->groupBy('students.supervisor_id')

@@ -1,5 +1,3 @@
-@php $reminderStudentId = \Illuminate\Support\Facades\Auth::guard('student')->id(); @endphp
-
 <div id="reminder-popup" data-student="{{ $reminderStudentId }}" class="mb-6 hidden" role="region" aria-label="Reminders" aria-live="polite"></div>
 
 <style>

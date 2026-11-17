@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Supervisor;
 
+use App\Models\Logbook;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SupervisorReviewRequest extends FormRequest
 {
@@ -18,8 +20,14 @@ class SupervisorReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'decision' => 'required|in:Validated,Revision Requested',
-            'comment' => 'required_if:decision,Revision Requested|nullable|string|max:2000',
+            'decision' => [
+                'required',
+                Rule::in([
+                    Logbook::SUPERVISOR_STATUS_VALIDATED,
+                    Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED,
+                ]),
+            ],
+            'comment' => 'required_if:decision,'.Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED.'|nullable|string|max:2000',
         ];
     }
 

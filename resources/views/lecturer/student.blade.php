@@ -21,9 +21,9 @@
     ];
 
     $entryClass = [
-        'Validated' => 'bg-[#D1FAE5] text-[#065F46]',
-        'Revision Requested' => 'bg-[#FFEDD5] text-[#9A3412]',
-        'Pending' => 'bg-[#FEF3C7] text-[#92400E]',
+        \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED => 'bg-[#D1FAE5] text-[#065F46]',
+        \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED => 'bg-[#FFEDD5] text-[#9A3412]',
+        \App\Models\Logbook::SUPERVISOR_STATUS_PENDING => 'bg-[#FEF3C7] text-[#92400E]',
     ];
 
     $chipClass = [
@@ -183,7 +183,7 @@
                                                 @if($day['wfh'])
                                                     <span class="rounded-full bg-[#E8EFFF] px-2.5 py-1 text-xs font-bold text-[#1F45D6]"><i class="fa-solid fa-house"></i> Work from home</span>
                                                 @endif
-                                                <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $entryClass[$entry->supervisor_status ?? 'Pending'] ?? $entryClass['Pending'] }}">Supervisor: {{ $entry->supervisor_status ?? 'Pending' }}</span>
+                                                <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $entryClass[$entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING] ?? $entryClass[\App\Models\Logbook::SUPERVISOR_STATUS_PENDING] }}">Supervisor: {{ $entry->supervisor_status ?? \App\Models\Logbook::SUPERVISOR_STATUS_PENDING }}</span>
                                             </div>
                                             <p class="whitespace-pre-line break-words text-sm leading-relaxed text-[#334155]">{{ $entry->description }}</p>
                                             @if($entry->attachments->count())
