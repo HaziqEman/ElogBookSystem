@@ -40,10 +40,8 @@ class StudentAttendanceController extends Controller
         $today = Carbon::now(Attendance::TIMEZONE);
 
         $monthRecords = Attendance::where('student_id', $student->student_id)
-            ->whereBetween('attendance_date', [
-                $today->copy()->startOfMonth()->toDateString(),
-                $today->copy()->endOfMonth()->toDateString(),
-            ])
+            ->whereDate('attendance_date', '>=', $today->copy()->startOfMonth()->toDateString())
+            ->whereDate('attendance_date', '<=', $today->copy()->endOfMonth()->toDateString())
             ->get();
 
         $todayKey = $today->toDateString();
@@ -89,10 +87,16 @@ class StudentAttendanceController extends Controller
         }
 
         try {
-            $attendance = Attendance::firstOrNew([
-                'student_id' => $student->student_id,
-                'attendance_date' => $todayDate,
-            ]);
+            $attendance = Attendance::where('student_id', $student->student_id)
+                ->whereDate('attendance_date', $todayDate)
+                ->first();
+
+            if (! $attendance) {
+                $attendance = new Attendance([
+                    'student_id' => $student->student_id,
+                    'attendance_date' => $todayDate,
+                ]);
+            }
 
             if ($attendance->exists && $attendance->isDayOff()) {
                 return $this->reply($request, false, 'Today is marked as '.$attendance->dayOffLabel().'. Press Change first if you want to clock in.');
@@ -136,7 +140,7 @@ class StudentAttendanceController extends Controller
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
 
         $attendance = Attendance::where('student_id', $student->student_id)
-            ->where('attendance_date', $today)
+            ->whereDate('attendance_date', $today)
             ->first();
 
         if (! $attendance || ! $attendance->check_in) {
@@ -200,10 +204,17 @@ class StudentAttendanceController extends Controller
 
         try {
             DB::transaction(function () use ($student, $data, $file, $mime) {
-                $attendance = Attendance::firstOrNew([
-                    'student_id' => $student->student_id,
-                    'attendance_date' => Carbon::parse($data['leave_date'])->toDateString(),
-                ]);
+                $leaveDate = Carbon::parse($data['leave_date'])->toDateString();
+                $attendance = Attendance::where('student_id', $student->student_id)
+                    ->whereDate('attendance_date', $leaveDate)
+                    ->first();
+
+                if (! $attendance) {
+                    $attendance = new Attendance([
+                        'student_id' => $student->student_id,
+                        'attendance_date' => $leaveDate,
+                    ]);
+                }
 
                 if ($attendance->check_in) {
                     throw ValidationException::withMessages([
