@@ -121,4 +121,13 @@
 - Moved dashboard queries, calculations, and attention summaries into `AdminDashboardService`. No validation or authorization behavior was changed.
 - Added return and parameter types to the controller and extracted service helpers.
 - Verification after this controller: **62 tests, 62 passed, 277 assertions**; Pint and level-5 PHPStan passed.
-- Next controller: `ChatController` and `MessageDeleteController`.
+- Next controllers: `ChatController` and `MessageDeleteController`.
+
+## Controller follow-up: ChatController and MessageDeleteController
+
+- Added characterization tests for text sends, conversation ownership, per-user hidden messages, global deletion tombstones, read cursors, and sender-only delete-for-everyone authorization.
+- Extracted message validation into `ChatMessageRequest`; the request is resolved after conversation ownership checks to preserve the existing 404/403-before-validation order.
+- Centralized role resolution, participant matching, message sending/read state, and deletion workflows in `ChatService`; role-specific ownership checks remain enforced.
+- Fixed fresh-schema support for message type/attachment metadata and corrected attachment cleanup on the separate `fix:` commits noted above.
+- Verification after these controllers: **70 tests, 70 passed, 319 assertions**; Pint and level-5 PHPStan passed.
+- Next: review non-presentational Blade calculations and safely centralize repeated status/page-size values.
