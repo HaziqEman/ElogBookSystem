@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Student\ClockInRequest;
+use App\Http\Requests\Student\StudentDayOffRequest;
 use App\Models\Attendance;
 use App\Models\AttendanceFile;
 use Carbon\Carbon;
@@ -12,13 +14,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class StudentAttendanceController extends Controller
 {
-    private const MC_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-
     protected function student()
     {
         return Auth::guard('student')->user();
@@ -66,18 +65,12 @@ class StudentAttendanceController extends Controller
         ));
     }
 
-    public function clockIn(Request $request)
+    public function clockIn(ClockInRequest $request)
     {
         $student = $this->student();
         $todayDate = Carbon::now(Attendance::TIMEZONE)->toDateString();
 
-        $data = $request->validate([
-            'work_mode' => ['required', Rule::in(array_keys(Attendance::WORK_MODES))],
-            'location_status' => 'nullable|in:shared,denied,unavailable',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'accuracy' => 'nullable|numeric|min:0|max:1000000',
-        ]);
+        $data = $request->validated();
 
         if ($data['work_mode'] === 'Home') {
             $data['location_status'] = 'unavailable';
@@ -163,44 +156,14 @@ class StudentAttendanceController extends Controller
         return $this->reply($request, true, 'Clocked out at '.$attendance->checkOutLocal().'. Worked '.$attendance->workedLabel().'.');
     }
 
-    public function dayOff(Request $request)
+    public function dayOff(StudentDayOffRequest $request)
     {
         $student = $this->student();
-        $today = Carbon::now(Attendance::TIMEZONE);
-
-        $data = $request->validate([
-            'day_off_type' => ['required', Rule::in(Attendance::DAY_OFF_TYPES)],
-            'leave_date' => [
-                'required',
-                'date',
-                'after_or_equal:'.$today->copy()->subDays(30)->toDateString(),
-                'before_or_equal:'.$today->copy()->addDays(60)->toDateString(),
-            ],
-            'note' => [
-                Rule::requiredIf(fn () => $request->input('day_off_type') !== 'MC'),
-                'nullable',
-                'string',
-                'max:255',
-            ],
-            'mc_file' => [
-                Rule::requiredIf(fn () => $request->input('day_off_type') === 'MC'),
-                'nullable',
-                'file',
-                'mimes:jpg,jpeg,png,webp,pdf',
-                'max:'.(int) config('attendance.mc_max_kb', 2048),
-            ],
-        ], [
-            'note.required' => 'Please write a short reason.',
-            'mc_file.required' => 'Please upload your MC (photo or PDF).',
-        ]);
+        $data = $request->validated();
 
         $isMc = $data['day_off_type'] === 'MC';
         $file = $isMc ? $request->file('mc_file') : null;
         $mime = $file ? (string) $file->getMimeType() : null;
-
-        if ($file && ! in_array($mime, self::MC_MIMES, true)) {
-            throw ValidationException::withMessages(['mc_file' => 'The MC must be a JPG, PNG, WEBP or PDF file.']);
-        }
 
         try {
             DB::transaction(function () use ($student, $data, $file, $mime) {
