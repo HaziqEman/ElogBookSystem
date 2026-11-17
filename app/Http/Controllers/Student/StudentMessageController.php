@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Student;
 
-use App\Http\Controllers\Controller;
 use App\Events\MessageSent;
+use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Lecturer;
 use App\Models\Student;

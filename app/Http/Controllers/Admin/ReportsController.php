@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Exports\AcademicReportExport;
 use App\Exports\InternshipDashboardExport;
 use App\Exports\InternshipSheets;
+use App\Http\Controllers\Controller;
 use App\Models\Lecturer;
 use App\Models\Logbook;
 use App\Models\Student;
@@ -52,7 +52,7 @@ class ReportsController extends Controller
     public function exportDashboard(Request $request)
     {
         try {
-            $report = (new InternshipReportService())->build($this->filters($request));
+            $report = (new InternshipReportService)->build($this->filters($request));
 
             return Excel::download(
                 new InternshipDashboardExport($report),
@@ -73,7 +73,7 @@ class ReportsController extends Controller
         }
 
         try {
-            $report = (new InternshipReportService())->build($this->filters($request));
+            $report = (new InternshipReportService)->build($this->filters($request));
 
             return Excel::download(
                 InternshipSheets::make($type, $report, true),

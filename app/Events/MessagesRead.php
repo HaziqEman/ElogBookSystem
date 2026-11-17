@@ -18,16 +18,16 @@ class MessagesRead implements ShouldBroadcastNow
     {
         $this->read = [
             'conversation_id' => $conversationId,
-            'reader_type'     => $readerType,
-            'reader_id'       => $readerId,
-            'up_to'           => $upTo,
-            'read_at'         => now()->toIso8601String(),
+            'reader_type' => $readerType,
+            'reader_id' => $readerId,
+            'up_to' => $upTo,
+            'read_at' => now()->toIso8601String(),
         ];
     }
 
     public function broadcastOn()
     {
-        return new PrivateChannel('private-conversation.' . $this->read['conversation_id']);
+        return new PrivateChannel('private-conversation.'.$this->read['conversation_id']);
     }
 
     public function broadcastWith()

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Events\MessageSent;
 use App\Models\Admin;
 use App\Models\Conversation;
 use App\Models\Lecturer;
@@ -111,7 +112,7 @@ class DummyDataSeederTest extends TestCase
 
         app(DummyDataSeeder::class)->run();
 
-        Event::assertNotDispatched(\App\Events\MessageSent::class);
+        Event::assertNotDispatched(MessageSent::class);
     }
 
     public function test_cleanup_removes_only_registered_fixture_accounts(): void

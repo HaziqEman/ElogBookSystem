@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\ChecksUniqueEmail;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Concerns\ChecksUniqueEmail;
 
 class StoreLecturerRequest extends FormRequest
 {
     use ChecksUniqueEmail;
+
     /**
      * Determine if the user is authorized to make this request.
      */

@@ -1,12 +1,14 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
-$app = require __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../vendor/autoload.php';
+$app = require __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use App\Models\Conversation;
 use App\Models\Lecturer;
 use App\Models\Message;
-use App\Models\Conversation;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Auth;
 
 $lecturer = Lecturer::find(23);
@@ -57,5 +59,5 @@ if ($message && is_string($message->sender_id)) {
 } elseif ($message && is_int($message->sender_id)) {
     echo "sender_id type is int\n";
 } else {
-    echo "sender_id type is ".gettype($message?->sender_id)."\n";
+    echo 'sender_id type is '.gettype($message?->sender_id)."\n";
 }

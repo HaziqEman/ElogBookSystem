@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Exports\SupervisorRubricTemplateExport;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImportSupervisorRubricRequest;
 use App\Imports\SupervisorRubricImport;
 use App\Services\SupervisorRubricService;
@@ -63,7 +63,7 @@ class AdminSupervisorRubricController extends Controller
             ])->withInput();
         }
 
-        $import = new SupervisorRubricImport();
+        $import = new SupervisorRubricImport;
 
         try {
             Excel::import($import, $request->file('file'));

@@ -27,7 +27,7 @@ class BulkLecturerRequest extends FormRequest
 
             'faculty' => 'required_if:action,set_faculty|string|max:255',
 
-            'to_lecturer_id' => 'required_if:action,transfer_students|integer|exists:lecturers,lecturer_id'
+            'to_lecturer_id' => 'required_if:action,transfer_students|integer|exists:lecturers,lecturer_id',
         ];
     }
 }

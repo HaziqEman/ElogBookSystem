@@ -24,7 +24,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
  * lecturer_email, supervisor_email, internship_start, internship_weeks, working_days.
  * Every row is checked on its own: good rows are saved, bad rows are listed with the reason.
  */
-class StudentsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class StudentsImport implements SkipsEmptyRows, ToCollection, WithHeadingRow
 {
     public int $created = 0;
 
@@ -142,7 +142,7 @@ class StudentsImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             }
 
             try {
-                (new Student())->forceFill($payload)->save();
+                (new Student)->forceFill($payload)->save();
                 $this->created++;
             } catch (\Throwable $e) {
                 // Roll back the generated password for this row, it was never saved.

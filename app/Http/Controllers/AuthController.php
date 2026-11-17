@@ -26,6 +26,7 @@ class AuthController extends Controller
         if ($student && Hash::check($password, $student->password)) {
             Auth::guard('student')->login($student);
             $request->session()->regenerate();
+
             return redirect('/student/dashboard');
         }
 
@@ -33,6 +34,7 @@ class AuthController extends Controller
         if ($lecturer && Hash::check($password, $lecturer->password)) {
             Auth::guard('lecturer')->login($lecturer);
             $request->session()->regenerate();
+
             return redirect('/lecturer/dashboard');
         }
 
@@ -40,6 +42,7 @@ class AuthController extends Controller
         if ($supervisor && Hash::check($password, $supervisor->password)) {
             Auth::guard('supervisor')->login($supervisor);
             $request->session()->regenerate();
+
             return redirect($supervisor->must_change_password ? '/supervisor/password' : '/supervisor/dashboard');
         }
 
@@ -47,6 +50,7 @@ class AuthController extends Controller
         if ($admin && Hash::check($password, $admin->password)) {
             Auth::guard('admin')->login($admin);
             $request->session()->regenerate();
+
             return redirect('/admin/dashboard');
         }
 
@@ -135,6 +139,7 @@ class AuthController extends Controller
                 ]);
                 Auth::guard('lecturer')->login($model);
                 $request->session()->regenerate();
+
                 return redirect('/lecturer/dashboard');
             }
 
@@ -158,10 +163,11 @@ class AuthController extends Controller
                 ]);
                 Auth::guard('student')->login($model);
                 $request->session()->regenerate();
+
                 return redirect('/student/dashboard');
             }
         } catch (\Exception $e) {
-            return back()->withInput()->withErrors(['error' => 'Unable to register: ' . $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Unable to register: '.$e->getMessage()]);
         }
 
         return back()->withInput()->with('error', 'Unable to register.');

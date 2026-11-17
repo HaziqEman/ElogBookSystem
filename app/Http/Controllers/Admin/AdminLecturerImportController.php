@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Exports\LecturersTemplateExport;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImportLecturerFileRequest;
 use App\Imports\LecturersImport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -17,7 +17,7 @@ class AdminLecturerImportController extends Controller
 
     public function template()
     {
-        return Excel::download(new LecturersTemplateExport(), 'lecturers-import-template.xlsx');
+        return Excel::download(new LecturersTemplateExport, 'lecturers-import-template.xlsx');
     }
 
     public function store(ImportLecturerFileRequest $request)
@@ -26,7 +26,7 @@ class AdminLecturerImportController extends Controller
 
         @set_time_limit(300);
 
-        $import = new LecturersImport();
+        $import = new LecturersImport;
 
         try {
             Excel::import($import, $request->file('file'));

@@ -21,7 +21,8 @@ class DummyDataRegistry
 
     /**
      * @template TModel of Model
-     * @param class-string<TModel> $modelClass
+     *
+     * @param  class-string<TModel>  $modelClass
      * @return TModel
      *
      * Create a fixture row once and record its exact primary key for safe cleanup.

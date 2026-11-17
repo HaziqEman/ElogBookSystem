@@ -11,10 +11,10 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Style\Conditional;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
@@ -27,7 +27,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *   rules   => [['col' => 'Heading name', 'op' => 'equal|lt|gt|gte', 'value' => ..., 'fill' => 'FFC7CE', 'font' => '9C0006']]
  *   freeze  => 'C2'
  */
-class ReportArraySheet implements FromArray, WithHeadings, WithTitle, WithColumnFormatting, WithColumnWidths, WithStyles, WithEvents
+class ReportArraySheet implements FromArray, WithColumnFormatting, WithColumnWidths, WithEvents, WithHeadings, WithStyles, WithTitle
 {
     public function __construct(
         protected string $title,
@@ -185,7 +185,7 @@ class ReportArraySheet implements FromArray, WithHeadings, WithTitle, WithColumn
             return;
         }
 
-        $conditional = new Conditional();
+        $conditional = new Conditional;
         $op = $rule['op'];
 
         if ($op === 'equal') {

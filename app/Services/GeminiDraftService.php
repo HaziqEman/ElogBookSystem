@@ -10,9 +10,7 @@ class GeminiDraftService
 {
     private const FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
-    public function __construct(protected LocalDraftBuilder $local)
-    {
-    }
+    public function __construct(protected LocalDraftBuilder $local) {}
 
     /**
      * @return array{text: string, fallback: bool, source: string, message: string}

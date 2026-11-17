@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Database\Seeders\DummyDataSeeder;
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -107,7 +108,7 @@ class SeedDummyData extends Command
 
             return self::SUCCESS;
         } catch (Throwable $exception) {
-            $state = $exception instanceof \Illuminate\Database\QueryException
+            $state = $exception instanceof QueryException
                 ? ($exception->errorInfo[0] ?? null)
                 : null;
             $exceptionMessage = $exception->getMessage();
@@ -115,7 +116,7 @@ class SeedDummyData extends Command
             if (($state === '08006' || str_contains($exceptionMessage, 'SQLSTATE[08006]'))
                 && str_contains($exceptionMessage, 'Endpoint ID is not specified')) {
                 $this->error('Database connection failed: this PHP/libpq build does not provide Neon SNI. Use Laragon PHP 8.3.35 or newer with libpq 14+, then retry. No fixture transaction was committed.');
-            } elseif ($exception instanceof \Illuminate\Database\QueryException) {
+            } elseif ($exception instanceof QueryException) {
                 $this->error('Database operation failed'.($state ? " (SQLSTATE {$state})" : '').'. No fixture transaction was committed; inspect the Laravel log locally after redacting sensitive values.');
             } elseif ($exception instanceof \RuntimeException) {
                 $this->error('Dummy data seeding failed ('.class_basename($exception).'): '.$exception->getMessage());

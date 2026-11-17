@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
+
 class LocalDraftBuilder
 {
     /**
-     * @param  array{role?: string, company?: string, notes?: string, week?: int|string|null, date?: \Carbon\Carbon|null}  $context
+     * @param  array{role?: string, company?: string, notes?: string, week?: int|string|null, date?: Carbon|null}  $context
      */
     public function build(array $context): string
     {
@@ -59,7 +61,7 @@ class LocalDraftBuilder
         foreach ($pieces as $piece) {
             $piece = trim($piece);
             $piece = preg_replace('/^[\-\*\d\.\)\s]+/u', '', $piece) ?? $piece;
-            $piece = rtrim(trim($piece), ".,;:!");
+            $piece = rtrim(trim($piece), '.,;:!');
 
             if ($piece === '') {
                 continue;

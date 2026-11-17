@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
+use App\Models\Logbook;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use App\Models\Logbook;
+use Tests\TestCase;
 
 class LogbookFactoryTest extends TestCase
 {

@@ -12,11 +12,11 @@ class Lecturer extends Authenticatable
         'name',
         'email',
         'password',
-        'faculty'
+        'faculty',
     ];
 
     protected $hidden = [
-        'password'
+        'password',
     ];
 
     public function students()

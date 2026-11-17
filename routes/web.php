@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminLecturerController;
 use App\Http\Controllers\Admin\AdminLecturerImportController;
@@ -13,6 +11,7 @@ use App\Http\Controllers\Admin\AdminUniversityController;
 use App\Http\Controllers\Admin\ReportsController;
 use App\Http\Controllers\AttendanceMcController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CronController;
 use App\Http\Controllers\EvaluationViewController;
 use App\Http\Controllers\Lecturer\LecturerController;
@@ -39,7 +38,7 @@ use App\Http\Controllers\Supervisor\SupervisorTaskController;
 use App\Http\Controllers\Supervisor\SupervisorWeekController;
 use App\Http\Middleware\EnsureSupervisorPasswordChanged;
 use App\Http\Middleware\LimitAiHelp;
-
+use Illuminate\Support\Facades\Route;
 
 // Home Page
 Route::get('/', function () {
@@ -151,20 +150,20 @@ foreach (['student', 'lecturer', 'supervisor'] as $chatRole) {
     Route::middleware("auth:$chatRole")->prefix("chat/$chatRole")->group(function () {
         Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->whereNumber(['conversation', 'message']);
         Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->whereNumber(['conversation', 'message']);
-        Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'store'])->whereNumber('conversation')->middleware('throttle:60,1');
-        Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])->whereNumber('conversation');
-        Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatController::class, 'read'])->whereNumber('conversation');
+        Route::post('/conversations/{conversation}/messages', [ChatController::class, 'store'])->whereNumber('conversation')->middleware('throttle:60,1');
+        Route::get('/conversations/{conversation}/messages', [ChatController::class, 'since'])->whereNumber('conversation');
+        Route::post('/conversations/{conversation}/read', [ChatController::class, 'read'])->whereNumber('conversation');
     });
 }
 
 Route::middleware('auth:student,lecturer,supervisor')->group(function () {
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-me', [MessageDeleteController::class, 'deleteForMe'])->name('messages.delete.for.me');
     Route::post('/conversations/{conversation}/messages/{message}/delete-for-everyone', [MessageDeleteController::class, 'deleteForEveryone'])->name('messages.delete.for.everyone');
-    Route::post('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'store'])
+    Route::post('/conversations/{conversation}/messages', [ChatController::class, 'store'])
         ->whereNumber('conversation')->middleware('throttle:60,1')->name('chat.store');
-    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\ChatController::class, 'since'])
+    Route::get('/conversations/{conversation}/messages', [ChatController::class, 'since'])
         ->whereNumber('conversation')->name('chat.since');
-    Route::post('/conversations/{conversation}/read', [\App\Http\Controllers\ChatController::class, 'read'])
+    Route::post('/conversations/{conversation}/read', [ChatController::class, 'read'])
         ->whereNumber('conversation')->name('chat.read');
 });
 
@@ -212,7 +211,7 @@ Route::middleware('auth:admin')->group(function () {
 foreach (['student', 'lecturer', 'supervisor'] as $notificationRole) {
     $guards = $notificationRole === 'supervisor'
         ? ['auth:supervisor', EnsureSupervisorPasswordChanged::class]
-        : ['auth:' . $notificationRole];
+        : ['auth:'.$notificationRole];
 
     Route::middleware($guards)->group(function () use ($notificationRole) {
         Route::get("/{$notificationRole}/notifications", [NotificationController::class, 'index']);

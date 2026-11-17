@@ -26,7 +26,7 @@ class StoreLogbookRequest extends FormRequest
             'week_no' => 'nullable|integer|min:1|max:60',
             'description' => 'required|string|min:10',
             'activity_date' => 'required|date',
-            'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx'
+            'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
         ];
     }
 

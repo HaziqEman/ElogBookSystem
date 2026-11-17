@@ -23,10 +23,10 @@ class ChatController extends Controller
         $me = $this->participant($conversation, $this->roleFromUrl($request)) ?? abort(403);
 
         $request->validate([
-            'message'    => ['nullable', 'string', 'max:1000'],
-            'attachment' => ['nullable', 'file', 'max:' . ChatUploader::MAX_KB, 'mimes:' . ChatUploader::ALLOWED],
-            'voice'      => ['nullable', 'boolean'],
-            'duration'   => ['nullable', 'integer', 'min:0', 'max:3600'],
+            'message' => ['nullable', 'string', 'max:1000'],
+            'attachment' => ['nullable', 'file', 'max:'.ChatUploader::MAX_KB, 'mimes:'.ChatUploader::ALLOWED],
+            'voice' => ['nullable', 'boolean'],
+            'duration' => ['nullable', 'integer', 'min:0', 'max:3600'],
         ]);
 
         $text = trim((string) $request->input('message', ''));
@@ -38,9 +38,9 @@ class ChatController extends Controller
 
         $data = [
             'sender_type' => $me['type'],
-            'sender_id'   => $me['id'],
-            'message'     => $text,
-            'type'        => 'text',
+            'sender_id' => $me['id'],
+            'message' => $text,
+            'type' => 'text',
         ];
 
         if ($file) {
@@ -53,14 +53,14 @@ class ChatController extends Controller
             }
 
             $data += [
-                'type'                     => $up['type'],
-                'attachment_url'           => $up['url'],
-                'attachment_public_id'     => $up['public_id'],
+                'type' => $up['type'],
+                'attachment_url' => $up['url'],
+                'attachment_public_id' => $up['public_id'],
                 'attachment_resource_type' => $up['resource_type'],
-                'attachment_name'          => $up['name'],
-                'attachment_mime'          => $up['mime'],
-                'attachment_size'          => $up['size'],
-                'attachment_duration'      => $up['type'] === 'audio' ? (int) $request->input('duration', 0) : null,
+                'attachment_name' => $up['name'],
+                'attachment_mime' => $up['mime'],
+                'attachment_size' => $up['size'],
+                'attachment_duration' => $up['type'] === 'audio' ? (int) $request->input('duration', 0) : null,
             ];
         }
 
@@ -97,7 +97,7 @@ class ChatController extends Controller
             ->max('message_id');
 
         return response()->json([
-            'messages'      => $messages,
+            'messages' => $messages,
             'my_read_up_to' => $myReadUpTo ? (int) $myReadUpTo : null,
         ]);
     }

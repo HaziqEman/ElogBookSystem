@@ -38,15 +38,15 @@ return [
     // 'gemini' => [
     //     'api_key' => env('GEMINI_API_KEY'),
     //     'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),        'endpoint' => 'https://generativelanguage.googleapis.com/v1/models',    ],
-        
+
     'gemini' => [
-    'key' => env('GEMINI_API_KEY'),
-    'api_key' => env('GEMINI_API_KEY'),
-    'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
-    'endpoint' => 'https://generativelanguage.googleapis.com/v1/models',],
+        'key' => env('GEMINI_API_KEY'),
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'endpoint' => 'https://generativelanguage.googleapis.com/v1/models', ],
 
     'resend' => [
-    'key' => env('RESEND_API_KEY'),
-],
+        'key' => env('RESEND_API_KEY'),
+    ],
 
 ];

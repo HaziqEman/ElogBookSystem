@@ -13,7 +13,7 @@ class Attachment extends Model
         'logbook_id',
         'file_name',
         'file_path',
-        'upload_date'
+        'upload_date',
     ];
 
     public function logbook()

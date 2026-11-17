@@ -18,7 +18,7 @@ class ChatContacts
         $first = mb_substr($parts[0] ?? '?', 0, 1);
         $second = isset($parts[1]) ? mb_substr($parts[1], 0, 1) : mb_substr($parts[0] ?? '', 1, 1);
 
-        return mb_strtoupper($first . $second);
+        return mb_strtoupper($first.$second);
     }
 
     protected function preview(?Message $m, string $meType): string
@@ -32,7 +32,7 @@ class ChatContacts
 
         $text = Str::limit($m->preview(), 60);
 
-        return $m->sender_type === $meType ? 'You: ' . $text : $text;
+        return $m->sender_type === $meType ? 'You: '.$text : $text;
     }
 
     /** Latest message of each conversation, keyed by conversation_id. */
@@ -43,9 +43,9 @@ class ChatContacts
         }
 
         return Message::whereIn('message_id', Message::query()
-                ->selectRaw('MAX(message_id)')
-                ->whereIn('conversation_id', $conversationIds)
-                ->groupBy('conversation_id'))
+            ->selectRaw('MAX(message_id)')
+            ->whereIn('conversation_id', $conversationIds)
+            ->groupBy('conversation_id'))
             ->get()
             ->keyBy('conversation_id');
     }
@@ -66,17 +66,17 @@ class ChatContacts
                 $lm = $last->get($c->conversation_id);
 
                 return [
-                    'title'           => $c->student->name,
-                    'name'            => null,
-                    'initials'        => self::initials($c->student->name),
-                    'tone'            => 'blue',
-                    'href'            => '/lecturer/messages/' . $c->conversation_id,
-                    'active'          => $activeConversationId === (int) $c->conversation_id,
-                    'student_id'      => (int) $c->student->student_id,
+                    'title' => $c->student->name,
+                    'name' => null,
+                    'initials' => self::initials($c->student->name),
+                    'tone' => 'blue',
+                    'href' => '/lecturer/messages/'.$c->conversation_id,
+                    'active' => $activeConversationId === (int) $c->conversation_id,
+                    'student_id' => (int) $c->student->student_id,
                     'conversation_id' => (int) $c->conversation_id,
-                    'preview'         => $this->preview($lm, Lecturer::class),
-                    'time_iso'        => optional($lm?->created_at)->toIso8601String(),
-                    'unread'          => (int) $c->unread_count,
+                    'preview' => $this->preview($lm, Lecturer::class),
+                    'time_iso' => optional($lm?->created_at)->toIso8601String(),
+                    'unread' => (int) $c->unread_count,
                 ];
             })
             ->values()
@@ -105,17 +105,17 @@ class ChatContacts
                 $lm = $c ? $last->get($c->conversation_id) : null;
 
                 return [
-                    'title'           => $s->name,
-                    'name'            => null,
-                    'initials'        => self::initials($s->name),
-                    'tone'            => 'green',
-                    'href'            => $c ? '/supervisor/messages/' . $c->conversation_id : '/supervisor/messages/with/' . $s->student_id,
-                    'active'          => $c && $activeConversationId === (int) $c->conversation_id,
-                    'student_id'      => (int) $s->student_id,
+                    'title' => $s->name,
+                    'name' => null,
+                    'initials' => self::initials($s->name),
+                    'tone' => 'green',
+                    'href' => $c ? '/supervisor/messages/'.$c->conversation_id : '/supervisor/messages/with/'.$s->student_id,
+                    'active' => $c && $activeConversationId === (int) $c->conversation_id,
+                    'student_id' => (int) $s->student_id,
                     'conversation_id' => $c ? (int) $c->conversation_id : null,
-                    'preview'         => $this->preview($lm, Supervisor::class),
-                    'time_iso'        => optional($lm?->created_at)->toIso8601String(),
-                    'unread'          => $c ? (int) $c->unread_count : 0,
+                    'preview' => $this->preview($lm, Supervisor::class),
+                    'time_iso' => optional($lm?->created_at)->toIso8601String(),
+                    'unread' => $c ? (int) $c->unread_count : 0,
                 ];
             })
             ->values()

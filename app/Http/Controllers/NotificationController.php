@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 
@@ -42,7 +43,7 @@ class NotificationController extends Controller
         $user = $this->recipient($role);
 
         if (! Schema::hasTable('user_notifications')) {
-            $notifications = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+            $notifications = new LengthAwarePaginator([], 0, 20);
 
             return view('notifications.index', ['role' => $role, 'notifications' => $notifications, 'unread' => 0]);
         }
@@ -98,5 +99,6 @@ class NotificationController extends Controller
             return response()->json(['message' => 'All notifications marked as read.']);
         }
 
-        return back();    }
+        return back();
+    }
 }

@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Exports\SupervisorRubricTemplateExport;
 use App\Imports\SupervisorRubricImport;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
@@ -13,7 +14,7 @@ class SupervisorRubricImportTest extends TestCase
 {
     public function test_it_builds_a_rubric_from_rows(): void
     {
-        $import = new SupervisorRubricImport();
+        $import = new SupervisorRubricImport;
         $import->collection(new Collection([
             $this->row('work', 'Work performance', 'quality', 'Quality of work', 5),
             $this->row('skills', 'Skills', 'learning', 'Ability to learn', 4),
@@ -27,7 +28,7 @@ class SupervisorRubricImportTest extends TestCase
 
     public function test_it_rejects_duplicate_criterion_keys(): void
     {
-        $import = new SupervisorRubricImport();
+        $import = new SupervisorRubricImport;
 
         try {
             $import->collection(new Collection([
@@ -60,8 +61,8 @@ class SupervisorRubricImportTest extends TestCase
             new SupervisorRubricTemplateExport($rubric),
             \Maatwebsite\Excel\Excel::XLSX
         );
-        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('rubric.xlsx', $contents);
-        $import = new SupervisorRubricImport();
+        $file = UploadedFile::fake()->createWithContent('rubric.xlsx', $contents);
+        $import = new SupervisorRubricImport;
 
         Excel::import($import, $file);
 

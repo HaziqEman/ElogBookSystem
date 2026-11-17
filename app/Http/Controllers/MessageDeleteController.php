@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\MessageDeleted;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\ChatUploader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -25,7 +26,7 @@ class MessageDeleteController extends Controller
         }
 
         $message->update([$actor['flag'] => true]);
-        app(\App\Services\ChatUploader::class)->destroy($message); 
+        app(ChatUploader::class)->destroy($message);
 
         return response()->json(['success' => true]);
     }

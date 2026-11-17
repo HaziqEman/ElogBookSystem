@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\AiHelpLogbookRequest;
 use App\Http\Requests\Student\StoreLogbookRequest;
-use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Attendance;
 use App\Models\Logbook;
@@ -32,7 +32,7 @@ class LogbookController extends Controller
         $notes = trim((string) ($data['description'] ?? ''));
         $file = ($request->boolean('use_file') && $request->hasFile('attachment')) ? $request->file('attachment') : null;
 
-        if ($notes === '' && !$file) {
+        if ($notes === '' && ! $file) {
             throw ValidationException::withMessages([
                 'description' => 'Type a few words about what you did, or tick "Let AI Help read this file", so there is something real to write from.',
             ]);
@@ -57,7 +57,7 @@ class LogbookController extends Controller
             try {
                 $student->forceFill(['internship_role' => $typedRole])->save();
             } catch (\Throwable $e) {
-                Log::notice('Could not save internship role: ' . $e->getMessage());
+                Log::notice('Could not save internship role: '.$e->getMessage());
             }
         }
 
@@ -67,7 +67,7 @@ class LogbookController extends Controller
             ->orderByDesc('logbook_id')
             ->take(2)
             ->pluck('description')
-            ->map(fn($text) => Str::limit(trim((string) $text), 250, '...'))
+            ->map(fn ($text) => Str::limit(trim((string) $text), 250, '...'))
             ->all();
 
         $result = $gemini->draft([
@@ -141,7 +141,7 @@ class LogbookController extends Controller
             DB::transaction(function () use ($request, $student, $data, $date, $storage) {
                 $logbook = $student->logbooks()->create([
                     'week_no' => $data['week_no'],
-                    'title' => 'Week ' . $data['week_no'],
+                    'title' => 'Week '.$data['week_no'],
                     'description' => $data['description'],
                     'activity_date' => $date->toDateString(),
                     'status' => 'Pending',
@@ -166,7 +166,7 @@ class LogbookController extends Controller
 
             return redirect('/student/dashboard#logbook-week')->with('success', 'Log entry created successfully.');
         } catch (\Throwable $e) {
-            Log::error('Logbook store failed: ' . $e->getMessage());
+            Log::error('Logbook store failed: '.$e->getMessage());
 
             if ($request->wantsJson()) {
                 return response()->json(['message' => 'Failed to create log entry. Please try again.'], 500);
@@ -181,7 +181,7 @@ class LogbookController extends Controller
         $student = Auth::guard('student')->user();
         $logbook = $student->logbooks()->with('attachments')->findOrFail($id);
 
-        if (!$logbook->isEditableByStudent()) {
+        if (! $logbook->isEditableByStudent()) {
             $message = 'This entry has been validated by your supervisor and can no longer be deleted.';
 
             return $this->deleteReply($request, false, $message, 403);
@@ -194,7 +194,7 @@ class LogbookController extends Controller
 
             $logbook->delete();
         } catch (\Throwable $e) {
-            Log::error('Logbook deletion failed: ' . $e->getMessage(), [
+            Log::error('Logbook deletion failed: '.$e->getMessage(), [
                 'logbook_id' => $logbook->logbook_id,
                 'exception' => $e,
             ]);

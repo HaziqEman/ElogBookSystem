@@ -68,7 +68,7 @@ class Message extends Model
         return match ($this->type) {
             'image' => '📷 Photo',
             'audio' => '🎤 Voice message',
-            'file'  => '📎 ' . ($this->attachment_name ?: 'File'),
+            'file' => '📎 '.($this->attachment_name ?: 'File'),
             default => '',
         };
     }
@@ -83,24 +83,24 @@ class Message extends Model
         $hasFile = ! $deleted && $this->attachment_url;
 
         return [
-            'message_id'      => $this->message_id,
+            'message_id' => $this->message_id,
             'conversation_id' => $this->conversation_id,
-            'sender_type'     => $this->sender_type,
-            'sender_id'       => $this->sender_id,
-            'sender_name'     => $this->sender?->name,
-            'type'            => $hasFile ? ($this->type ?: 'file') : 'text',
-            'message'         => $deleted ? null : (string) $this->message,
-            'attachment'      => $hasFile ? [
-                'url'      => $this->attachment_url,
-                'name'     => $this->attachment_name,
-                'mime'     => $this->attachment_mime,
-                'size'     => $this->attachment_size,
+            'sender_type' => $this->sender_type,
+            'sender_id' => $this->sender_id,
+            'sender_name' => $this->sender?->name,
+            'type' => $hasFile ? ($this->type ?: 'file') : 'text',
+            'message' => $deleted ? null : (string) $this->message,
+            'attachment' => $hasFile ? [
+                'url' => $this->attachment_url,
+                'name' => $this->attachment_name,
+                'mime' => $this->attachment_mime,
+                'size' => $this->attachment_size,
                 'duration' => $this->attachment_duration,
             ] : null,
-            'deleted'         => $deleted,
-            'created_at'      => optional($this->created_at)->format('d M Y H:i'),   // label (conversation lists use it)
-            'created_at_iso'  => optional($this->created_at)->toIso8601String(),     // chat UI formats in the viewer's timezone
-            'read_at'         => optional($this->read_at)->toIso8601String(),
+            'deleted' => $deleted,
+            'created_at' => optional($this->created_at)->format('d M Y H:i'),   // label (conversation lists use it)
+            'created_at_iso' => optional($this->created_at)->toIso8601String(),     // chat UI formats in the viewer's timezone
+            'read_at' => optional($this->read_at)->toIso8601String(),
         ];
     }
 }

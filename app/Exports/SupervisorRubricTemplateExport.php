@@ -8,11 +8,9 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SupervisorRubricTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles
+class SupervisorRubricTemplateExport implements FromArray, ShouldAutoSize, WithHeadings, WithStyles
 {
-    public function __construct(private array $rubric)
-    {
-    }
+    public function __construct(private array $rubric) {}
 
     public function headings(): array
     {

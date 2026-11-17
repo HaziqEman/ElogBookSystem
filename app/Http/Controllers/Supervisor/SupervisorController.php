@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Supervisor;
 
-use App\Models\Todo; // 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\Controller; //
 use App\Models\Attendance;
 use App\Models\Logbook;
 use App\Models\Student;
+use App\Models\Todo;
 use App\Models\WeekSubmission;
 use App\Services\WeekBatchService;
 use App\Services\WeekPlanner;
@@ -21,8 +21,11 @@ use Illuminate\View\View;
 class SupervisorController extends Controller
 {
     private const OVERDUE_DAYS = 7;
+
     private const PER_PAGE = 8;
+
     private const REVIEW_QUEUE_SIZE = 6;
+
     private const FILTERS = ['all', 'pending', 'revision', 'uptodate'];
 
     public function dashboard(Request $request): View
@@ -52,8 +55,8 @@ class SupervisorController extends Controller
         // A student + week can only be one batch, so duplicate submission rows are collapsed
         // into the most recent one. Without this, every duplicate row doubles the KPI numbers.
         $batches = WeekSubmission::whereIn('student_id', $ids)->get()
-            ->groupBy(fn($sub) => $sub->student_id . '-' . (int) $sub->week_no)
-            ->map(fn($group) => $group->sortByDesc(fn($sub) => $sub->sent_at?->timestamp ?? 0)->first())
+            ->groupBy(fn ($sub) => $sub->student_id.'-'.(int) $sub->week_no)
+            ->map(fn ($group) => $group->sortByDesc(fn ($sub) => $sub->sent_at?->timestamp ?? 0)->first())
             ->map(function ($sub) use ($statMap, $studentsById, $today) {
                 $g = $statMap[$sub->student_id][(int) $sub->week_no] ?? [];
                 $pending = $g['Pending'] ?? 0;
@@ -73,7 +76,7 @@ class SupervisorController extends Controller
                         : null,
                 ];
             })
-            ->filter(fn($b) => $b['student'] && $b['total'] > 0)
+            ->filter(fn ($b) => $b['student'] && $b['total'] > 0)
             ->values();
 
         $waiting = $batches->where('pending', '>', 0);
@@ -94,9 +97,9 @@ class SupervisorController extends Controller
 
         // Review queue: ONE row per student (not one per week), most urgent first.
         $needsReview = $waiting
-            ->groupBy(fn($b) => $b['student']->student_id)
+            ->groupBy(fn ($b) => $b['student']->student_id)
             ->map(function ($weeks) {
-                $oldest = $weeks->sortBy(fn($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0)->first();
+                $oldest = $weeks->sortBy(fn ($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0)->first();
 
                 return [
                     'student' => $oldest['student'],
@@ -107,7 +110,7 @@ class SupervisorController extends Controller
                     'priority' => $weeks->contains('priority', 'High') ? 'High' : 'Medium',
                 ];
             })
-            ->sortByDesc(fn($r) => [$r['priority'] === 'High' ? 1 : 0, $r['wait_days']])
+            ->sortByDesc(fn ($r) => [$r['priority'] === 'High' ? 1 : 0, $r['wait_days']])
             ->values()
             ->take(self::REVIEW_QUEUE_SIZE);
 
@@ -115,7 +118,7 @@ class SupervisorController extends Controller
         $inProgress = $students->map(function ($student) use ($today, $batchService) {
             $planner = new WeekPlanner($student, $today);
 
-            if (!$planner->hasStart()) {
+            if (! $planner->hasStart()) {
                 return null;
             }
 
@@ -131,7 +134,7 @@ class SupervisorController extends Controller
             $dates = Logbook::where('student_id', $student->student_id)
                 ->whereBetween('activity_date', [$start->toDateString(), $end->toDateString()])
                 ->pluck('activity_date')
-                ->map(fn($d) => Carbon::parse($d)->toDateString())
+                ->map(fn ($d) => Carbon::parse($d)->toDateString())
                 ->unique();
 
             $required = 0;
@@ -176,7 +179,7 @@ class SupervisorController extends Controller
             $reviewed = (int) ($counts->reviewed ?? 0);
 
             return [
-                'label' => $from->format('d M') . ' - ' . $to->format('d M'),
+                'label' => $from->format('d M').' - '.$to->format('d M'),
                 'rate' => $total > 0 ? (int) round($reviewed / $total * 100) : null,
                 'total' => $total,
                 'pending' => $total - $reviewed,
@@ -207,9 +210,9 @@ class SupervisorController extends Controller
                 'total' => $total,
                 'oldest_days' => $waitingWeeks->max('wait_days'),
                 'oldest_week' => $waitingWeeks
-                    ->sortBy(fn($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0)
+                    ->sortBy(fn ($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0)
                     ->first()['week'] ?? null,
-                'last_sent' => $mine->max(fn($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0),
+                'last_sent' => $mine->max(fn ($b) => $b['sent_at'] ? $b['sent_at']->timestamp : 0),
                 'live' => $inProgress->firstWhere('student.student_id', $student->student_id),
                 'review_label' => $label,
             ];
@@ -223,14 +226,14 @@ class SupervisorController extends Controller
 
         if ($q !== '') {
             $needle = mb_strtolower($q);
-            $table = $table->filter(fn($r) => str_contains(mb_strtolower((string) $r['student']->name), $needle)
+            $table = $table->filter(fn ($r) => str_contains(mb_strtolower((string) $r['student']->name), $needle)
                 || str_contains(mb_strtolower((string) $r['student']->matric_no), $needle));
         }
 
         $table = match ($filter) {
-            'pending' => $table->filter(fn($r) => $r['pending'] > 0),
-            'revision' => $table->filter(fn($r) => $r['revision'] > 0),
-            'uptodate' => $table->filter(fn($r) => $r['review_label'] === 'Up to date'),
+            'pending' => $table->filter(fn ($r) => $r['pending'] > 0),
+            'revision' => $table->filter(fn ($r) => $r['revision'] > 0),
+            'uptodate' => $table->filter(fn ($r) => $r['review_label'] === 'Up to date'),
             default => $table,
         };
 
@@ -254,7 +257,7 @@ class SupervisorController extends Controller
             'done' => (clone $tasks)->where('is_done', true)->count(),
             'overdue' => (clone $tasks)->where('is_done', false)->whereDate('due_date', '<', $todayKey)->count(),
             'open' => (clone $tasks)->where('is_done', false)
-                ->where(fn($q) => $q->whereNull('due_date')->orWhereDate('due_date', '>=', $todayKey))
+                ->where(fn ($q) => $q->whereNull('due_date')->orWhereDate('due_date', '>=', $todayKey))
                 ->count(),
         ];
 
@@ -303,7 +306,7 @@ class SupervisorController extends Controller
             'password.different' => 'The new password must be different from the current one.',
         ]);
 
-        if (!Hash::check($data['current_password'], $supervisor->password)) {
+        if (! Hash::check($data['current_password'], $supervisor->password)) {
             return back()->withErrors(['current_password' => 'The current password is not correct.']);
         }
 

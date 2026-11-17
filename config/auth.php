@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Admin;
+use App\Models\Lecturer;
+use App\Models\Student;
+use App\Models\Supervisor;
 use App\Models\User;
 
 return [
@@ -92,22 +96,22 @@ return [
 
         'admins' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class,
+            'model' => Admin::class,
         ],
 
         'students' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Student::class,
+            'model' => Student::class,
         ],
 
         'lecturers' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Lecturer::class,
+            'model' => Lecturer::class,
         ],
 
         'supervisors' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Supervisor::class,
+            'model' => Supervisor::class,
         ],
 
     ],

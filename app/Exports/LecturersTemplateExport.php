@@ -8,7 +8,7 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class LecturersTemplateExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles
+class LecturersTemplateExport implements FromArray, ShouldAutoSize, WithHeadings, WithStyles
 {
     public function headings(): array
     {

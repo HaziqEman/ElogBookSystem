@@ -28,26 +28,26 @@ return [
         'work' => [
             'title' => 'A. Work performance',
             'criteria' => [
-                'cooperation'    => ['label' => 'Co-operation', 'help' => 'Works well with colleagues and follows instructions.'],
-                'punctuality'    => ['label' => 'Punctuality and attendance', 'help' => 'Comes on time and is present on working days.'],
-                'initiative'     => ['label' => 'Initiative', 'help' => 'Starts tasks without being told and looks for ways to help.'],
+                'cooperation' => ['label' => 'Co-operation', 'help' => 'Works well with colleagues and follows instructions.'],
+                'punctuality' => ['label' => 'Punctuality and attendance', 'help' => 'Comes on time and is present on working days.'],
+                'initiative' => ['label' => 'Initiative', 'help' => 'Starts tasks without being told and looks for ways to help.'],
                 'responsibility' => ['label' => 'Responsibility', 'help' => 'Finishes tasks on time and owns their mistakes.'],
-                'quality'        => ['label' => 'Quality of work', 'help' => 'Work is accurate, neat and complete.'],
+                'quality' => ['label' => 'Quality of work', 'help' => 'Work is accurate, neat and complete.'],
             ],
         ],
         'skills' => [
             'title' => 'B. Skills and knowledge',
             'criteria' => [
-                'technical'     => ['label' => 'Technical knowledge and skills', 'help' => 'Applies what they learned to the real tasks.'],
-                'learning'      => ['label' => 'Ability to learn', 'help' => 'Picks up new tools and methods quickly.'],
-                'problem'       => ['label' => 'Problem solving', 'help' => 'Finds solutions to problems at work.'],
+                'technical' => ['label' => 'Technical knowledge and skills', 'help' => 'Applies what they learned to the real tasks.'],
+                'learning' => ['label' => 'Ability to learn', 'help' => 'Picks up new tools and methods quickly.'],
+                'problem' => ['label' => 'Problem solving', 'help' => 'Finds solutions to problems at work.'],
                 'communication' => ['label' => 'Communication skills', 'help' => 'Speaks and writes clearly, asks when unsure.'],
             ],
         ],
         'professional' => [
             'title' => 'C. Professional conduct',
             'criteria' => [
-                'ethics'   => ['label' => 'Professional ethics and discipline', 'help' => 'Follows company rules and keeps information confidential.'],
+                'ethics' => ['label' => 'Professional ethics and discipline', 'help' => 'Follows company rules and keeps information confidential.'],
                 'teamwork' => ['label' => 'Teamwork', 'help' => 'Supports the team and shares the workload.'],
             ],
         ],

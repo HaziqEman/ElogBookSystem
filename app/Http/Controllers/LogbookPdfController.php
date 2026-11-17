@@ -8,6 +8,7 @@ use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -56,7 +57,7 @@ class LogbookPdfController extends Controller
         // Training period = first to last logbook activity date (blank if none)
         $dates = $logbooks->pluck('activity_date')->filter()->sort()->values();
         $period = $dates->isEmpty() ? '' : (
-            \Carbon\Carbon::parse($dates->first())->format('d F Y').' - '.\Carbon\Carbon::parse($dates->last())->format('d F Y')
+            Carbon::parse($dates->first())->format('d F Y').' - '.Carbon::parse($dates->last())->format('d F Y')
         );
 
         // University name + logo for the PDF header (logo is embedded because DomPDF cannot rely on remote images).

@@ -16,7 +16,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
  * Imports many lecturers from one sheet.
  * Columns (heading row): name, email, faculty (optional), password (optional).
  */
-class LecturersImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class LecturersImport implements SkipsEmptyRows, ToCollection, WithHeadingRow
 {
     public int $created = 0;
 

@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class StudentDashboardController extends Controller
 {
@@ -228,7 +229,7 @@ class StudentDashboardController extends Controller
                 $items[] = [
                     'type' => 'log',
                     'title' => 'Logbook entry',
-                    'meta' => \Illuminate\Support\Str::limit((string) $log->description, 90) ?: 'Entry submitted',
+                    'meta' => Str::limit((string) $log->description, 90) ?: 'Entry submitted',
                     'action' => null,
                 ];
             }

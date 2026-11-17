@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Exports\StudentsTemplateExport;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ImportStudentFileRequest;
 use App\Imports\StudentsImport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -17,7 +17,7 @@ class AdminStudentImportController extends Controller
 
     public function template()
     {
-        return Excel::download(new StudentsTemplateExport(), 'students-import-template.xlsx');
+        return Excel::download(new StudentsTemplateExport, 'students-import-template.xlsx');
     }
 
     public function store(ImportStudentFileRequest $request)
@@ -26,7 +26,7 @@ class AdminStudentImportController extends Controller
 
         @set_time_limit(300);
 
-        $import = new StudentsImport();
+        $import = new StudentsImport;
 
         try {
             Excel::import($import, $request->file('file'));

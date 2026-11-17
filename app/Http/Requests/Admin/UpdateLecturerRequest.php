@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\ChecksUniqueEmail;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Concerns\ChecksUniqueEmail;
 
 class UpdateLecturerRequest extends FormRequest
 {

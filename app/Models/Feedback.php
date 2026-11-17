@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Logbook;
-use App\Models\Lecturer;
 
 class Feedback extends Model
 {
     use HasFactory;
+
     protected $primaryKey = 'feedback_id';
+
     protected $table = 'feedback';
 
     protected $fillable = [
@@ -18,7 +18,7 @@ class Feedback extends Model
         'lecturer_id',
         'supervisor_id',
         'comment',
-        'feedback_date'
+        'feedback_date',
     ];
 
     public function logbook()
@@ -31,7 +31,7 @@ class Feedback extends Model
         return $this->belongsTo(Lecturer::class, 'lecturer_id');
     }
 
-        public function supervisor()
+    public function supervisor()
     {
         return $this->belongsTo(Supervisor::class, 'supervisor_id');
     }

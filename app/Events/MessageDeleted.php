@@ -2,11 +2,10 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Queue\SerializesModels;
 
 class MessageDeleted implements ShouldBroadcastNow
 {
@@ -25,7 +24,7 @@ class MessageDeleted implements ShouldBroadcastNow
 
     public function broadcastOn()
     {
-        return new PrivateChannel('private-conversation.' . $this->message['conversation_id']);
+        return new PrivateChannel('private-conversation.'.$this->message['conversation_id']);
     }
 
     public function broadcastWith()

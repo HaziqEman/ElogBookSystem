@@ -21,7 +21,6 @@ class StudentTodoController extends Controller
 
         $student = $this->student();
 
-
         if (Todo::where('student_id', $student->student_id)->count() >= 200) {
             return $this->reply($request, false, 'You have 200 tasks. Please delete some completed ones first.');
         }
@@ -42,7 +41,7 @@ class StudentTodoController extends Controller
             ->where('todo_id', $id)
             ->firstOrFail();
 
-        $todo->is_done = !$todo->is_done;
+        $todo->is_done = ! $todo->is_done;
         $todo->save();
 
         return $this->reply($request, true, $todo->is_done ? 'Task done.' : 'Task moved back to open.');
@@ -54,7 +53,7 @@ class StudentTodoController extends Controller
             ->where('todo_id', $id)
             ->firstOrFail();
 
-        if (!empty($todo->supervisor_id)) {
+        if (! empty($todo->supervisor_id)) {
             return $this->reply($request, false, 'This task was assigned by your supervisor, so only they can remove it.', 403);
         }
 

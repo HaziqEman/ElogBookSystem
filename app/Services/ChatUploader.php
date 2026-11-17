@@ -29,7 +29,7 @@ class ChatUploader
     /** @return array{type:string,url:string,public_id:string,resource_type:string,name:string,mime:?string,size:int} */
     public function upload(UploadedFile $file, int $conversationId, bool $voice = false): array
     {
-        $ext  = strtolower($file->getClientOriginalExtension());
+        $ext = strtolower($file->getClientOriginalExtension());
         $mime = $file->getMimeType();
 
         if ($voice && in_array($ext, self::AUDIO_EXT, true)) {
@@ -44,20 +44,20 @@ class ChatUploader
         }
 
         $res = $this->client()->uploadApi()->upload($file->getRealPath(), [
-            'folder'          => 'elogbook/chat/' . $conversationId,
-            'resource_type'   => 'auto',
-            'use_filename'    => false,
+            'folder' => 'elogbook/chat/'.$conversationId,
+            'resource_type' => 'auto',
+            'use_filename' => false,
             'unique_filename' => true,
         ]);
 
         return [
-            'type'          => $type,
-            'url'           => $res['secure_url'],
-            'public_id'     => $res['public_id'],
+            'type' => $type,
+            'url' => $res['secure_url'],
+            'public_id' => $res['public_id'],
             'resource_type' => $res['resource_type'] ?? 'raw',
-            'name'          => mb_substr($file->getClientOriginalName() ?: 'file', 0, 200),
-            'mime'          => $mime,
-            'size'          => (int) $file->getSize(),
+            'name' => mb_substr($file->getClientOriginalName() ?: 'file', 0, 200),
+            'mime' => $mime,
+            'size' => (int) $file->getSize(),
         ];
     }
 
@@ -71,7 +71,7 @@ class ChatUploader
         try {
             $this->client()->uploadApi()->destroy($message->attachment_public_id, [
                 'resource_type' => $message->attachment_resource_type ?: 'image',
-                'invalidate'    => true,
+                'invalidate' => true,
             ]);
         } catch (\Throwable $e) {
             report($e);

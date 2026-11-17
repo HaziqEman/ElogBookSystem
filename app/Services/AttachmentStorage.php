@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\Attachment;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\UploadedFile;
-use RuntimeException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class AttachmentStorage
 {
@@ -41,7 +41,7 @@ class AttachmentStorage
                 ]);
 
             if (empty($result['secure_url'])) {
-                throw new \RuntimeException('Cloudinary did not return a secure URL for the uploaded attachment.');
+                throw new RuntimeException('Cloudinary did not return a secure URL for the uploaded attachment.');
             }
 
             return [
@@ -54,14 +54,14 @@ class AttachmentStorage
         $uploadDirectory = public_path('uploads');
 
         if (! is_dir($uploadDirectory) && ! mkdir($uploadDirectory, 0755, true) && ! is_dir($uploadDirectory)) {
-            throw new \RuntimeException('The local uploads directory could not be created.');
+            throw new RuntimeException('The local uploads directory could not be created.');
         }
 
         $safeName = time().'_'.Str::random(6).'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $originalName);
         $storedFile = $file->move($uploadDirectory, $safeName);
 
         if (! $storedFile->isFile()) {
-            throw new \RuntimeException('The uploaded attachment was not found after saving.');
+            throw new RuntimeException('The uploaded attachment was not found after saving.');
         }
 
         return [

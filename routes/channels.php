@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Broadcast;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Conversation;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Broadcast;
 
 // Authorize private conversation channel subscriptions.
 Broadcast::channel('private-conversation.{conversationId}', function ($user, $conversationId) {

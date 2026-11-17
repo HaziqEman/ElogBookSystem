@@ -17,23 +17,23 @@ class MessageSent implements ShouldBroadcastNow
     {
         // Same payload the page uses. Files are NOT sent through Pusher, only their Cloudinary URL.
         $this->message = $message->toChatPayload() + [
-            'lecturer_id'    => $message->conversation?->lecturer_id ?? null,
-            'supervisor_id'  => $message->conversation?->supervisor_id ?? null,
+            'lecturer_id' => $message->conversation?->lecturer_id ?? null,
+            'supervisor_id' => $message->conversation?->supervisor_id ?? null,
         ];
     }
 
     public function broadcastOn()
     {
         $channels = [
-            new PrivateChannel('private-conversation.' . $this->message['conversation_id']),
+            new PrivateChannel('private-conversation.'.$this->message['conversation_id']),
         ];
 
         if (! empty($this->message['lecturer_id'])) {
-            $channels[] = new PrivateChannel('private-lecturer.' . $this->message['lecturer_id']);
+            $channels[] = new PrivateChannel('private-lecturer.'.$this->message['lecturer_id']);
         }
 
         if (! empty($this->message['supervisor_id'])) {
-            $channels[] = new PrivateChannel('private-supervisor.' . $this->message['supervisor_id']);
+            $channels[] = new PrivateChannel('private-supervisor.'.$this->message['supervisor_id']);
         }
 
         return $channels;

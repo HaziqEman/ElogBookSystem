@@ -4,15 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Concerns\ChecksUniqueEmail;
 use App\Http\Controllers\Controller;
-
+use App\Http\Requests\Admin\BulkLecturerRequest;
+use App\Http\Requests\Admin\StoreLecturerRequest;
+use App\Http\Requests\Admin\UpdateLecturerRequest;
 use App\Models\Lecturer;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Http\Requests\Admin\StoreLecturerRequest;
-use App\Http\Requests\Admin\UpdateLecturerRequest;
-use App\Http\Requests\Admin\BulkLecturerRequest;
 
 class AdminLecturerController extends Controller
 {
@@ -45,7 +44,7 @@ class AdminLecturerController extends Controller
             ['key' => 'no_students', 'label' => 'No students', 'count' => Lecturer::doesntHave('students')->count(), 'query' => ['state' => 'no_students'], 'tone' => 'amber'],
         ];
 
-        $filters = collect($request->only(['q', 'faculty', 'state']))->filter(fn($v) => $v !== null && $v !== '');
+        $filters = collect($request->only(['q', 'faculty', 'state']))->filter(fn ($v) => $v !== null && $v !== '');
         $activeChip = 'custom';
 
         if ($filters->isEmpty()) {
@@ -70,7 +69,7 @@ class AdminLecturerController extends Controller
 
         $ids = $request->boolean('apply_to_all')
             ? $this->filteredQuery($request)->pluck('lecturer_id')
-            : collect($request->input('ids', []))->map(fn($id) => (int) $id)->filter()->unique()->values();
+            : collect($request->input('ids', []))->map(fn ($id) => (int) $id)->filter()->unique()->values();
 
         if ($ids->isEmpty()) {
             return back()->with('error', 'No lecturers were selected.');
@@ -84,10 +83,9 @@ class AdminLecturerController extends Controller
 
                 Lecturer::whereIn('lecturer_id', $ids)->update(['faculty' => trim($data['faculty'])]);
 
-                return back()->with('success', 'Set the faculty of ' . $count . ' ' . $noun . ' to "' . trim($data['faculty']) . '".');
+                return back()->with('success', 'Set the faculty of '.$count.' '.$noun.' to "'.trim($data['faculty']).'".');
 
             case 'transfer_students':
-
 
                 if ($ids->contains((int) $data['to_lecturer_id'])) {
                     return back()->with('error', 'Choose a lecturer who is not one of the selected lecturers.');
@@ -95,7 +93,7 @@ class AdminLecturerController extends Controller
 
                 $moved = Student::whereIn('lecturer_id', $ids)->update(['lecturer_id' => $data['to_lecturer_id']]);
 
-                return back()->with('success', 'Moved ' . $moved . ' ' . str('student')->plural($moved) . ' to ' . optional(Lecturer::find($data['to_lecturer_id']))->name . '.');
+                return back()->with('success', 'Moved '.$moved.' '.str('student')->plural($moved).' to '.optional(Lecturer::find($data['to_lecturer_id']))->name.'.');
 
             case 'delete':
                 $withStudents = Student::whereIn('lecturer_id', $ids)->distinct()->pluck('lecturer_id');
@@ -104,10 +102,10 @@ class AdminLecturerController extends Controller
                 Lecturer::whereIn('lecturer_id', $deletable)->get()->each->delete();
 
                 $skipped = $withStudents->count();
-                $message = 'Deleted ' . $deletable->count() . ' ' . str('lecturer')->plural($deletable->count()) . '.';
+                $message = 'Deleted '.$deletable->count().' '.str('lecturer')->plural($deletable->count()).'.';
 
                 if ($skipped > 0) {
-                    $message .= ' ' . $skipped . ' kept because they still have students. Move those students to another lecturer first.';
+                    $message .= ' '.$skipped.' kept because they still have students. Move those students to another lecturer first.';
                 }
 
                 return back()->with($skipped > 0 && $deletable->isEmpty() ? 'error' : 'success', $message);
@@ -124,7 +122,7 @@ class AdminLecturerController extends Controller
         $lecturer->forceFill(['password' => Hash::make($temporary)])->save();
 
         return back()->with([
-            'success' => 'Password reset for ' . $lecturer->name . '.',
+            'success' => 'Password reset for '.$lecturer->name.'.',
             'temp_password' => $temporary,
             'temp_for' => $lecturer->name,
         ]);
@@ -172,7 +170,7 @@ class AdminLecturerController extends Controller
             'faculty' => $data['faculty'] ?? null,
         ]);
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $lecturer->password = Hash::make($data['password']);
         }
 
@@ -189,7 +187,7 @@ class AdminLecturerController extends Controller
         $students = Student::where('lecturer_id', $lecturer->lecturer_id)->count();
 
         if ($students > 0) {
-            return back()->with('error', $lecturer->name . ' still has ' . $students . ' ' . str('student')->plural($students) . '. Move them to another lecturer first (select the lecturer, then use "Move students").');
+            return back()->with('error', $lecturer->name.' still has '.$students.' '.str('student')->plural($students).'. Move them to another lecturer first (select the lecturer, then use "Move students").');
         }
 
         $lecturer->delete();
@@ -207,7 +205,7 @@ class AdminLecturerController extends Controller
 
         $term = trim((string) $request->query('q'));
         if ($term !== '') {
-            $like = '%' . mb_strtolower($term) . '%';
+            $like = '%'.mb_strtolower($term).'%';
             $query->where(function ($where) use ($like) {
                 $where->whereRaw('lower(name) like ?', [$like])
                     ->orWhereRaw('lower(email) like ?', [$like])

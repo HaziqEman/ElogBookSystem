@@ -10,9 +10,7 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
  */
 class InternshipDashboardExport implements WithMultipleSheets
 {
-    public function __construct(protected array $report)
-    {
-    }
+    public function __construct(protected array $report) {}
 
     public function sheets(): array
     {

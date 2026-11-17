@@ -1,6 +1,7 @@
 <?php
-$file = __DIR__ . '/../app/Http/Controllers/AuthController.php';
-if (!function_exists('opcache_invalidate')) {
+
+$file = __DIR__.'/../app/Http/Controllers/AuthController.php';
+if (! function_exists('opcache_invalidate')) {
     echo "opcache not available\n";
     exit(0);
 }

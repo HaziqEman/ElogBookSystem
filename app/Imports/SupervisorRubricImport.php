@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class SupervisorRubricImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class SupervisorRubricImport implements SkipsEmptyRows, ToCollection, WithHeadingRow
 {
     private ?array $rubric = null;
 

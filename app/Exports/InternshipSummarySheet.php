@@ -23,7 +23,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *   G:H  pending reviews (top supervisors)      J:K  weeks sent per week number
  * Charts sit underneath and read straight from those tables, so they stay editable in Excel.
  */
-class InternshipSummarySheet implements FromArray, WithTitle, WithCharts, WithStyles, WithColumnWidths
+class InternshipSummarySheet implements FromArray, WithCharts, WithColumnWidths, WithStyles, WithTitle
 {
     protected const SHEET = 'Summary';
 

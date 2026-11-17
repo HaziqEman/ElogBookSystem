@@ -339,7 +339,7 @@ class AdminStudentController extends Controller
         }
 
         // forceFill writes every field, even if the model's fillable list is out of date.
-        $student = new Student();
+        $student = new Student;
         $student->forceFill($payload)->save();
 
         return redirect('/admin/students')->with('success', 'Student created.'.$this->datesMessage($payload));

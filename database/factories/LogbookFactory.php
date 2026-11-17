@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Logbook;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class LogbookFactory extends Factory
 {
@@ -11,7 +11,8 @@ class LogbookFactory extends Factory
 
     public function definition()
     {
-        $week = $this->faker->numberBetween(1,12);
+        $week = $this->faker->numberBetween(1, 12);
+
         return [
             'student_id' => 1,
             'week_no' => $week,
