@@ -62,4 +62,17 @@
 - Applied Pint to application code, config, routes, scripts, tests, factories, and seeders. Existing migrations and the duplicated `export_context` snapshot were deliberately excluded.
 - Extracted supervisor review validation into a Form Request with unchanged rules and error text; moved status/comment persistence into `SupervisorReviewService` while keeping controller response and error handling unchanged.
 - Added explicit Eloquent relationship return types to the core student, logbook, feedback, lecturer, and supervisor models.
-- Verification after cleanup: **36 tests, 36 passed, 159 assertions**; Pint check passed on changed supervisor-review files.
+- Added query, route-ID, view, redirect, and JSON response types to the supervisor review controller after confirming the actual return paths.
+- No confirmed dead code was removed. No route or Blade behavior was changed; the initial scans did not establish an unused route or a specific N+1 query.
+- No Laravel `env()` calls outside config were found, so no config change was needed.
+- Broader controller extraction, Blade calculation cleanup, role-value centralization, and chat-helper consolidation remain deferred until focused characterization tests can establish behavior.
+
+## Final verification
+
+- Baseline: **33 tests, 21 passed, 12 failed, 101 assertions**.
+- Final: **36 tests, 36 passed, 159 assertions** (`php artisan test`).
+- Pint check passed for `app`, `config`, `routes`, `scripts`, `tests`, `database/factories`, and `database/seeders`.
+- `php artisan route:list` succeeded and listed **158 routes**.
+- `php artisan optimize:clear` succeeded with the process-level `CACHE_STORE=array` override to avoid the configured database cache store.
+- PHPStan was not run because `vendor/bin/phpstan` is not installed.
+- Relative to `refactor/best-practices`, the branch contains **905 insertions and 471 deletions across 116 files**.
