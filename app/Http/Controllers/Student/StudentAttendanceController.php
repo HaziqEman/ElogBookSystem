@@ -6,14 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\ClockInRequest;
 use App\Http\Requests\Student\StudentDayOffRequest;
 use App\Models\Attendance;
-use App\Models\AttendanceFile;
+use App\Models\Student;
+use App\Services\StudentAttendanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class StudentAttendanceController extends Controller
@@ -33,130 +31,49 @@ class StudentAttendanceController extends Controller
         return back()->with($ok ? 'success' : 'error', $message);
     }
 
-    public function index()
+    public function index(StudentAttendanceService $attendanceService)
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE);
+        $data = $attendanceService->indexData($student, $today);
 
-        $monthRecords = Attendance::where('student_id', $student->student_id)
-            ->whereDate('attendance_date', '>=', $today->copy()->startOfMonth()->toDateString())
-            ->whereDate('attendance_date', '<=', $today->copy()->endOfMonth()->toDateString())
-            ->get();
-
-        $todayKey = $today->toDateString();
-        $attendance = $monthRecords->first(fn ($record) => $record->attendance_date->toDateString() === $todayKey);
-        $monthPresent = $monthRecords->where('status', 'Present')->count();
-        $monthLeave = $monthRecords->where('status', 'Leave')->count();
-        $monthMinutes = (int) $monthRecords->sum(fn ($record) => $record->workedMinutes() ?? 0);
-
-        $records = Attendance::where('student_id', $student->student_id)
-            ->orderByDesc('attendance_date')
-            ->take(60)
-            ->get();
-
-        return view('student.attendance', compact(
-            'student',
-            'today',
-            'attendance',
-            'monthPresent',
-            'monthLeave',
-            'monthMinutes',
-            'records'
-        ));
+        return view('student.attendance', array_merge(['student' => $student, 'today' => $today], $data));
     }
 
-    public function clockIn(ClockInRequest $request)
+    public function clockIn(ClockInRequest $request, StudentAttendanceService $attendanceService)
     {
         $student = $this->student();
         $todayDate = Carbon::now(Attendance::TIMEZONE)->toDateString();
-
         $data = $request->validated();
 
-        if ($data['work_mode'] === 'Home') {
-            $data['location_status'] = 'unavailable';
-            $data['latitude'] = null;
-            $data['longitude'] = null;
-            $data['accuracy'] = null;
-        }
-
         try {
-            $attendance = Attendance::where('student_id', $student->student_id)
-                ->whereDate('attendance_date', $todayDate)
-                ->first();
-
-            if (! $attendance) {
-                $attendance = new Attendance([
-                    'student_id' => $student->student_id,
-                    'attendance_date' => $todayDate,
-                ]);
-            }
-
-            if ($attendance->exists && $attendance->isDayOff()) {
-                return $this->reply($request, false, 'Today is marked as '.$attendance->dayOffLabel().'. Press Change first if you want to clock in.');
-            }
-
-            if ($attendance->check_in) {
-                return $this->reply($request, false, 'You already clocked in today at '.$attendance->checkInLocal().'.');
-            }
-
-            $shared = ($data['location_status'] ?? null) === 'shared'
-                && isset($data['latitude'], $data['longitude']);
-
-            // Only a rounded position (about 11 m) is saved and sent to the place-name service.
-            $latitude = $shared ? round((float) $data['latitude'], 4) : null;
-            $longitude = $shared ? round((float) $data['longitude'], 4) : null;
-
-            $attendance->status = 'Present';
-            $attendance->day_off_type = null;
-            $attendance->note = null;
-            $attendance->work_mode = $data['work_mode'];
-            $attendance->latitude = $latitude;
-            $attendance->longitude = $longitude;
-            $attendance->location_accuracy = $shared && isset($data['accuracy']) ? (int) round((float) $data['accuracy']) : null;
-            $attendance->location_name = $shared ? $this->placeName($latitude, $longitude) : null;
-            $attendance->location_status = $shared ? 'shared' : ($data['location_status'] ?? 'unavailable');
-            $attendance->check_in = now();
-            $attendance->check_out = null;
-            $attendance->save();
+            $result = $attendanceService->clockIn($student, $data, $todayDate);
         } catch (\Throwable $e) {
             Log::error('Clock in failed: '.$e->getMessage());
 
             return $this->reply($request, false, 'Could not clock you in. Please try again.', 500);
         }
 
-        return $this->reply($request, true, 'Clocked in at '.$attendance->checkInLocal().'.');
+        return $this->reply($request, $result['ok'], $result['message']);
     }
 
-    public function clockOut(Request $request)
+    public function clockOut(Request $request, StudentAttendanceService $attendanceService)
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
 
-        $attendance = Attendance::where('student_id', $student->student_id)
-            ->whereDate('attendance_date', $today)
-            ->first();
-
-        if (! $attendance || ! $attendance->check_in) {
-            return $this->reply($request, false, 'Please clock in first.');
-        }
-
-        if ($attendance->check_out) {
-            return $this->reply($request, false, 'You already clocked out today at '.$attendance->checkOutLocal().'.');
-        }
-
         try {
-            $attendance->check_out = now();
-            $attendance->save();
+            $result = $attendanceService->clockOut($student, $today);
         } catch (\Throwable $e) {
             Log::error('Clock out failed: '.$e->getMessage());
 
             return $this->reply($request, false, 'Could not clock you out. Please try again.', 500);
         }
 
-        return $this->reply($request, true, 'Clocked out at '.$attendance->checkOutLocal().'. Worked '.$attendance->workedLabel().'.');
+        return $this->reply($request, $result['ok'], $result['message']);
     }
 
-    public function dayOff(StudentDayOffRequest $request)
+    public function dayOff(StudentDayOffRequest $request, StudentAttendanceService $attendanceService)
     {
         $student = $this->student();
         $data = $request->validated();
@@ -166,49 +83,7 @@ class StudentAttendanceController extends Controller
         $mime = $file ? (string) $file->getMimeType() : null;
 
         try {
-            DB::transaction(function () use ($student, $data, $file, $mime) {
-                $leaveDate = Carbon::parse($data['leave_date'])->toDateString();
-                $attendance = Attendance::where('student_id', $student->student_id)
-                    ->whereDate('attendance_date', $leaveDate)
-                    ->first();
-
-                if (! $attendance) {
-                    $attendance = new Attendance([
-                        'student_id' => $student->student_id,
-                        'attendance_date' => $leaveDate,
-                    ]);
-                }
-
-                if ($attendance->check_in) {
-                    throw ValidationException::withMessages([
-                        'leave_date' => 'You already clocked in on that day, so it cannot be marked as a day off.',
-                    ]);
-                }
-
-                $attendance->status = 'Leave';
-                $attendance->day_off_type = $data['day_off_type'];
-                $attendance->note = isset($data['note']) ? trim($data['note']) : null;
-                $attendance->check_in = null;
-                $attendance->check_out = null;
-                $attendance->work_mode = null;
-                $attendance->latitude = null;
-                $attendance->longitude = null;
-                $attendance->location_accuracy = null;
-                $attendance->location_name = null;
-                $attendance->location_status = null;
-                $attendance->mc_file_name = $file ? Str::limit(basename($file->getClientOriginalName()), 200, '') : null;
-                $attendance->mc_mime = $file ? $mime : null;
-                $attendance->save();
-
-                if ($file) {
-                    AttendanceFile::updateOrCreate(
-                        ['attendance_id' => $attendance->attendance_id],
-                        ['content_base64' => base64_encode((string) file_get_contents($file->getRealPath()))]
-                    );
-                } else {
-                    AttendanceFile::where('attendance_id', $attendance->attendance_id)->delete();
-                }
-            });
+            $attendanceService->saveDayOff($student, $data, $file, $mime);
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -217,55 +92,20 @@ class StudentAttendanceController extends Controller
             return $this->reply($request, false, 'Could not save this day off. Please try again.', 500);
         }
 
-        return $this->reply($request, true, $data['day_off_type'].' saved for '.Carbon::parse($data['leave_date'])->format('d M Y').'.');
+        return $this->reply(
+            $request,
+            true,
+            $data['day_off_type'].' saved for '.Carbon::parse($data['leave_date'])->format('d M Y').'.'
+        );
     }
 
-    public function cancelDayOff(Request $request, $id)
+    public function cancelDayOff(Request $request, string $id, StudentAttendanceService $attendanceService)
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE)->toDateString();
 
-        $attendance = Attendance::where('student_id', $student->student_id)
-            ->where('attendance_id', $id)
-            ->where('status', 'Leave')
-            ->firstOrFail();
+        $result = $attendanceService->cancelDayOff($student, $id, $today);
 
-        if ($attendance->attendance_date->toDateString() < $today) {
-            return $this->reply($request, false, 'Days that have already passed cannot be changed.');
-        }
-
-        // The certificate row is removed together with the record (ON DELETE CASCADE).
-        $attendance->delete();
-
-        return $this->reply($request, true, 'The day off was removed.');
-    }
-
-    /** Turn a position into a place name using OpenStreetMap. Failure just means no name. */
-    protected function placeName(float $latitude, float $longitude): ?string
-    {
-        try {
-            $response = Http::timeout(4)
-                ->connectTimeout(3)
-                ->withHeaders([
-                    'User-Agent' => 'SmartELogBook/1.0 ('.config('app.url').')',
-                    'Accept-Language' => 'en',
-                ])
-                ->get('https://nominatim.openstreetmap.org/reverse', [
-                    'format' => 'jsonv2',
-                    'lat' => $latitude,
-                    'lon' => $longitude,
-                    'zoom' => 18,
-                ]);
-
-            if ($response->successful()) {
-                $name = data_get($response->json(), 'display_name');
-
-                return $name ? Str::limit((string) $name, 250, '') : null;
-            }
-        } catch (\Throwable $e) {
-            Log::notice('Reverse geocoding failed: '.$e->getMessage());
-        }
-
-        return null;
+        return $this->reply($request, $result['ok'], $result['message']);
     }
 }
