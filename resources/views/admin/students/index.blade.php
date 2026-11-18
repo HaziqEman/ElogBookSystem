@@ -20,6 +20,7 @@
     $dayNames = [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'];
     $hasFilters = collect(request()->only(['q', 'course', 'lecturer', 'supervisor', 'status']))->filter()->isNotEmpty();
     $inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
+    $sortOptions = ['name' => 'Name A-Z', 'matric' => 'Matric', 'start' => 'Start date', 'newest' => 'Newest added'];
 @endphp
 
 <div class="space-y-5">
@@ -56,8 +57,7 @@
     </div>
 
     {{-- Search and filters --}}
-    <form method="GET" action="/admin/students" class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
+    <x-admin.filter-shell action="/admin/students" grid-class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6" :has-filters="$hasFilters" :per-page="$perPage" :sort-options="$sortOptions">
             <div class="relative lg:col-span-2">
                 <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                 <input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, matric or email" class="{{ $inputClass }} pl-9">
@@ -93,32 +93,7 @@
                 <option value="finished" {{ request('status') === 'finished' ? 'selected' : '' }}>Finished</option>
                 <option value="not_set" {{ request('status') === 'not_set' ? 'selected' : '' }}>Dates not set</option>
             </select>
-        </div>
-
-        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <label for="sort">Sort</label>
-                <select id="sort" name="sort" onchange="this.form.submit()" class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
-                    <option value="name" {{ request('sort', 'name') === 'name' ? 'selected' : '' }}>Name A-Z</option>
-                    <option value="matric" {{ request('sort') === 'matric' ? 'selected' : '' }}>Matric</option>
-                    <option value="start" {{ request('sort') === 'start' ? 'selected' : '' }}>Start date</option>
-                    <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Newest added</option>
-                </select>
-                <label for="per_page" class="ml-2">Show</label>
-                <select id="per_page" name="per_page" onchange="this.form.submit()" class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
-                    @foreach([10, 25, 50, 100] as $size)
-                        <option value="{{ $size }}" {{ $perPage === $size ? 'selected' : '' }}>{{ $size }} per page</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="flex items-center gap-2">
-                @if($hasFilters)
-                    <a href="/admin/students" class="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800">Clear filters</a>
-                @endif
-                <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-900">Search</button>
-            </div>
-        </div>
-    </form>
+    </x-admin.filter-shell>
 
     {{-- Bulk actions (appears once rows are ticked) --}}
     <form id="bulk-form" method="POST" action="/admin/students/bulk?{{ http_build_query(request()->except('page')) }}" data-total="{{ $students->total() }}" data-noun="students">

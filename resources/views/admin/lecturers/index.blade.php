@@ -12,6 +12,7 @@
 
     $hasFilters = collect(request()->only(['q', 'faculty', 'state']))->filter()->isNotEmpty();
     $inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
+    $sortOptions = ['name' => 'Name A-Z', 'students' => 'Most students', 'newest' => 'Newest added'];
 @endphp
 
 <div class="space-y-5">
@@ -45,8 +46,7 @@
     </div>
 
     {{-- Search and filters --}}
-    <form method="GET" action="/admin/lecturers" class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <x-admin.filter-shell action="/admin/lecturers" grid-class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" :has-filters="$hasFilters" :per-page="$perPage" :sort-options="$sortOptions">
             <div class="relative lg:col-span-2">
                 <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                 <input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, email or faculty" class="{{ $inputClass }} pl-9">
@@ -64,31 +64,7 @@
                 <option value="has_students" {{ request('state') === 'has_students' ? 'selected' : '' }}>With students</option>
                 <option value="no_students" {{ request('state') === 'no_students' ? 'selected' : '' }}>No students</option>
             </select>
-        </div>
-
-        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <label for="sort">Sort</label>
-                <select id="sort" name="sort" onchange="this.form.submit()" class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
-                    <option value="name" {{ request('sort', 'name') === 'name' ? 'selected' : '' }}>Name A-Z</option>
-                    <option value="students" {{ request('sort') === 'students' ? 'selected' : '' }}>Most students</option>
-                    <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Newest added</option>
-                </select>
-                <label for="per_page" class="ml-2">Show</label>
-                <select id="per_page" name="per_page" onchange="this.form.submit()" class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
-                    @foreach([10, 25, 50, 100] as $size)
-                        <option value="{{ $size }}" {{ $perPage === $size ? 'selected' : '' }}>{{ $size }} per page</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="flex items-center gap-2">
-                @if($hasFilters)
-                    <a href="/admin/lecturers" class="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800">Clear filters</a>
-                @endif
-                <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-900">Search</button>
-            </div>
-        </div>
-    </form>
+    </x-admin.filter-shell>
 
     {{-- Bulk actions --}}
     <form id="bulk-form" method="POST" action="/admin/lecturers/bulk?{{ http_build_query(request()->except('page')) }}" data-total="{{ $lecturers->total() }}" data-noun="lecturers">
