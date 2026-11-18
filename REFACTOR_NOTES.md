@@ -416,3 +416,16 @@ Target: `resources/views/layouts/app.blade.php` (1,365 lines at mapping time). T
 - Dompdf's canvas `page_text()` now renders the unchanged “Page X of Y” wording in the footer area on each page. Local extraction of the generated 25-student/75-logbook PDF confirmed the first and last student names, the last student's third entry, and page labels from “Page 1 of 7” through “Page 7 of 7”.
 - No filters, limits, routes, or report columns were added or removed. The active report page/link discrepancy remains for human review; the export route stays available as instructed. Very large exports may still exceed memory because Dompdf must render the whole document; a per-class or date-range report can be considered later, without applying a limit in this change.
 - Task 2 test results: before adding the export test **103 tests / 962 assertions**; after the test and implementation **104 / 973**. Full tests, Pint, PHPStan, and `npm run build` pass after both commits.
+
+## Guest Tailwind/Vite investigation (finding #14)
+
+- `package.json` declares Tailwind CSS and `@tailwindcss/vite` at `^4.0.0`; the installed versions are **4.3.3**. `vite.config.js` includes the Tailwind Vite plugin and builds `resources/css/app.css` plus `resources/js/app.js`.
+- `resources/css/app.css` imports Tailwind v4 and currently has explicit `@source` entries for Laravel paginator views and compiled storage views, but no explicit `resources/views` entry. The current build nevertheless includes guest selectors such as `.bg-gradient-to-b`, `.from-blue-900`, `.to-indigo-950`, `.max-w-md`, `.max-w-xl`, `.border-white\\/10`, `.focus\\:ring-blue-500\\/20`, and `.sm\\:grid-cols-2`. The guest templates contain no arbitrary-value utility classes, so no additional `@source` directive is needed.
+- `layouts/guest.blade.php` currently uses the Tailwind browser CDN. The authenticated layout conditionally uses the Vite manifest/hot file for the app CSS and JS; the guest layout will use the same condition and Vite entries, retain Font Awesome, and omit only the Tailwind CDN fallback.
+
+### Guest Tailwind/Vite implementation
+
+- The guest layout now conditionally loads `resources/css/app.css` and `resources/js/app.js` through `@vite` when the manifest or hot file exists. The Tailwind browser CDN was removed from this layout only; Font Awesome and `layouts/app.blade.php` were left unchanged.
+- After `npm run build`, a check of **80 guest utility classes** against the generated CSS found **zero missing selectors**. The guest templates contain **zero arbitrary-value utility classes**. The built CSS already covered their classes, so no Tailwind source configuration change was needed.
+- `GuestViteAssetsTest` covers the login and registration pages’ status, form fields/labels, Vite CSS/JS tags, removed Tailwind CDN, and retained Font Awesome link.
+- Task 3 test results: before the guest change **104 tests / 973 assertions**; after the change **106 / 1,006**. Full tests, Pint, PHPStan, and `npm run build` pass.
