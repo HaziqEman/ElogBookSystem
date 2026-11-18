@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+@include('partials.google-fonts', ['includeCaveat' => false])
 <div class="space-y-6" style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif">
     <a href="{{ $logbook->student_id && $logbook->week_no ? '/supervisor/students/'.$logbook->student_id.'?week='.$logbook->week_no : '/supervisor/dashboard' }}" class="inline-flex items-center gap-2 text-sm font-bold text-[#1F45D6] hover:underline">
         <i class="fa-solid fa-arrow-left"></i> Back to Week {{ $logbook->week_no }}

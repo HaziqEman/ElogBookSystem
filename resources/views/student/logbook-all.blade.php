@@ -1,10 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <link
-        href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
+    @include('partials.google-fonts', ['includeCaveat' => true])
     @php
         $pill = function (string $status) {
             if (in_array($status, [\App\Models\Logbook::STATUS_APPROVED, \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED], true)) {

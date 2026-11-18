@@ -1,10 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
+    @include('partials.google-fonts', ['includeCaveat' => false])
     @php
         $chipClass = [
             'waiting' => 'bg-[#FEF3C7] text-[#7C2D12]',
