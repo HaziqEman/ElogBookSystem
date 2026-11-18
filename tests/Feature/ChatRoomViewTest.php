@@ -23,7 +23,7 @@ class ChatRoomViewTest extends TestCase
 
         $response = $this->actingAs($student, 'student')->get('/student/messages');
 
-        $this->assertChatPage($response, $lecturerConversation, 'student', 'lecturer');
+        $this->assertChatPage($response, $lecturerConversation, 'student', 'lecturer', $student->student_id);
     }
 
     public function test_lecturer_chat_page_renders_message_list_composer_and_json_config(): void
@@ -34,7 +34,7 @@ class ChatRoomViewTest extends TestCase
         $response = $this->actingAs($lecturer, 'lecturer')
             ->get('/lecturer/messages/'.$lecturerConversation->conversation_id);
 
-        $this->assertChatPage($response, $lecturerConversation, 'lecturer', 'student');
+        $this->assertChatPage($response, $lecturerConversation, 'lecturer', 'student', $lecturer->lecturer_id);
     }
 
     public function test_supervisor_chat_page_renders_message_list_composer_and_json_config(): void
@@ -45,7 +45,7 @@ class ChatRoomViewTest extends TestCase
         $response = $this->actingAs($supervisor, 'supervisor')
             ->get('/supervisor/messages/'.$supervisorConversation->conversation_id);
 
-        $this->assertChatPage($response, $supervisorConversation, 'supervisor', 'student');
+        $this->assertChatPage($response, $supervisorConversation, 'supervisor', 'student', $supervisor->supervisor_id);
     }
 
     /**
@@ -103,28 +103,30 @@ class ChatRoomViewTest extends TestCase
         TestResponse $response,
         Conversation $conversation,
         string $role,
-        string $partnerRole
+        string $partnerRole,
+        int $currentUserId
     ): void {
         $response->assertOk()
             ->assertSee('id="cm-list"', false)
             ->assertSee('id="cm-form"', false)
             ->assertSee('id="cm-input"', false)
-            ->assertSee('window.CHAT_PARTNER_ROLE = "'.$partnerRole.'"', false);
+            ->assertSee('window.CHAT_CONFIG = ', false);
 
         $config = $this->chatConfig($response);
+        $data = $this->chatData($response);
         $this->assertSame($conversation->conversation_id, $config['conversationId']);
-        $this->assertSame($role, $config['me']['role']);
-        $this->assertSame($partnerRole, $config['partner']['role']);
-        $this->assertSame('Chat render payload', $config['messages'][0]['message']);
+        $this->assertSame($role, $config['role']);
+        $this->assertSame($currentUserId, $config['currentUserId']);
+        $this->assertSame($partnerRole, $config['partnerRole']);
+        $this->assertSame('Chat render payload', $data['messages'][0]['message']);
+        $messagesUrl = url("/chat/{$role}/conversations/{$conversation->conversation_id}/messages");
+        $this->assertSame($messagesUrl, $config['routes']['store']);
+        $this->assertSame($messagesUrl, $config['routes']['since']);
         $this->assertSame(
-            url("/chat/{$role}/conversations/{$conversation->conversation_id}/messages"),
-            $config['urls']['store']
+            url("/chat/{$role}/conversations/{$conversation->conversation_id}/read"),
+            $config['routes']['read']
         );
-
-        preg_match('/window\.CURRENT_USER = (.+);/', $response->getContent(), $matches);
-        $this->assertCount(2, $matches);
-        $currentUser = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame($role, $currentUser['role']);
+        $this->assertSame($messagesUrl, $config['routes']['deleteBase']);
     }
 
     /**
@@ -132,7 +134,21 @@ class ChatRoomViewTest extends TestCase
      */
     private function chatConfig(TestResponse $response): array
     {
-        preg_match("/window\\.CHAT = JSON\\.parse\\('(.+)'\\);/", $response->getContent(), $matches);
+        preg_match('/window\.CHAT_CONFIG = (.+);/', $response->getContent(), $matches);
+        $this->assertCount(2, $matches);
+
+        $config = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
+        $this->assertIsArray($config);
+
+        return $config;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function chatData(TestResponse $response): array
+    {
+        preg_match("/window\\.CHAT_DATA = JSON\\.parse\\('(.+)'\\);/", $response->getContent(), $matches);
         $this->assertCount(2, $matches);
 
         $json = json_decode('"'.$matches[1].'"', true, 512, JSON_THROW_ON_ERROR);

@@ -39,16 +39,16 @@ window.Echo = new Echo({
 const emit = (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail }));
 
 const isCurrentUserMember = (member) => {
-	const currentUser = window.CURRENT_USER ?? null;
-	if (! currentUser || ! member) return false;
-	return currentUser.role === member.role && Number(currentUser.id) === Number(member.id);
+	const config = window.CHAT_CONFIG ?? null;
+	if (! config || ! member) return false;
+	return config.role === member.role && Number(config.currentUserId) === Number(member.id);
 };
 
 const getOtherParticipantRole = () => {
-	if (window.CHAT_PARTNER_ROLE) return window.CHAT_PARTNER_ROLE;
-	const currentUser = window.CURRENT_USER ?? null;
-	if (! currentUser) return null;
-	return currentUser.role === 'student' ? 'lecturer' : 'student';
+	const config = window.CHAT_CONFIG ?? null;
+	if (config?.partnerRole) return config.partnerRole;
+	if (! config) return null;
+	return config.role === 'student' ? 'lecturer' : 'student';
 };
 
 const otherParticipantIsOnline = (members) => {
@@ -58,14 +58,14 @@ const otherParticipantIsOnline = (members) => {
 };
 
 const leaveRealtimeChannels = () => {
-	const id = window.CONVERSATION_ID ?? null;
+	const id = window.CHAT_CONFIG?.conversationId ?? null;
 	if (! id) return;
 	window.Echo.leave(`private-conversation.${id}`);
 	window.Echo.leave(`presence-conversation.${id}`);
 };
 
 const initRealtimeChannels = () => {
-	const id = window.CONVERSATION_ID ?? null;
+	const id = window.CHAT_CONFIG?.conversationId ?? null;
 	if (! id) return;
 
 	const channel = window.Echo.private(`private-conversation.${id}`);

@@ -4,19 +4,29 @@
     $role = $c['me']['role'] ?? 'student';
     $cid = $c['conversation_id'] ?? null; // null = list only, no chat selected
     $tabs = $c['tabs'] ?? false; // student: two tabs on mobile instead of a back arrow
-    $js = $cid
+    $config = $cid
         ? [
-            'conversationId' => $cid,
-            'me' => $c['me'],
-            'partner' => $c['partner'],
-            'messages' => $c['messages'],
-            'maxMb' => 10,
-            'urls' => [
+            'conversationId' => (int) $cid,
+            'role' => $role,
+            'currentUserId' => (int) $c['me']['id'],
+            'partnerRole' => $c['partner']['role'],
+            'routes' => [
                 'store' => url("/chat/{$role}/conversations/{$cid}/messages"),
                 'since' => url("/chat/{$role}/conversations/{$cid}/messages"),
                 'read' => url("/chat/{$role}/conversations/{$cid}/read"),
                 'deleteBase' => url("/chat/{$role}/conversations/{$cid}/messages"),
             ],
+        ]
+        : null;
+    $js = $cid
+        ? [
+            'me' => [
+                'type' => $c['me']['type'],
+                'name' => $c['me']['name'],
+            ],
+            'partner' => $c['partner'],
+            'messages' => $c['messages'],
+            'maxMb' => 10,
         ]
         : null;
 @endphp
@@ -160,13 +170,8 @@
 </div>
 
 <script>
-    @if ($cid)
-        window.CHAT = {{ \Illuminate\Support\Js::from($js) }};
-        // names app.js already uses for presence / channels
-        window.CONVERSATION_ID = {{ (int) $cid }};
-        window.CHAT_PARTNER_ROLE = @json($c['partner']['role']);
-        window.CURRENT_USER = @json($c['me']);
-    @endif
+    window.CHAT_CONFIG = @json($config);
+    window.CHAT_DATA = {{ \Illuminate\Support\Js::from($js) }};
     window.CHAT_LIST = @json($c['list'] ?? null);
 </script>
 

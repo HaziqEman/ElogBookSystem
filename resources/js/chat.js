@@ -75,7 +75,7 @@ function initList(root) {
 			if (! m || m.sender_type !== L.partnerType) return;
 			const c = side.querySelector(`.cm-contact[data-student-id="${m.sender_id}"]`);
 			if (! c) return;
-			const open = String(m.conversation_id) === String(window.CONVERSATION_ID || '');
+			const open = String(m.conversation_id) === String(window.CHAT_CONFIG?.conversationId || '');
 			bump(c, m, ! open);
 		});
 	}
@@ -93,12 +93,13 @@ function initChat() {
 	if (! root) return;
 	setupFit(root);
 	initList(root);
-	const cfg = window.CHAT;
-	if (! cfg) return;   // list-only page (no conversation selected)
+	const config = window.CHAT_CONFIG;
+	const data = window.CHAT_DATA;
+	if (! config || ! data) return;   // list-only page (no conversation selected)
 
-	const me = cfg.me;
-	const urls = cfg.urls;
-	const maxBytes = (cfg.maxMb || 10) * 1024 * 1024;
+	const me = { ...data.me, role: config.role, id: config.currentUserId };
+	const urls = config.routes;
+	const maxBytes = (data.maxMb || 10) * 1024 * 1024;
 	const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 	const touch = window.matchMedia('(pointer: coarse)').matches;
 
@@ -173,7 +174,7 @@ function initChat() {
 
 	const buildBubble = createMessageItemRenderer({
 		me,
-		partner: cfg.partner,
+		partner: data.partner,
 		state,
 		isImg,
 		el,
@@ -312,7 +313,7 @@ function initChat() {
 	/* ---------- realtime events ---------- */
 	window.addEventListener('chat:message', (e) => {
 		const m = e.detail;
-		if (Number(m.conversation_id) !== Number(cfg.conversationId)) return;
+		if (Number(m.conversation_id) !== Number(config.conversationId)) return;
 		addMessage(m);
 		if (! isMine(m)) { setTyping(false); markRead(); }
 	});
@@ -337,7 +338,7 @@ function initChat() {
 	// typing indicator (Pusher client events: enable "Client events" in the Pusher app settings; harmless if disabled)
 	let channel = null;
 	try {
-		channel = window.Echo.private(`private-conversation.${cfg.conversationId}`);
+		channel = window.Echo.private(`private-conversation.${config.conversationId}`);
 		channel.listenForWhisper('typing', () => { setTyping(true); clearTimeout(state.typingTimer); state.typingTimer = setTimeout(() => setTyping(false), 3500); });
 	} catch (_) {}
 	const whisperTyping = () => {
@@ -388,7 +389,7 @@ function initChat() {
 	const addToTray = async (fileList) => {
 		for (const f of Array.from(fileList)) {
 			const file = await prepImage(f);
-			if (file.size > maxBytes) { toast(`${f.name} is larger than ${cfg.maxMb} MB.`); continue; }
+			if (file.size > maxBytes) { toast(`${f.name} is larger than ${data.maxMb} MB.`); continue; }
 			state.tray.push({ file, url: file.type.startsWith('image/') ? URL.createObjectURL(file) : null });
 		}
 		renderTray(); refreshButtons();
@@ -532,7 +533,7 @@ function initChat() {
 	$('cm-newpill').addEventListener('click', scrollBottom);
 
 	/* ---------- boot ---------- */
-	(cfg.messages || []).forEach((m) => addMessage(m, { silent: true }));
+	(data.messages || []).forEach((m) => addMessage(m, { silent: true }));
 	$('cm-empty').hidden = state.msgs.size > 0;
 	net(); refreshButtons(); scrollBottom();
 	setTimeout(scrollBottom, 300);
