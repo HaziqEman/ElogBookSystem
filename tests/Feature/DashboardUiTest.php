@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\University;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -134,6 +135,59 @@ class DashboardUiTest extends TestCase
             ->assertOk()
             ->assertSee('Logbook by week');
         $assertVisibleOptions($logbooks->getContent());
+    }
+
+    public function test_student_layout_loads_lecturer_and_supervisor_with_two_relationship_queries(): void
+    {
+        $lecturer = Lecturer::create([
+            'name' => 'Layout Test Lecturer',
+            'email' => 'layout-test-lecturer@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Test Faculty',
+        ]);
+        $supervisor = Supervisor::create([
+            'name' => 'Layout Test Supervisor',
+            'email' => 'layout-test-supervisor@example.test',
+            'password' => Hash::make('password'),
+            'must_change_password' => false,
+        ]);
+        $student = Student::create([
+            'lecturer_id' => $lecturer->lecturer_id,
+            'supervisor_id' => $supervisor->supervisor_id,
+            'matric_no' => 'LAYOUTRELATIONS001',
+            'name' => 'Layout Test Student',
+            'email' => 'layout-test-student@example.test',
+            'password' => Hash::make('password'),
+            'phone_no' => '0000000000',
+            'course' => 'Test Course',
+        ]);
+
+        $connection = DB::connection();
+        $connection->flushQueryLog();
+        $connection->enableQueryLog();
+
+        try {
+            $response = $this->actingAs($student, 'student')->get('/student/dashboard');
+            $queries = $connection->getQueryLog();
+        } finally {
+            $connection->disableQueryLog();
+            $connection->flushQueryLog();
+        }
+
+        $response->assertOk()
+            ->assertSee('Student Portal')
+            ->assertSee('Layout Test Lecturer')
+            ->assertSee('Layout Test Supervisor');
+
+        $lecturerQueries = collect($queries)
+            ->filter(fn (array $query): bool => str_contains(strtolower($query['query']), 'lecturers'))
+            ->count();
+        $supervisorQueries = collect($queries)
+            ->filter(fn (array $query): bool => str_contains(strtolower($query['query']), 'supervisors'))
+            ->count();
+
+        $this->assertSame(1, $lecturerQueries);
+        $this->assertSame(1, $supervisorQueries);
     }
 
     public function test_student_logbook_query_count_does_not_scale_with_twenty_entries(): void

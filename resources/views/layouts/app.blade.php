@@ -118,15 +118,10 @@
                         : null;
                     $currentAdmin = request()->is('admin*') ? Auth::guard('admin')->user() : null;
 
-                    $supervisorName = null;
-                    $industryName = null;
-
                     if (request()->is('student*') && $currentStudent) {
                         $displayName = $currentStudent->name;
                         $roleLabel = 'Logged in as Student';
                         $roleShort = 'Student';
-                        $supervisorName = optional($currentStudent->lecturer)->name;
-                        $industryName = optional($currentStudent->supervisor)->name;
                     } elseif (request()->is('lecturer*') && $currentLecturer) {
                         $displayName = $currentLecturer->name;
                         $roleLabel = 'Faculty Evaluator';
