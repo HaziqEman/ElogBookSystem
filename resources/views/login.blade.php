@@ -30,13 +30,13 @@
         <form action="/login" method="POST" class="mt-6 space-y-4">
             @csrf
             <div>
-                <label class="mb-1 block text-xs font-semibold text-slate-600">Email Address</label>
-                <input type="email" name="email" value="{{ old('email') }}" required placeholder="you@example.com" class="w-full rounded-lg border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                <label for="email" class="mb-1 block text-xs font-semibold text-slate-600">Email Address</label>
+                <input id="email" type="email" name="email" value="{{ old('email') }}" required placeholder="you@example.com" class="w-full rounded-lg border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
             </div>
 
             <div>
-                <label class="mb-1 block text-xs font-semibold text-slate-600">Password</label>
-                <input type="password" name="password" required placeholder="••••••••" class="w-full rounded-lg border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                <label for="password" class="mb-1 block text-xs font-semibold text-slate-600">Password</label>
+                <input id="password" type="password" name="password" required placeholder="••••••••" class="w-full rounded-lg border border-slate-200 p-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
             </div>
 
             <button type="submit" class="w-full rounded-lg bg-blue-600 p-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">

@@ -222,6 +222,23 @@ class DashboardUiTest extends TestCase
             ->assertDontSee('Administrator');
     }
 
+    public function test_guest_auth_form_labels_reference_their_controls(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('UiTM E-Logbook Portal')
+            ->assertSee('for="email"', false)
+            ->assertSee('id="email"', false)
+            ->assertSee('for="password"', false)
+            ->assertSee('id="password"', false);
+
+        $this->get('/register')
+            ->assertOk()
+            ->assertSee('Portal Registration')
+            ->assertSee('for="role"', false)
+            ->assertSee('id="role"', false);
+    }
+
     public function test_lecturer_dashboard_shows_assigned_students_and_logbook_statuses(): void
     {
         $lecturer = Lecturer::create([
