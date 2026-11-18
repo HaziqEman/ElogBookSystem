@@ -8,6 +8,7 @@ use App\Models\Feedback;
 use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
+use App\Models\University;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -69,6 +70,70 @@ class DashboardUiTest extends TestCase
         $this->get('/student/logbooks')
             ->assertOk()
             ->assertSee('Logbook by week');
+    }
+
+    public function test_university_form_lists_only_visible_universities_in_name_order(): void
+    {
+        $lecturer = Lecturer::create([
+            'name' => 'University Form Lecturer',
+            'email' => 'university-form-lecturer@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Test Faculty',
+        ]);
+        $student = Student::create([
+            'lecturer_id' => $lecturer->lecturer_id,
+            'matric_no' => 'UNIVERSITYFORM001',
+            'name' => 'University Form Student',
+            'email' => 'university-form-student@example.test',
+            'password' => Hash::make('password'),
+            'phone_no' => '0000000000',
+            'course' => 'Test Course',
+        ]);
+        $otherStudent = Student::create([
+            'lecturer_id' => $lecturer->lecturer_id,
+            'matric_no' => 'UNIVERSITYFORM002',
+            'name' => 'Another Student',
+            'email' => 'university-form-other@example.test',
+            'password' => Hash::make('password'),
+            'phone_no' => '0000000000',
+            'course' => 'Test Course',
+        ]);
+
+        University::create(['name' => 'Zulu University', 'is_verified' => true]);
+        University::create([
+            'name' => 'Mango University',
+            'created_by_student_id' => $student->student_id,
+        ]);
+        University::create(['name' => 'Alpha University', 'is_verified' => true]);
+        University::create([
+            'name' => 'Private University',
+            'created_by_student_id' => $otherStudent->student_id,
+        ]);
+
+        $this->actingAs($student, 'student');
+
+        $assertVisibleOptions = function (string $html): void {
+            $alphaPosition = strpos($html, 'Alpha University');
+            $mangoPosition = strpos($html, 'Mango University');
+            $zuluPosition = strpos($html, 'Zulu University');
+
+            $this->assertNotFalse($alphaPosition);
+            $this->assertNotFalse($mangoPosition);
+            $this->assertNotFalse($zuluPosition);
+            $this->assertLessThan($mangoPosition, $alphaPosition);
+            $this->assertLessThan($zuluPosition, $mangoPosition);
+            $this->assertStringNotContainsString('Private University', $html);
+        };
+
+        $dashboard = $this->get('/student/dashboard')
+            ->assertOk()
+            ->assertSee('Student Portal');
+        $assertVisibleOptions($dashboard->getContent());
+
+        $logbooks = $this->get('/student/logbooks')
+            ->assertOk()
+            ->assertSee('Logbook by week');
+        $assertVisibleOptions($logbooks->getContent());
     }
 
     public function test_student_logbook_query_count_does_not_scale_with_twenty_entries(): void

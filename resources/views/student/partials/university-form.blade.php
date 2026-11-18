@@ -1,10 +1,9 @@
-{{-- University Information form, shown inside the Export PDF modal. Needs $student. --}}
+{{-- University Information form, shown inside the Export PDF modal. Needs $student and $universities. --}}
 @php
-    $uniList = \App\Models\University::visibleTo($student->student_id)->orderBy('name')->get();
     $currentUni = $student->university;
     $uniMode = old('mode', 'existing');
     $uniSelected = old('university_id', $student->university_id);
-    $uniSelectedModel = $uniList->firstWhere('university_id', (int) $uniSelected);
+    $uniSelectedModel = $universities->firstWhere('university_id', (int) $uniSelected);
     $uniInput = 'w-full rounded-xl border border-[#E3E8F2] bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#2F5BFF] focus:outline-none focus:ring-2 focus:ring-[#2F5BFF]/20';
 @endphp
 
@@ -26,7 +25,7 @@
                 <span class="text-sm font-semibold text-slate-600">University</span>
                 <select name="university_id" id="uni-select" class="{{ $uniInput }}">
                     <option value="" data-logo="">Select your university</option>
-                    @foreach($uniList as $uni)
+                    @foreach($universities as $uni)
                         <option value="{{ $uni->university_id }}" data-logo="{{ $uni->logo_url }}" @selected((string) $uniSelected === (string) $uni->university_id)>
                             {{ $uni->name }}{{ $uni->is_verified ? '' : ' (pending approval)' }}
                         </option>

@@ -60,7 +60,10 @@
             </button>
         </div>
 
-        @include('student.partials.university-form')
+        @include('student.partials.university-form', [
+            'student' => $student,
+            'universities' => $universities,
+        ])
     </div>
 </div>
 

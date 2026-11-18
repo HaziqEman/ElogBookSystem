@@ -10,8 +10,10 @@ use App\Models\Logbook;
 use App\Models\Message;
 use App\Models\Student;
 use App\Models\Todo;
+use App\Models\University;
 use App\Services\WeekPlanner;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -323,9 +325,11 @@ class StudentDashboardController extends Controller
                 ->value('used_count')
             : 0;
         $aiLeft = max($aiLimit - $aiUsed, 0);
+        $universities = $this->visibleUniversitiesFor($student);
 
         return view('student.dashboard', compact(
             'student',
+            'universities',
             'today',
             'planner',
             'currentWeek',
@@ -359,6 +363,7 @@ class StudentDashboardController extends Controller
     public function logbooks(Request $request)
     {
         $student = Auth::guard('student')->user();
+        $universities = $this->visibleUniversitiesFor($student);
         $today = Carbon::now(Attendance::TIMEZONE)->startOfDay();
         $planner = new WeekPlanner($student, $today);
         $todayKey = $today->toDateString();
@@ -455,6 +460,7 @@ class StudentDashboardController extends Controller
 
         return view('student.logbook-all', compact(
             'student',
+            'universities',
             'today',
             'todayKey',
             'planner',
@@ -473,5 +479,13 @@ class StudentDashboardController extends Controller
             'workingDaysCsv',
             'entryDates'
         ));
+    }
+
+    /** @return Collection<int, University> */
+    private function visibleUniversitiesFor(Student $student): Collection
+    {
+        return University::visibleTo($student->student_id)
+            ->orderBy('name')
+            ->get();
     }
 }
