@@ -212,6 +212,16 @@ class DashboardUiTest extends TestCase
         $registerResponse->assertDontSee('Smart eLogBook');
     }
 
+    public function test_registration_page_renders_only_supported_roles(): void
+    {
+        $this->get('/register')
+            ->assertOk()
+            ->assertSee('Portal Registration')
+            ->assertSee('Student')
+            ->assertSee('Lecturer')
+            ->assertDontSee('Administrator');
+    }
+
     public function test_lecturer_dashboard_shows_assigned_students_and_logbook_statuses(): void
     {
         $lecturer = Lecturer::create([

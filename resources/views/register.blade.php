@@ -26,7 +26,6 @@
                 <select name="role" class="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
                     <option value="student" {{ old('role', 'student') === 'student' ? 'selected' : '' }}>Student</option>
                     <option value="lecturer" {{ old('role') === 'lecturer' ? 'selected' : '' }}>Lecturer</option>
-                    <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Administrator</option>
                 </select>
             </div>
 
