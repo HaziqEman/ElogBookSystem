@@ -80,6 +80,22 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Latest logbook entries');
     }
 
+    public function test_admin_reports_render_current_export_controls(): void
+    {
+        $admin = Admin::create([
+            'name' => 'Reports Admin',
+            'email' => 'reports-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/reports')
+            ->assertOk()
+            ->assertSee('Internship Coordinator Reports')
+            ->assertSee('Download Excel Dashboard')
+            ->assertSee('Student progress');
+    }
+
     public function test_admin_dashboard_separates_reviewable_overdue_and_unassigned_entries(): void
     {
         $lecturer = Lecturer::create([

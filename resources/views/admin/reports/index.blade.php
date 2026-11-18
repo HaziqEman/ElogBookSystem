@@ -157,24 +157,6 @@
             </div>
         </div>
 
-        {{-- Existing exports
-    <div class="bg-white rounded-[16px] border border-slate-200 shadow-sm shadow-slate-200/40 p-6">
-        <h3 class="text-xl font-semibold text-slate-800">Academic Compilation Reports</h3>
-        <p class="mt-3 text-sm text-slate-600">Export student logbook records, lecturer evaluations, and internship summaries into standardized formats.</p>
-
-        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
-            <a href="/admin/reports/export/excel" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
-                <i class="fa-solid fa-file-excel"></i>
-                Export Excel Sheet
-            </a>
-            <a href="/admin/reports/export/pdf" class="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700">
-                <i class="fa-solid fa-file-pdf"></i>
-                Export Master Evaluation Audit PDF
-            </a>
-        </div>
-    </div>
-</div> --}}
-
         <script>
             // Adds the selected filters to the export link, then starts the download.
             document.querySelectorAll('[data-export]').forEach(function(button) {
