@@ -160,24 +160,14 @@
                                 @endif
                             </td>
                             <td class="px-4 py-4">
-                                <div class="flex flex-wrap gap-2">
-                                    <a href="/admin/supervisors/{{ $supervisor->supervisor_id }}/edit" class="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-amber-600">
-                                        Edit
-                                    </a>
-                                    <form action="/admin/supervisors/{{ $supervisor->supervisor_id }}/reset-password" method="POST" class="inline" onsubmit="return confirm('Reset the password for {{ addslashes($supervisor->name) }}? A new temporary password will be shown once.');">
-                                        @csrf
-                                        <button type="submit" title="Reset password" aria-label="Reset password for {{ $supervisor->name }}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
-                                            <i class="fa-solid fa-key"></i>
-                                        </button>
-                                    </form>
-                                    <form action="/admin/supervisors/{{ $supervisor->supervisor_id }}" method="POST" class="inline" onsubmit="return confirm('Remove this supervisor? Their students will become unassigned.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
+                                <x-admin.row-actions
+                                    :delete-confirmation="'Remove this supervisor? Their students will become unassigned.'"
+                                    :delete-url="'/admin/supervisors/'.$supervisor->supervisor_id"
+                                    :edit-url="'/admin/supervisors/'.$supervisor->supervisor_id.'/edit'"
+                                    :name="$supervisor->name"
+                                    :reset-confirmation="'Reset the password for '.$supervisor->name.'? A new temporary password will be shown once.'"
+                                    :reset-url="'/admin/supervisors/'.$supervisor->supervisor_id.'/reset-password'"
+                                />
                             </td>
                         </tr>
                     @empty

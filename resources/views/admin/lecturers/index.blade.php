@@ -139,30 +139,16 @@
                                 @endif
                             </td>
                             <td class="px-4 py-4">
-                                <div class="flex flex-wrap gap-2">
-                                    <a href="/admin/lecturers/{{ $lecturer->lecturer_id }}/edit" class="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-amber-600">
-                                        Edit
-                                    </a>
-                                    <form action="/admin/lecturers/{{ $lecturer->lecturer_id }}/reset-password" method="POST" class="inline" onsubmit="return confirm('Reset the password for {{ addslashes($lecturer->name) }}? A new temporary password will be shown once.');">
-                                        @csrf
-                                        <button type="submit" title="Reset password" aria-label="Reset password for {{ $lecturer->name }}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
-                                            <i class="fa-solid fa-key"></i>
-                                        </button>
-                                    </form>
-                                    <form action="/admin/lecturers/{{ $lecturer->lecturer_id }}" method="POST" class="inline" onsubmit="return confirm('Delete this lecturer?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        @if($lecturer->students_count > 0)
-                                            <button type="button" disabled title="Move their {{ $lecturer->students_count }} students to another lecturer first" class="inline-flex cursor-not-allowed items-center rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white opacity-40">
-                                                Delete
-                                            </button>
-                                        @else
-                                            <button type="submit" class="inline-flex items-center rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600">
-                                                Delete
-                                            </button>
-                                        @endif
-                                    </form>
-                                </div>
+                                <x-admin.row-actions
+                                    :delete-confirmation="'Delete this lecturer?'"
+                                    :delete-disabled="$lecturer->students_count > 0"
+                                    :delete-disabled-title="'Move their '.$lecturer->students_count.' students to another lecturer first'"
+                                    :delete-url="'/admin/lecturers/'.$lecturer->lecturer_id"
+                                    :edit-url="'/admin/lecturers/'.$lecturer->lecturer_id.'/edit'"
+                                    :name="$lecturer->name"
+                                    :reset-confirmation="'Reset the password for '.$lecturer->name.'? A new temporary password will be shown once.'"
+                                    :reset-url="'/admin/lecturers/'.$lecturer->lecturer_id.'/reset-password'"
+                                />
                             </td>
                         </tr>
                     @empty

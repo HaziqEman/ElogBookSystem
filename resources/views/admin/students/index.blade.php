@@ -237,24 +237,14 @@
                                 </p>
                             </td>
                             <td class="px-4 py-4">
-                                <div class="flex flex-wrap gap-2">
-                                    <a href="/admin/students/{{ $student->student_id }}/edit" class="inline-flex items-center rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-amber-600">
-                                        Edit
-                                    </a>
-                                    <form action="/admin/students/{{ $student->student_id }}/reset-password" method="POST" class="inline" onsubmit="return confirm('Reset the password for {{ addslashes($student->name) }}? A new temporary password will be shown once.');">
-                                        @csrf
-                                        <button type="submit" title="Reset password" aria-label="Reset password for {{ $student->name }}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
-                                            <i class="fa-solid fa-key"></i>
-                                        </button>
-                                    </form>
-                                    <form action="/admin/students/{{ $student->student_id }}" method="POST" class="inline" onsubmit="return confirm('Delete this student and all of their logbook entries?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-600">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
+                                <x-admin.row-actions
+                                    :delete-confirmation="'Delete this student and all of their logbook entries?'"
+                                    :delete-url="'/admin/students/'.$student->student_id"
+                                    :edit-url="'/admin/students/'.$student->student_id.'/edit'"
+                                    :name="$student->name"
+                                    :reset-confirmation="'Reset the password for '.$student->name.'? A new temporary password will be shown once.'"
+                                    :reset-url="'/admin/students/'.$student->student_id.'/reset-password'"
+                                />
                             </td>
                         </tr>
                     @empty

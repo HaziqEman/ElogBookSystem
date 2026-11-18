@@ -61,6 +61,7 @@ class AdminDirectoryPagesTest extends TestCase
             ->assertSee('action="/admin/students/'.$student->student_id.'/reset-password"', false)
             ->assertSee('action="/admin/students/'.$student->student_id.'"', false)
             ->assertSee('href="/admin/students/'.$student->student_id.'/edit"', false)
+            ->assertSee('Reset the password for Directory Student? A new temporary password will be shown once.')
             ->assertSee('Delete this student and all of their logbook entries?');
     }
 
@@ -104,6 +105,8 @@ class AdminDirectoryPagesTest extends TestCase
             ->assertSee('action="/admin/lecturers/'.$lecturer->lecturer_id.'/reset-password"', false)
             ->assertSee('action="/admin/lecturers/'.$lecturer->lecturer_id.'"', false)
             ->assertSee('href="/admin/lecturers/'.$lecturer->lecturer_id.'/edit"', false)
+            ->assertSee('Reset the password for Directory Lecturer? A new temporary password will be shown once.')
+            ->assertSee('Move their 1 students to another lecturer first')
             ->assertSee('Delete this lecturer?');
     }
 
@@ -139,6 +142,7 @@ class AdminDirectoryPagesTest extends TestCase
             ->assertSee('action="/admin/supervisors/'.$supervisor->supervisor_id.'/reset-password"', false)
             ->assertSee('action="/admin/supervisors/'.$supervisor->supervisor_id.'"', false)
             ->assertSee('href="/admin/supervisors/'.$supervisor->supervisor_id.'/edit"', false)
+            ->assertSee('Reset the password for Directory Supervisor? A new temporary password will be shown once.')
             ->assertSee("Remove this supervisor? Their students will become unassigned.");
     }
 
