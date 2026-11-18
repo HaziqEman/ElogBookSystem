@@ -1468,11 +1468,7 @@
 
             @include('partials.chat-room.message-list')
 
-            <div
-                id="cm-tray"
-                class="cm-tray"
-                hidden
-            ></div>
+            @include('partials.chat-room.attachment-preview')
 
             @include('partials.chat-room.composer')
         </section>
