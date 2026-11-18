@@ -30,9 +30,10 @@ class AdminReportPdfExportTest extends TestCase
         $this->actingAs($admin, 'admin');
 
         $this->createStudentWithLogbooks($lecturer, 1);
-        $singleCount = $this->countDatabaseQueries(
-            fn () => $this->get('/admin/reports/export/pdf')->assertOk()
-        );
+        $singleCount = $this->countDatabaseQueries(function (): void {
+            $response = $this->get('/admin/reports/export/pdf');
+            $response->assertOk();
+        });
 
         for ($sequence = 2; $sequence <= 25; $sequence++) {
             $this->createStudentWithLogbooks($lecturer, $sequence);

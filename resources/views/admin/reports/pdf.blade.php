@@ -53,7 +53,6 @@
 
     <div class="footer">
         <div>Prepared for university administration review</div>
-        <div>Page 1 of 1</div>
     </div>
 </body>
 </html>

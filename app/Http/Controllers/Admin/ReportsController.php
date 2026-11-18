@@ -7,12 +7,12 @@ use App\Exports\InternshipDashboardExport;
 use App\Exports\InternshipSheets;
 use App\Http\Controllers\Controller;
 use App\Models\Lecturer;
-use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\University;
 use App\Services\InternshipReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Excel as ExcelType;
@@ -105,13 +105,37 @@ class ReportsController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            $students = Student::with(['lecturer', 'logbooks'])->get();
-            $logbooks = Logbook::with('student')->get();
+            $students = Student::query()
+                ->select(['student_id', 'lecturer_id', 'name', 'matric_no', 'course'])
+                ->with([
+                    'lecturer:lecturer_id,name',
+                    'logbooks' => fn (HasMany $query) => $query
+                        ->select([
+                            'logbook_id',
+                            'student_id',
+                            'week_no',
+                            'activity_date',
+                            'status',
+                            'description',
+                        ])
+                        ->orderBy('logbook_id'),
+                ])
+                ->lazyById(100, 'student_id');
 
             $pdf = Pdf::loadView('admin.reports.pdf', [
                 'students' => $students,
-                'logbooks' => $logbooks,
             ])->setPaper('a4', 'portrait');
+            $pdf->render();
+            $canvas = $pdf->getDomPDF()->getCanvas();
+            $font = $pdf->getDomPDF()->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+            $canvas->page_text(
+                40,
+                $canvas->get_height() - 40,
+                'Page {PAGE_NUM} of {PAGE_COUNT}',
+                $font,
+                10,
+                [0.42, 0.447, 0.502]
+            );
 
             return $pdf->download('master-evaluation-audit-'.now()->format('Ymd-His').'.pdf');
         } catch (\Throwable $e) {
