@@ -107,10 +107,56 @@ class ChatRoomViewTest extends TestCase
         int $currentUserId
     ): void {
         $response->assertOk()
-            ->assertSee('id="cm-list"', false)
-            ->assertSee('id="cm-form"', false)
-            ->assertSee('id="cm-input"', false)
             ->assertSee('window.CHAT_CONFIG = ', false);
+
+        foreach ([
+            'cm-root',
+            'cm-status',
+            'cm-status-text',
+            'cm-typing',
+            'cm-offline',
+            'cm-list',
+            'cm-empty',
+            'cm-newpill',
+            'cm-tray',
+            'cm-form',
+            'cm-attach',
+            'cm-input',
+            'cm-emoji-btn',
+            'cm-send',
+            'cm-mic',
+            'cm-menu',
+            'cm-pick-doc',
+            'cm-pick-photo',
+            'cm-pick-cam',
+            'cm-emoji',
+            'cm-in-doc',
+            'cm-in-photo',
+            'cm-in-cam',
+            'cm-rec',
+            'cm-rec-cancel',
+            'cm-rec-time',
+            'cm-rec-send',
+            'cm-sheet',
+            'cm-del-me',
+            'cm-del-everyone',
+            'cm-del-cancel',
+            'cm-lb',
+            'cm-lb-open',
+            'cm-lb-close',
+            'cm-lb-img',
+            'cm-cam',
+            'cm-cam-video',
+            'cm-cam-snap',
+            'cm-cam-close',
+            'cm-toast',
+        ] as $id) {
+            $response->assertSee('id="'.$id.'"', false);
+        }
+
+        foreach (['cm-list', 'cm-composer', 'cm-tray', 'cm-sheet', 'cm-lb', 'cm-cam', 'cm-toast'] as $class) {
+            $response->assertSee('class="'.$class.'"', false);
+        }
 
         $config = $this->chatConfig($response);
         $data = $this->chatData($response);
