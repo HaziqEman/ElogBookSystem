@@ -264,7 +264,7 @@
 - Removed the stale commented-out export block from the admin reports view.
 - Replaced the supervisor review button's hardcoded validated status with `Logbook::SUPERVISOR_STATUS_VALIDATED`.
 - Each item was committed separately after the full tests, Pint, and PHPStan passed. Test results progressed from **82 tests / 377 assertions** to **89 tests / 427 assertions**; all seven added render/feature tests pass.
-- No requested item was skipped; the deferred chat-room/layout refactor and pagination remain out of scope.
+- At that checkpoint, the chat-room/layout follow-up and pagination were left for later. The chat-room and shared-layout work are documented below; pagination remains deferred.
 
 ## Chat-room view map (before refactoring)
 
@@ -359,3 +359,20 @@ Target: `resources/views/layouts/app.blade.php` (1,365 lines at mapping time). T
 - There are no literal `<style>` blocks in this layout. Inline style attributes are at lines `71`, `323`, `437`, and `1112`; the async-navigation script creates a keyframe style element and inline spinner styles at lines `1223–1255`. The remaining styling is in the existing utility-class markup. No CSS has been moved.
 - `AppServiceProvider`’s `layouts.app` view composer currently provides `$supervisorName` and `$industryName`. On student paths it loads missing `lecturer` and `supervisor` relationships, then assigns the lecturer’s name to `$supervisorName` and the supervisor’s name to `$industryName`. It does not currently provide navigation data; role labels, navigation items, and page titles are prepared in the layout’s `@php` block.
 - The audit’s layout line count and inline-block ranges are stale relative to this version: the current file ends at line 1,365, and its reported CSS ranges include JavaScript. The exact current script/style locations are recorded above.
+
+## Shared layout refactor outcome
+
+- Moved the per-role menu definitions to `app/View/LayoutNavigation.php` and made them available through the existing `layouts.app` view composer. The navigation markup is now `resources/views/components/layouts/app-navigation.blade.php`, receiving the menu items explicitly.
+- Extracted the role-scoped notification UI to `resources/views/components/layouts/app-notification-area.blade.php`, with its role passed explicitly.
+- Extracted the sidebar and header to `resources/views/components/layouts/app-sidebar.blade.php` and `resources/views/components/layouts/app-header.blade.php`. Their display names, role labels, relationship names, menu items, titles, date, and dashboard URL are passed as component props. The outer dashboard wrapper, main content container, and `#page-content` stay in the layout so the async navigation hooks remain in their original place.
+- Isolated the four inline scripts into Blade partials under `resources/views/components/layouts/scripts/`. Their script blocks were checked byte-for-byte against the versions immediately before extraction. They remain inline rather than moving to Vite because the tests do not exercise browser behavior, and keeping the partials in the layout preserves behavior when no Vite manifest/hot file is present.
+- No literal `<style>` block existed in the layout. No CSS was moved: the utility classes, safe-area/profile inline style attributes, and styles dynamically created by async navigation remain in place. Tailwind and Font Awesome CDN links were not changed.
+- Added role-specific render tests for admin, student, lecturer, and supervisor: status 200; every role’s nav item labels/links and active state; notification markup and role URLs where present; profile name/role; student lecturer/supervisor names; and static JavaScript hook IDs. Admin notification markup remains absent, as before.
+- The layout file went from **1,365 lines** to **255 lines** (1,110 fewer in the layout itself; markup is now in focused components/partials). The suite went from **92 tests / 616 assertions** before this task to **96 tests / 829 assertions**.
+- After each code commit, the full test suite, Pint check, PHPStan, and Vite build passed. Final results: **96 tests passed, 829 assertions**; Pint, PHPStan, and `npm run build` passed. Vite emitted its existing optional `fontaine` optimization notice but built successfully.
+- Chat-room views/assets, `.env`, `composer.json`, routes, and CDN references were not changed.
+
+### Needs human review: shared layout assets
+
+- The four layout scripts remain inline in dedicated Blade partials until browser-level behavior tests are available. The render tests protect their required markup/hooks but do not execute notification, profile, sidebar, or asynchronous navigation interactions in a browser.
+- The existing inline style attributes and JavaScript-generated spinner styles remain unchanged; moving these to CSS without visual/browser verification was deferred.
