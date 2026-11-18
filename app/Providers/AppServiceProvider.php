@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Student;
+use App\View\LayoutNavigation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -36,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with(compact('supervisorName', 'industryName'));
+            $view->with('navItems', LayoutNavigation::itemsFor(request()));
         });
     }
 }
