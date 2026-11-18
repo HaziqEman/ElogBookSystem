@@ -376,3 +376,12 @@ Target: `resources/views/layouts/app.blade.php` (1,365 lines at mapping time). T
 
 - The four layout scripts remain inline in dedicated Blade partials until browser-level behavior tests are available. The render tests protect their required markup/hooks but do not execute notification, profile, sidebar, or asynchronous navigation interactions in a browser.
 - The existing inline style attributes and JavaScript-generated spinner styles remain unchanged; moving these to CSS without visual/browser verification was deferred.
+
+## Admin directory list cleanup
+
+- Replaced the 11 repeated Google Fonts stylesheet links with `resources/views/partials/google-fonts.blade.php`. The two student pages pass the Caveat variant explicitly. The existing supervisor font partial keeps its preconnects and font styling and now includes the shared stylesheet markup.
+- Added feature render coverage for the admin student, lecturer, and supervisor directories. Tests exercise filtering, bulk-form controls and query strings, row-action URLs, confirmation text, and the lecturer delete-disabled state.
+- Extracted the shared filter shell, bulk-selection wrapper, and row actions into `resources/views/components/admin/filter-shell.blade.php`, `bulk-actions.blade.php`, and `row-actions.blade.php`. Entity-specific filters, bulk action options/panels, confirmations, and the conditional lecturer deletion control remain in the page slots/props.
+- Directory view line counts on this branch before and after this work: students **306 to 252**; lecturers **218 to 161**; supervisors **233 to 179**. The three shared components are **28**, **29**, and **34** lines respectively.
+- The test suite went from **96 tests / 829 assertions** to **99 tests / 901 assertions**. Full tests, Pint, PHPStan, and `npm run build` passed after each change.
+- No list extraction was skipped. No visible copy, styles, action behavior, pagination, or layout/chat markup was intentionally changed. Tailwind CDN links, `composer.json`, and `.env` were untouched.
