@@ -29,8 +29,16 @@ class AppLayoutRenderTest extends TestCase
             ->assertSee('System Administrator');
 
         $html = $response->getContent();
-        $this->assertNavigationLink($html, '/admin/dashboard', 'System Overview', true);
-        $this->assertNavigationLink($html, '/admin/students', 'Manage Students');
+        $this->assertNavigationItems($html, [
+            ['href' => '/admin/dashboard', 'label' => 'System Overview'],
+            ['href' => '/admin/students', 'label' => 'Manage Students'],
+            ['href' => '/admin/lecturers', 'label' => 'Manage Lecturers'],
+            ['href' => '/admin/supervisors', 'label' => 'Manage Supervisors'],
+            ['href' => '/admin/reports', 'label' => 'Reports'],
+            ['href' => '/admin/universities', 'label' => 'Universities'],
+            ['href' => '/admin/evaluations', 'label' => 'Supervisor Marks'],
+            ['href' => '/admin/supervisor-rubric', 'label' => 'Supervisor Rubric'],
+        ], '/admin/dashboard');
         $this->assertStringNotContainsString('id="notif-wrap"', $html);
         $this->assertLayoutJavascriptElements($html, false);
     }
@@ -69,8 +77,13 @@ class AppLayoutRenderTest extends TestCase
             ->assertSee('Layout Test Supervisor');
 
         $html = $response->getContent();
-        $this->assertNavigationLink($html, '/student/dashboard', 'Dashboard', true);
-        $this->assertNavigationLink($html, '/student/logbooks', 'Logbook');
+        $this->assertNavigationItems($html, [
+            ['href' => '/student/dashboard', 'label' => 'Dashboard'],
+            ['href' => '/student/logbooks', 'label' => 'Logbook'],
+            ['href' => '/student/calendar', 'label' => 'Calendar'],
+            ['href' => '/student/attendance', 'label' => 'Attendance'],
+            ['href' => '/student/messages', 'label' => 'Messages'],
+        ], '/student/dashboard');
         $this->assertNotificationMarkup($html, 'student');
         $this->assertLayoutJavascriptElements($html, true);
     }
@@ -91,8 +104,11 @@ class AppLayoutRenderTest extends TestCase
             ->assertSee('Faculty Evaluator');
 
         $html = $response->getContent();
-        $this->assertNavigationLink($html, '/lecturer/dashboard', 'Dashboard', true);
-        $this->assertNavigationLink($html, '/lecturer/messages', 'Messages');
+        $this->assertNavigationItems($html, [
+            ['href' => '/lecturer/dashboard', 'label' => 'Dashboard'],
+            ['href' => '/lecturer/messages', 'label' => 'Messages'],
+            ['href' => '/lecturer/evaluations', 'label' => 'Supervisor Marks'],
+        ], '/lecturer/dashboard');
         $this->assertNotificationMarkup($html, 'lecturer');
         $this->assertLayoutJavascriptElements($html, true);
     }
@@ -113,28 +129,38 @@ class AppLayoutRenderTest extends TestCase
             ->assertSee('Industry Supervisor');
 
         $html = $response->getContent();
-        $this->assertNavigationLink($html, '/supervisor/dashboard', 'Supervisor Dashboard', true);
-        $this->assertNavigationLink($html, '/supervisor/tasks', 'Tasks');
+        $this->assertNavigationItems($html, [
+            ['href' => '/supervisor/dashboard', 'label' => 'Supervisor Dashboard'],
+            ['href' => '/supervisor/tasks', 'label' => 'Tasks'],
+            ['href' => '/supervisor/messages', 'label' => 'Messages'],
+            ['href' => '/supervisor/password', 'label' => 'Change Password'],
+        ], '/supervisor/dashboard');
         $this->assertNotificationMarkup($html, 'supervisor');
         $this->assertLayoutJavascriptElements($html, true);
     }
 
-    private function assertNavigationLink(string $html, string $href, string $label, bool $active = false): void
+    /**
+     * @param list<array{href: string, label: string}> $expectedItems
+     */
+    private function assertNavigationItems(string $html, array $expectedItems, string $activeHref): void
     {
         $nav = $this->sidebarNavigation($html);
-        $this->assertStringContainsString('href="'.$href.'"', $nav);
-        $this->assertStringContainsString($label, $nav);
 
-        if (! $active) {
-            return;
+        foreach ($expectedItems as $item) {
+            $pattern = '/<a\b(?=[^>]*href="'.preg_quote($item['href'], '/').'")[^>]*>(.*?)<\/a>/s';
+            $matched = preg_match($pattern, $nav, $matches);
+
+            $this->assertSame(1, $matched, "Expected navigation link {$item['href']}.");
+            $this->assertStringContainsString($item['label'], strip_tags($matches[1] ?? ''));
+
+            $isActive = str_contains($matches[0] ?? '', 'aria-current="page"');
+            $shouldBeActive = $item['href'] === $activeHref;
+            $this->assertSame($shouldBeActive, $isActive, "Unexpected active state for {$item['href']}.");
+
+            if ($shouldBeActive) {
+                $this->assertStringContainsString('bg-white/15', $matches[0] ?? '');
+            }
         }
-
-        $pattern = '/<a\b(?=[^>]*href="'.preg_quote($href, '/').'")[^>]*aria-current="page"[^>]*>(.*?)<\/a>/s';
-        $matched = preg_match($pattern, $nav, $matches);
-
-        $this->assertSame(1, $matched, "Expected {$href} to be the active navigation link.");
-        $this->assertStringContainsString('bg-white/15', $matches[0] ?? '');
-        $this->assertStringContainsString($label, strip_tags($matches[1] ?? ''));
     }
 
     private function sidebarNavigation(string $html): string
