@@ -42,6 +42,35 @@ class DashboardUiTest extends TestCase
         $response->assertSee('Logbook entries');
     }
 
+    public function test_logbook_partial_is_rendered_only_on_the_full_logbook_page(): void
+    {
+        $lecturer = Lecturer::create([
+            'name' => 'Logbook Partial Lecturer',
+            'email' => 'logbook-partial-lecturer@example.test',
+            'password' => Hash::make('password'),
+            'faculty' => 'Test Faculty',
+        ]);
+        $student = Student::create([
+            'lecturer_id' => $lecturer->lecturer_id,
+            'matric_no' => 'LOGBOOKPARTIAL001',
+            'name' => 'Logbook Partial Student',
+            'email' => 'logbook-partial-student@example.test',
+            'password' => Hash::make('password'),
+            'phone_no' => '0000000000',
+            'course' => 'Test Course',
+        ]);
+        $this->actingAs($student, 'student');
+
+        $this->get('/student/dashboard')
+            ->assertOk()
+            ->assertSee('Student Portal')
+            ->assertDontSee('Logbook by week');
+
+        $this->get('/student/logbooks')
+            ->assertOk()
+            ->assertSee('Logbook by week');
+    }
+
     public function test_student_logbook_query_count_does_not_scale_with_twenty_entries(): void
     {
         $lecturer = Lecturer::create([

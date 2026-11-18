@@ -79,7 +79,6 @@
     @include('partials.reminder-popup', ['reminderStudentId' => $student->student_id])
 
     @include('student.partials.dashboard-overview')
-    <!-- @include('student.partials.dashboard-logbook') -->
 </div>
 
 @include('student.partials.dashboard-modals')
