@@ -100,7 +100,7 @@
                     <textarea id="comment" name="comment" rows="6" placeholder="Required when requesting a revision. Optional when validating." class="w-full text-sm border border-[#CBD3E3] rounded-xl p-2.5 focus:outline-none focus:border-[#2F5BFF]">{{ old('comment') }}</textarea>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                    <button type="submit" name="decision" value="Validated" class="review-btn rounded-xl bg-[#10B981] px-3 py-2.5 text-sm font-bold text-white transition hover:bg-[#059669] disabled:opacity-60">
+                    <button type="submit" name="decision" value="{{ \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED }}" class="review-btn rounded-xl bg-[#10B981] px-3 py-2.5 text-sm font-bold text-white transition hover:bg-[#059669] disabled:opacity-60">
                         <i class="fa-solid fa-check"></i> Validate
                     </button>
                     <button type="submit" name="decision" value="{{ \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED }}" class="review-btn rounded-xl bg-[#F59E0B] px-3 py-2.5 text-sm font-bold text-[#1F2937] transition hover:bg-[#D97706] disabled:opacity-60">

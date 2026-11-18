@@ -54,6 +54,16 @@ class SupervisorReviewValidationTest extends TestCase
         ]);
     }
 
+    public function test_supervisor_review_page_renders_status_decisions(): void
+    {
+        $this->actingAs($this->supervisor, 'supervisor')
+            ->get('/supervisor/logbook/'.$this->logbook->logbook_id)
+            ->assertOk()
+            ->assertSee('Your review')
+            ->assertSee('Validate')
+            ->assertSee('Request revision');
+    }
+
     public function test_revision_request_requires_a_comment(): void
     {
         $this->actingAs($this->supervisor, 'supervisor')
