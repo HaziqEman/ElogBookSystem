@@ -324,3 +324,38 @@ Those role-prefixed API routes are defined without route names in `routes/web.ph
 ### Needs human review: chat JavaScript
 
 - The viewport script remains inline in its own partial until browser-level sizing behavior can be tested. The existing `chat.js` `fitRoot()` also writes `style.height`, while the chat CSS declares `height: var(--cm-fit-h, ...) !important` and the inline script sets `--cm-fit-h`. This looks like overlapping sizing logic and may make `fitRoot()` ineffective; it was not changed without browser verification.
+
+## Shared layout map (before refactoring)
+
+Target: `resources/views/layouts/app.blade.php` (1,365 lines at mapping time). This map is for the shared authenticated layout only. No layout or application code had been changed for this task when the map was recorded.
+
+### File sections
+
+| Lines | Section | Responsibility |
+|---|---|---|
+| 1–55 | Head and assets | Document metadata, CSRF token, title, conditional Vite/CSS CDN loading, and Font Awesome CDN. The Tailwind and Font Awesome CDN references are left unchanged. |
+| 57–108 | Shell check and simulator bar | Determines whether the current path gets the role dashboard shell; renders the role-switch bar and `#sidebar-overlay`. |
+| 109–318 | Role and navigation data | Selects the role guard/user, display and role labels, per-role `$navItems` and their route-match patterns, page/portal titles, current date, and dashboard URL. |
+| 320–579 | Sidebar and navigation | Renders the user/company summary, menu label, `#sidebar-nav`, active-link styling, logout link, and sidebar footer. The active state uses `request()->is()` against each item’s `match` patterns. |
+| 581–711 | Main header before notifications | Main scroll region, decorative header, mobile sidebar button, page/portal title, and date. |
+| 713–1018 | Notification area and script | Role-scoped bell, badge, dropdown/list, footer link, and notification fetch/read-state behavior. Present only on student, lecturer, and supervisor paths. |
+| 1020–1105 | Profile menu and script | User display name, role label, dashboard/logout links, and profile dropdown behavior. |
+| 1110–1118 | Page-content shell | `#page-content` container and `@yield('content')`. |
+| 1121–1157 | Sidebar JavaScript | Opens/closes the responsive sidebar and closes it on navigation, Escape, overlay click, or desktop resize. |
+| 1160–1357 | Progress and asynchronous navigation JavaScript | Progress bar, spinner, same-portal page fetch/replacement, click interception, and history navigation. It hard-loads chat pages rather than replacing them. |
+| 1358–1365 | Non-dashboard fallback | Renders page content without the dashboard shell. |
+
+### Layout JavaScript hooks and routes
+
+- Notification script (`776–1018`): `csrf()` reads `meta[name="csrf-token"]`; `setUnread()`, `refreshCount()`, `showMessage()`, `markRead()`, `buildRow()`, `loadList()`, `openPanel()`, and `closePanel()` operate on `#notif-wrap`, `#notif-bell`, `#notif-badge`, `#notif-panel`, `#notif-panel-list`, `#notif-panel-sub`, and `#notif-panel-readall`. It toggles `hidden`, `bg-blue-50/60`, `font-bold`, `text-slate-900`, `font-semibold`, `text-slate-700`, `truncate`, `whitespace-pre-line`, and `break-words`; generated notification rows are selected by `[data-notif-item]`.
+- Notification URLs are built in Blade from the current first path segment and emitted in `data-count-url`, `data-list-url`, and `data-read-all-url`, plus the “View all notifications” href: `/{role}/notifications/unread-count`, `/{role}/notifications`, and `/{role}/notifications/read-all`. The JavaScript fetches those data attributes; it does not call named route helpers.
+- Profile script (`1079–1105`): uses `#profile-wrap`, `#profile-btn`, and `#profile-menu`; toggles the `hidden` class and closes on outside click or Escape.
+- Sidebar script (`1121–1157`): uses `#sidebar`, `#sidebar-overlay`, `#sidebar-toggle`, and `#sidebar-close`; toggles `-translate-x-full` and `hidden`, and closes on sidebar-link clicks, Escape, overlay click, or desktop resize.
+- Async-navigation script (`1164–1357`): uses `#page-content`, `main`, and `#nav-progress`; creates/removes `#nav-spinner` dynamically. It replaces `#page-title` and `#sidebar-nav`, selects links with `#sidebar a[href]` and `#page-content a[href]`, and checks `[data-live-nav]`, `[data-no-ajax]`, and `[data-hard-load]`. It checks for `#cm-root` to force normal navigation on chat pages; `#cm-root` is rendered by the separately scoped chat partial, not by this layout.
+- The simulator uses named routes `login.home` and `module.switch`. The layout contains no role-scoped chat URL construction; chat requests remain in the chat partial/client.
+
+### CSS and existing view composer
+
+- There are no literal `<style>` blocks in this layout. Inline style attributes are at lines `71`, `323`, `437`, and `1112`; the async-navigation script creates a keyframe style element and inline spinner styles at lines `1223–1255`. The remaining styling is in the existing utility-class markup. No CSS has been moved.
+- `AppServiceProvider`’s `layouts.app` view composer currently provides `$supervisorName` and `$industryName`. On student paths it loads missing `lecturer` and `supervisor` relationships, then assigns the lecturer’s name to `$supervisorName` and the supervisor’s name to `$industryName`. It does not currently provide navigation data; role labels, navigation items, and page titles are prepared in the layout’s `@php` block.
+- The audit’s layout line count and inline-block ranges are stale relative to this version: the current file ends at line 1,365, and its reported CSS ranges include JavaScript. The exact current script/style locations are recorded above.
