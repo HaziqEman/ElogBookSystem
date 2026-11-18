@@ -265,3 +265,47 @@
 - Replaced the supervisor review button's hardcoded validated status with `Logbook::SUPERVISOR_STATUS_VALIDATED`.
 - Each item was committed separately after the full tests, Pint, and PHPStan passed. Test results progressed from **82 tests / 377 assertions** to **89 tests / 427 assertions**; all seven added render/feature tests pass.
 - No requested item was skipped; the deferred chat-room/layout refactor and pagination remain out of scope.
+
+## Chat-room view map (before refactoring)
+
+Target: `resources/views/partials/chat-room.blade.php` (1,741 lines at mapping time). This map is limited to the requested chat partial and its directly connected JavaScript, route names, and role-specific render wrappers. The markup, CSS, and JavaScript have not been changed for this task.
+
+### File sections
+
+| Lines | Section | Responsibility |
+|---|---|---|
+| 1–22 | Blade data/config | Reads the explicit `$chat` array, derives contacts/role/conversation/tabs, and builds the client config. |
+| 24–1,341 | Inline CSS | `.cm-*` chat styling, responsive states, message bubbles, composer, attachment tray, overlays, and root sizing. |
+| 1,343–1,414 | Contacts/sidebar markup | `#cm-root`, `.cm-side`, search, `.cm-contacts`, contact rows, unread badges, note, and empty sidebar. |
+| 1,416–1,421 | List-only placeholder | `.cm-ph` / `.cm-empty` shown when no conversation is selected. |
+| 1,423–1,467 | Conversation header/status | `.cm-main`, `.cm-head`, partner/back/switch UI, `#cm-status`, `#cm-typing`, `#cm-offline`. |
+| 1,468–1,493 | Message list | `#cm-list` / `.cm-list`, empty-state `#cm-empty`, `#cm-newpill`, and attachment tray `#cm-tray`. Message rows are not Blade markup; `chat.js` creates them in `buildBubble()`. |
+| 1,495–1,610 | Composer and recording controls | `#cm-form`, message input/buttons, attachment and emoji menus, file inputs, and `#cm-rec` voice-recording controls. |
+| 1,614–1,690 | Overlays | Delete sheet, image lightbox, camera overlay, and toast (`#cm-sheet`, `#cm-lb`, `#cm-cam`, `#cm-toast`). |
+| 1,692–1,701 | Inline JSON data | Sets `window.CHAT`, `window.CONVERSATION_ID`, `window.CHAT_PARTNER_ROLE`, `window.CURRENT_USER`, and `window.CHAT_LIST` using `Js::from` / `@json`. |
+| 1,703–1,741 | Inline root-height script | `setH()` and `fit()` size `#cm-root` relative to the nearest `main` and viewport; listeners use window/visualViewport/load/fonts/ResizeObserver. |
+
+### JavaScript hooks and routes
+
+- `resources/js/chat.js:10–21`, `fitRoot()` / `setupFit()`: takes the `#cm-root` node and adjusts its height on viewport resize.
+- `resources/js/chat.js:24–89`, `initList()`: uses `.cm-side`, `.cm-contacts`, `[data-iso]`, `.cm-search input`, `.cm-contact`, `.cm-pv`, `.cm-ct-time`, `.cm-badge`, `.cm-row2`, and contact `data-student-id` / `data-conversation-id`. It reads `window.CHAT_LIST`; `bump()` may set a contact href from `CHAT_LIST.openBase`.
+- `resources/js/chat.js:90–247`, `initChat()` setup and `buildBubble()`: reads `#cm-root`, `window.CHAT`, and message data; generates `.cm-row`, `.cm-me` / `.cm-them`, `.cm-avatar`, `.cm-bubble`, `.cm-img`, `.cm-audio`, `.cm-file`, `.cm-meta`, `.cm-tick`, `.cm-more`, `.cm-prog`, and related message-item classes.
+- `resources/js/chat.js:249–280`, message-list helpers: `nearBottom()`, `scrollBottom()`, `ensureDay()`, `addMessage()`, `rebuild()`, `patchMessage()`, and `setTicks()` use `#cm-list`, `#cm-empty`, `#cm-newpill`, `.cm-day`, `.cm-row`, and `.cm-tick`.
+- `resources/js/chat.js:283–386`, network/read helpers: `xhrSend()` and `sendMessage()` POST to `CHAT.urls.store`; `markRead()` POSTs to `CHAT.urls.read`; `catchUp()` GETs `CHAT.urls.since?after=...`. `headers()`, `applyReadUpTo()`, and the realtime handlers update message rows/read markers.
+- `resources/js/chat.js:388–405`, status/typing: `paintStatus()` / `setTyping()` use `#cm-status`, `#cm-status-text`, and `#cm-typing`; `whisperTyping()` sends the Echo typing event for the conversation.
+- `resources/js/chat.js:408–490`, composer/attachments: uses `#cm-input`, `#cm-form`, `#cm-send`, `#cm-mic`, `#cm-tray`, `#cm-menu`, `#cm-emoji`, `#cm-attach`, `#cm-emoji-btn`, `#cm-pick-*`, and `#cm-in-*`; generated preview chips use `.cm-chip`, `.cm-chip-info`, `.cm-chip-x`, and `.cm-chip-ic`.
+- `resources/js/chat.js:491–547`, camera/voice recording: `openWebcam()` / `closeWebcam()` use `#cm-cam`, `#cm-cam-video`, `#cm-cam-close`, and `#cm-cam-snap`; recording uses `#cm-rec`, `#cm-rec-time`, `#cm-rec-cancel`, and `#cm-rec-send`.
+- `resources/js/chat.js:548–579`, deletion/lightbox: uses `#cm-sheet`, `#cm-del-me`, `#cm-del-everyone`, `#cm-del-cancel`, `#cm-lb`, `#cm-lb-img`, `#cm-lb-open`, and `#cm-lb-close`; `postDelete()` POSTs to `CHAT.urls.deleteBase/{message}/{delete-for-me|delete-for-everyone}`.
+- `resources/js/chat.js:583–600`, online/lifecycle: uses `#cm-offline`, `#cm-list`, and `#cm-newpill`; `boot()` calls `initChat()`.
+- `resources/js/app.js:39–102`, realtime glue: `isCurrentUserMember()`, `getOtherParticipantRole()`, `otherParticipantIsOnline()`, `leaveRealtimeChannels()`, and `initRealtimeChannels()` consume `window.CURRENT_USER`, `window.CHAT_PARTNER_ROLE`, and `window.CONVERSATION_ID`, subscribe to Echo conversation channels, and dispatch chat events. Logout lookup uses `a[href="/logout"]`.
+
+The four role-scoped API URLs are explicitly built in the partial at lines 15–18:
+
+| Config key | URL pattern | Use |
+|---|---|---|
+| `store` | `url("/chat/{$role}/conversations/{$cid}/messages")` | `chat.js` POST for text, file, and voice messages. |
+| `since` | Same messages URL | `chat.js` GET with `?after=<message id>` to catch up. |
+| `read` | `url("/chat/{$role}/conversations/{$cid}/read")` | `chat.js` POST to mark messages read. |
+| `deleteBase` | Same messages URL | `chat.js` appends `/{message}/delete-for-me` or `/{message}/delete-for-everyone` and POSTs. |
+
+Those role-prefixed API routes are defined without route names in `routes/web.php:148–156`; the separately named, non-role-scoped equivalents are `chat.store`, `chat.since`, `chat.read`, `messages.delete.for.me`, and `messages.delete.for.everyone` (`routes/web.php:158–169`). The view itself does not call `route()` for these APIs. Page navigation names are `student.messages.index`, `student.messages.supervisor`, `lecturer.messages.index` / `lecturer.messages.show`, and `supervisor.messages.index` / `supervisor.messages.show`; the client contact-list update uses the controller-provided `href` and `CHAT_LIST.openBase`, not route names.
