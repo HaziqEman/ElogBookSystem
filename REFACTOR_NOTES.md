@@ -268,7 +268,7 @@
 
 ## Chat-room view map (before refactoring)
 
-Target: `resources/views/partials/chat-room.blade.php` (1,741 lines at mapping time). This map is limited to the requested chat partial and its directly connected JavaScript, route names, and role-specific render wrappers. The markup, CSS, and JavaScript have not been changed for this task.
+Target: `resources/views/partials/chat-room.blade.php` (1,741 lines at mapping time). This map is limited to the requested chat partial and its directly connected JavaScript, route names, and role-specific render wrappers. At the time this map was recorded, no markup, CSS, or JavaScript had been changed for this task.
 
 ### File sections
 
@@ -309,3 +309,18 @@ The four role-scoped API URLs are explicitly built in the partial at lines 15–
 | `deleteBase` | Same messages URL | `chat.js` appends `/{message}/delete-for-me` or `/{message}/delete-for-everyone` and POSTs. |
 
 Those role-prefixed API routes are defined without route names in `routes/web.php:148–156`; the separately named, non-role-scoped equivalents are `chat.store`, `chat.since`, `chat.read`, `messages.delete.for.me`, and `messages.delete.for.everyone` (`routes/web.php:158–169`). The view itself does not call `route()` for these APIs. Page navigation names are `student.messages.index`, `student.messages.supervisor`, `lecturer.messages.index` / `lecturer.messages.show`, and `supervisor.messages.index` / `supervisor.messages.show`; the client contact-list update uses the controller-provided `href` and `CHAT_LIST.openBase`, not route names.
+
+## Chat-room refactor outcome
+
+- Added render characterization tests for student, lecturer, and supervisor conversation pages. Each checks the response, message list/composer, all 42 chat DOM IDs, core JS-facing classes, serialized message data, current role/user ID, partner role, and all four role-scoped API URLs. The existing chat controller tests continue to pass.
+- Split the Blade message list, composer, attachment preview, and overlays into focused partials. These fragments have no dynamic inputs; existing parent-supplied chat data remains in the parent and is explicitly consumed by the message-item renderer.
+- The message item is browser-generated rather than Blade-rendered. Moved `buildBubble()` and its audio renderer into `resources/js/chat/message-item.js`, with helper dependencies passed explicitly. Compared `cm-*` JavaScript hook tokens before and after; all 79 are preserved.
+- Moved the inline CSS byte-for-byte into `resources/css/chat.css` and imported it from `resources/css/app.css`. The chat routes render through `layouts.app`, which loads the Vite app entries; `npm run build` succeeded with the new stylesheet in the app bundle.
+- Replaced the scattered conversation globals with a small `window.CHAT_CONFIG` object serialized with `@json` (routes, role, current user ID, conversation and partner role) plus initial `window.CHAT_DATA` serialized with `Js::from`. Updated `chat.js` and `app.js` to consume that config; message sending, deleting, read state, and attachments were not intentionally changed.
+- Kept the viewport-sizing script inline in `partials/chat-room/fit-script.blade.php` because the suite has no browser-level test for viewport behavior. It remains at the same render position.
+- Line counts: the target Blade file went from **1,741** to **178** lines. The target plus its five focused Blade partials total **433** lines; the extracted stylesheet is **1,316** lines. The original 42 markup IDs and 79 JavaScript `cm-*` hooks are unchanged.
+- Verification after the refactor: **92 tests passed, 616 assertions**; Pint, PHPStan, and Vite build passed. Existing chat controller tests are included in the passing suite.
+
+### Needs human review: chat JavaScript
+
+- The viewport script remains inline in its own partial until browser-level sizing behavior can be tested. The existing `chat.js` `fitRoot()` also writes `style.height`, while the chat CSS declares `height: var(--cm-fit-h, ...) !important` and the inline script sets `--cm-fit-h`. This looks like overlapping sizing logic and may make `fitRoot()` ineffective; it was not changed without browser verification.
