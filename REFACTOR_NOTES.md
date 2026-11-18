@@ -253,3 +253,15 @@
 - Removed a statically unreachable cleanup-command condition. Student notification ownership is still checked by the separate notification-specific guard; the deletion scope and authorization behavior are unchanged.
 - Re-ran PHPStan against `app` with the baseline excluded: **0 errors**. The remaining baseline was therefore a strict subset of the prior baseline, with **20 rules / 24 findings -> 0 / 0** and no new entries. Removed the now-unnecessary baseline file and its include from `phpstan.neon`.
 - Final verification for Phase 5: **82 tests passed, 377 assertions**; Pint and PHPStan passed.
+
+## Continuation: low-risk Blade fixes
+
+- Removed the disabled dashboard logbook include after confirming the logbook section remains available on the full logbooks page. Render coverage confirms the dashboard omits it while the full page retains it.
+- Moved the university options query from the partial to `StudentDashboardController`, preserving `visibleTo()` and name ordering; both dashboard views receive the collection explicitly. Feature coverage verifies visible and hidden options and ordering.
+- Removed the unsupported `admin` registration option; the controller already only accepts `lecturer` and `student`.
+- Associated the login and registration labels with their controls using matching `for` and `id` attributes.
+- Loaded the student lecturer and supervisor relationships from the shared layout view composer with `loadMissing()`. A dashboard feature test verifies the rendered names and measures one lecturer query and one supervisor query.
+- Removed the stale commented-out export block from the admin reports view.
+- Replaced the supervisor review button's hardcoded validated status with `Logbook::SUPERVISOR_STATUS_VALIDATED`.
+- Each item was committed separately after the full tests, Pint, and PHPStan passed. Test results progressed from **82 tests / 377 assertions** to **89 tests / 427 assertions**; all seven added render/feature tests pass.
+- No requested item was skipped; the deferred chat-room/layout refactor and pagination remain out of scope.
