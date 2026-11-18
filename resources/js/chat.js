@@ -3,6 +3,7 @@
  * Server contract: see Message::toChatPayload() and ChatController.
  * Realtime events come from app.js as window events: chat:message, chat:deleted, chat:read, chat:presence, chat:reconnected.
  */
+import { createMessageItemRenderer } from './chat/message-item';
 
 const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤔','😅','😉','🙂','🙃','😢','😭','😡','👍','👎','👏','🙏','💪','🙌','👌','✌️','🔥','🎉','✅','❌','⭐','💯','❤️','💙','📎','📄','📷','📅','⏰','🕒','📌','💡','👋','🤝','😴','🤒','🙈','🥲','😇','🤗'];
 
@@ -170,81 +171,22 @@ function initChat() {
 		return '<i class="fa-solid fa-check"></i>';
 	};
 
-	const pauseOthers = (except) => { if (state.activeAudio && state.activeAudio !== except) state.activeAudio.pause(); };
-
-	const audioNode = (a) => {
-		const wrap = el('div', 'cm-audio');
-		const btn = el('button', 'cm-play', '<i class="fa-solid fa-play"></i>'); btn.type = 'button'; btn.setAttribute('aria-label', 'Play voice message');
-		const bar = el('div', 'cm-bar'); const fill = el('i'); bar.appendChild(fill);
-		const dur = el('span', 'cm-dur', fmtDur(a.duration));
-		let audio = null;
-		const total = () => (audio && isFinite(audio.duration) && audio.duration > 0 ? audio.duration : (a.duration || 1));
-		btn.addEventListener('click', () => {
-			if (! audio) {
-				audio = new Audio(a.url); audio.preload = 'metadata';
-				audio.addEventListener('timeupdate', () => { fill.style.width = `${Math.min(100, (audio.currentTime / total()) * 100)}%`; dur.textContent = fmtDur(audio.currentTime); });
-				audio.addEventListener('ended', () => { btn.innerHTML = '<i class="fa-solid fa-play"></i>'; fill.style.width = '0'; dur.textContent = fmtDur(a.duration); });
-				audio.addEventListener('pause', () => { btn.innerHTML = '<i class="fa-solid fa-play"></i>'; });
-				audio.addEventListener('play', () => { btn.innerHTML = '<i class="fa-solid fa-pause"></i>'; });
-			}
-			if (audio.paused) { pauseOthers(audio); state.activeAudio = audio; audio.play().catch(() => toast('Could not play this voice message.')); } else audio.pause();
-		});
-		bar.addEventListener('click', (e) => { if (! audio) return; const r = bar.getBoundingClientRect(); audio.currentTime = ((e.clientX - r.left) / r.width) * total(); });
-		wrap.append(btn, bar, dur);
-		return wrap;
-	};
-
-	const buildBubble = (m) => {
-		const mine = isMine(m);
-		const row = el('div', `cm-row ${mine ? 'cm-me' : 'cm-them'}`);
-		row.dataset.id = m.message_id;
-
-		if (! mine) row.appendChild(el('div', `cm-avatar cm-tone-${cfg.partner.tone}`, esc(cfg.partner.initials)));
-
-		const bubble = el('div', 'cm-bubble');
-		const a = m.attachment;
-
-		if (m.deleted) {
-			bubble.classList.add('cm-deleted');
-			bubble.appendChild(el('span', 'cm-del-text', '<i class="fa-solid fa-ban"></i> This message was deleted'));
-		} else {
-			if (a && isImg(m)) {
-				const img = el('img', 'cm-img'); img.src = a.url; img.alt = a.name || 'Photo'; img.loading = 'lazy';
-				img.addEventListener('click', () => openLightbox(a));
-				bubble.appendChild(img);
-			} else if (a && m.type === 'audio') {
-				bubble.appendChild(audioNode(a));
-			} else if (a) {
-				const [ic, color] = fileIcon(a.name, a.mime);
-				const f = el('a', 'cm-file'); f.href = a.url; f.target = '_blank'; f.rel = 'noopener noreferrer';
-				f.innerHTML = `<span class="cm-file-ic"><i class="fa-solid ${ic}" style="color:${color}"></i></span>`;
-				const info = el('span', 'cm-file-info'); const n = el('b'); n.textContent = a.name || 'File'; const s = el('small', '', `${fmtSize(a.size)}${a.size ? ' · ' : ''}Tap to open`);
-				info.append(n, s); f.appendChild(info); bubble.appendChild(f);
-			}
-			if (m.message) { const t = el('div', 'cm-text'); linkify(m.message, t); bubble.appendChild(t); }
-			if (m.pending && a) bubble.appendChild(el('div', 'cm-prog', '<i></i>'));
-		}
-
-		const meta = el('div', 'cm-meta');
-		meta.appendChild(el('span', 'cm-time', fmtTime(m.created_at_iso)));
-		if (mine && ! m.deleted) meta.appendChild(el('span', 'cm-tick', tickHTML(m)));
-		bubble.appendChild(meta);
-
-		if (m.failed) {
-			const fl = el('div', 'cm-failrow', '<span>Not sent.</span> <button type="button" data-act="retry">Retry</button> <button type="button" data-act="discard">Discard</button>');
-			bubble.appendChild(fl);
-		}
-
-		if (! m.pending && ! m.failed) {
-			const more = el('button', 'cm-more', '<i class="fa-solid fa-chevron-down"></i>');
-			more.type = 'button'; more.setAttribute('aria-label', 'Message options');
-			more.addEventListener('click', () => openSheet(String(m.message_id)));
-			bubble.appendChild(more);
-		}
-
-		row.appendChild(bubble);
-		return row;
-	};
+	const buildBubble = createMessageItemRenderer({
+		me,
+		partner: cfg.partner,
+		state,
+		isImg,
+		el,
+		esc,
+		fileIcon,
+		fmtDur,
+		fmtSize,
+		linkify,
+		fmtTime,
+		tickHTML,
+		openLightbox,
+		toast,
+	});
 
 	const nearBottom = () => list.scrollHeight - list.scrollTop - list.clientHeight < 140;
 	const scrollBottom = () => { list.scrollTop = list.scrollHeight; $('cm-newpill').hidden = true; };
