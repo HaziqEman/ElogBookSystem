@@ -41,16 +41,6 @@
         // Shared card style (used by the included partial too)
         $card = 'rounded-3xl border border-[#E3E8F2] bg-white shadow-sm';
         $fullLogbookPage = true;
-        $plannedLogbookIds = collect($weeks)
-            ->flatMap(
-                fn($week) => collect($week['days'])->flatMap(
-                    fn($day) => $day['entries']->pluck('logbook_id'),
-                ),
-            )
-            ->flip();
-        $unplannedLogbooks = $visibleLogbooks->reject(
-            fn($entry) => $plannedLogbookIds->has($entry->logbook_id),
-        );
 
         $heroWeek = $planner->hasStart() ? max(1, min($planner->totalWeeks(), $currentWeek)) : null;
     @endphp
@@ -106,9 +96,9 @@
                     @if (!$hasFilters)
                         <div class="rounded-2xl bg-white/15 px-5 py-3 backdrop-blur">
                             <p class="text-2xl font-extrabold leading-none">
-                                {{ $visibleLogbooks->count() }}</p>
+                                {{ $counts['all'] }}</p>
                             <p class="mt-1 text-[11px] font-medium text-blue-50/90">
-                                {{ \Illuminate\Support\Str::plural('Entry', $visibleLogbooks->count()) }}
+                                {{ \Illuminate\Support\Str::plural('Entry', $counts['all']) }}
                                 written</p>
                         </div>
                     @endif
@@ -139,7 +129,7 @@
         @include('student.partials.dashboard-logbook')
 
         {{-- Older entries: collapsed so the page stays short --}}
-        @if (!$hasFilters && $unplannedLogbooks->isNotEmpty())
+        @if (!$hasFilters && $unplannedLogbooks->total() > 0)
             <details class="{{ $card }} group overflow-hidden">
                 <summary
                     class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-5 [&::-webkit-details-marker]:hidden"
@@ -154,7 +144,7 @@
                             <h2 class="text-lg font-extrabold text-[#1E293B]">Other logbook entries
                                 <span
                                     class="ml-1 rounded-full bg-[#EEF2FB] px-2.5 py-0.5 text-xs font-bold text-[#5B6478]"
-                                >{{ $unplannedLogbooks->count() }}</span>
+                                >{{ $unplannedLogbooks->total() }}</span>
                             </h2>
                             <p class="mt-0.5 text-[13px] text-[#5B6478]">These entries are outside the
                                 configured internship-week dates.</p>
@@ -211,6 +201,11 @@
                         </article>
                     @endforeach
                 </div>
+                @if ($unplannedLogbooks->hasPages())
+                    <div class="border-t border-[#EDF0F7] px-5 py-4 sm:px-6">
+                        {{ $unplannedLogbooks->links() }}
+                    </div>
+                @endif
             </details>
         @endif
     </div>

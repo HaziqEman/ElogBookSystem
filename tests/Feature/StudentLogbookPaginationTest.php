@@ -8,6 +8,7 @@ use App\Models\Lecturer;
 use App\Models\Logbook;
 use App\Models\Student;
 use App\Models\Supervisor;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -43,8 +44,10 @@ class StudentLogbookPaginationTest extends TestCase
         $response->assertOk()
             ->assertSee('Other logbook entries')
             ->assertSee('Entry 25')
-            ->assertSee('Entry 01')
-            ->assertSeeInOrder(['Entry 25', 'Entry 24', 'Entry 01']);
+            ->assertSee('Entry 06')
+            ->assertDontSee('Entry 05')
+            ->assertDontSee('Entry 01')
+            ->assertSeeInOrder(['Entry 25', 'Entry 24', 'Entry 06']);
         $response->assertViewHas('counts', [
             'all' => 25,
             'action' => 5,
@@ -52,10 +55,37 @@ class StudentLogbookPaginationTest extends TestCase
             'validated' => 5,
         ]);
         $response->assertViewHas('visibleLogbooks', function ($entries): bool {
-            $this->assertCount(25, $entries);
+            $this->assertCount(20, $entries);
+            $this->assertSame(25, $entries->total());
 
             return true;
         });
+
+        $archivePage = $this->get('/student/logbooks?archive_page=2');
+
+        $archivePage->assertOk()
+            ->assertSee('Entry 05')
+            ->assertSee('Entry 01')
+            ->assertDontSee('Entry 06')
+            ->assertSeeInOrder(['Entry 05', 'Entry 04', 'Entry 01']);
+
+        $matchingPage = $this->get('/student/logbooks?search=Entry&week=1');
+
+        $matchingPage->assertOk()
+            ->assertSee('Matching entries')
+            ->assertSee('Entry 25')
+            ->assertSee('Entry 06')
+            ->assertDontSee('Entry 05')
+            ->assertSee('search=Entry', false)
+            ->assertSee('page=2', false);
+
+        $matchingSecondPage = $this->get('/student/logbooks?search=Entry&week=1&page=2');
+
+        $matchingSecondPage->assertOk()
+            ->assertSee('Entry 05')
+            ->assertSee('Entry 01')
+            ->assertDontSee('Entry 06')
+            ->assertSeeInOrder(['Entry 05', 'Entry 04', 'Entry 01']);
 
         $filtered = $this->get('/student/logbooks?review=validated');
 
@@ -109,6 +139,9 @@ class StudentLogbookPaginationTest extends TestCase
             'comment' => 'A supervisor reviewer comment',
             'feedback_date' => now()->toDateString(),
         ]);
+        $this->createLogbook($student, 'Percent 100% complete');
+        $this->createLogbook($student, 'Only literal snake_case match');
+        $this->createLogbook($student, 'CAFÉ review');
 
         $response = $this->actingAs($student, 'student')->get('/student/logbooks?search=NeEdLe');
 
@@ -125,6 +158,48 @@ class StudentLogbookPaginationTest extends TestCase
 
             return true;
         });
+
+        $this->get('/student/logbooks?search=%25')
+            ->assertOk()
+            ->assertSee('Percent 100% complete')
+            ->assertDontSee('Only literal snake_case match');
+        $this->get('/student/logbooks?search=_')
+            ->assertOk()
+            ->assertSee('Only literal snake_case match')
+            ->assertDontSee('Percent 100% complete');
+        $this->get('/student/logbooks?search=caf%C3%A9')
+            ->assertOk()
+            ->assertSee('CAFÉ review')
+            ->assertDontSee('Percent 100% complete');
+    }
+
+    public function test_selected_week_loads_entry_attachments_and_feedback(): void
+    {
+        $student = $this->createStudent();
+        $student->forceFill([
+            'internship_start' => now()->startOfWeek(Carbon::MONDAY)->toDateString(),
+            'internship_weeks' => 2,
+        ]);
+        $entry = $this->createLogbook($student, 'Selected week entry');
+        Attachment::create([
+            'logbook_id' => $entry->logbook_id,
+            'file_name' => 'week-entry.pdf',
+            'file_path' => 'uploads/week-entry.pdf',
+            'upload_date' => now()->toDateString(),
+        ]);
+        Feedback::create([
+            'logbook_id' => $entry->logbook_id,
+            'lecturer_id' => $student->lecturer_id,
+            'comment' => 'Selected week feedback',
+            'feedback_date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($student, 'student')
+            ->get('/student/logbooks?week=1')
+            ->assertOk()
+            ->assertSee('Selected week entry')
+            ->assertSee('week-entry.pdf')
+            ->assertSee('Selected week feedback');
     }
 
     public function test_student_logbook_query_count_does_not_grow_per_entry(): void

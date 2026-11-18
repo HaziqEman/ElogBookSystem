@@ -37,7 +37,7 @@
         >Search</button>
         @if ($search !== '')
             <a
-                href="{{ request()->fullUrlWithQuery(['search' => null]) }}#logbook-week"
+                href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}#logbook-week"
                 class="flex h-10 items-center justify-center rounded-xl border border-[#CBD3E3] bg-white px-4 text-xs font-bold text-[#5B6478] hover:bg-[#F7F9FD]"
             >Clear</a>
         @endif
@@ -54,7 +54,7 @@
         'validated' => ['Validated', $counts['validated']],
     ] as $filter => [$label, $count])
             <a
-                href="{{ request()->fullUrlWithQuery(['review' => $filter, 'week' => $selected['number'] ?? request('week', 1)]) }}#logbook-week"
+                href="{{ request()->fullUrlWithQuery(['review' => $filter, 'week' => $selected['number'] ?? request('week', 1), 'page' => null, 'archive_page' => null]) }}#logbook-week"
                 aria-current="{{ $review === $filter ? 'page' : 'false' }}"
                 class="{{ $review === $filter ? 'bg-[#2F5BFF] text-white' : 'bg-[#EEF1F7] text-[#334155] hover:bg-[#E8EFFF]' }} inline-flex min-h-9 items-center gap-2 rounded-full px-3.5 text-xs font-bold transition"
             >
@@ -70,7 +70,7 @@
 @if ($hasFilters)
     <div class="mb-6 space-y-3 rounded-2xl border border-[#D3E0FF] bg-[#F5F7FF] p-4">
         <h3 class="text-sm font-extrabold uppercase tracking-wide text-[#5B6478]">Matching entries
-            ({{ $visibleLogbooks->count() }})</h3>
+            ({{ $visibleLogbooks->total() }})</h3>
         @forelse($visibleLogbooks as $entry)
             <article class="rounded-[20px] border border-[#E7ECF6] bg-white p-4">
                 <div class="flex flex-wrap items-center gap-2">
@@ -123,5 +123,10 @@
                 class="rounded-2xl border border-dashed border-[#C3CCEA] bg-white p-7 text-center text-sm text-[#5B6478]">
                 No entries match this search or review filter.</div>
         @endforelse
+        @if ($visibleLogbooks->hasPages())
+            <div class="pt-2">
+                {{ $visibleLogbooks->links() }}
+            </div>
+        @endif
     </div>
 @endif
