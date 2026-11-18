@@ -6,7 +6,7 @@
 - The machine-installed Composer 2.2.24 does not provide the `audit` command. The audit used a checksum-verified Composer PHAR in a temporary directory; the machine-wide Composer installation was not changed.
 - This is a package-advisory inventory, not confirmation that each issue is exploitable through this application.
 
-## Results
+## Baseline results before updates
 
 Composer reported **39 advisories across 10 locked packages**: 1 critical, 17 high, 10 medium, 5 low, and 6 without a severity assigned by the advisory feed.
 
@@ -23,4 +23,22 @@ Composer reported **39 advisories across 10 locked packages**: 1 critical, 17 hi
 | `symfony/mime` | `v7.4.13` | 1 | 1 medium | Email header injection advisory. |
 | `symfony/routing` | `v7.4.13` | 1 | 1 unrated | Host placeholders can affect path-based access-control matching. |
 
-No dependency versions were changed to address these advisories. Package updates require a separate behavior and compatibility review; no major framework upgrade was performed.
+## Remediation results
+
+The following lockfile-only updates were applied in separate commits, staying within the existing major-version constraints. The Laravel framework and its required `laravel/prompts` update were handled together.
+
+| Package | Before | After |
+|---|---:|---:|
+| `laravel/framework` | `v13.16.1` | `v13.43.0` |
+| `laravel/prompts` | `v0.3.18` | `v0.3.27` |
+| `symfony/http-foundation` | `v7.4.13` | `v7.4.23` |
+| `symfony/http-kernel` | `v7.4.13` | `v7.4.23` |
+| `symfony/mime` | `v7.4.13` | `v7.4.22` |
+| `symfony/routing` | `v7.4.13` | `v7.4.23` |
+| `phpoffice/phpspreadsheet` | `1.30.5` | `1.30.8` |
+| `maatwebsite/excel` | `3.1.69` | `3.1.70` |
+| `dompdf/dompdf` | `v3.1.5` | `v3.1.6` |
+| `league/commonmark` | `2.8.2` | `2.10.7` |
+| `league/flysystem` | `3.34.0` | `3.36.0` |
+
+After the updates, Composer 2.11.2 reports **0 advisories across 0 packages**. No major-version upgrades were needed, and no advisories remain to defer for human review. Each package group passed the test suite (96 tests, 829 assertions), Pint, PHPStan, the Vite build, and a Composer audit after commit. `composer.json` and `.env` were not changed.
