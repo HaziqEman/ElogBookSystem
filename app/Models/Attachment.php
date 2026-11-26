@@ -45,7 +45,7 @@ class Attachment extends Model
     {
         $extension = $this->extension();
 
-        if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'], true)) {
             return 'image';
         }
 

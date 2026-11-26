@@ -158,10 +158,10 @@
             name="attachments[]"
             data-ai-file
             multiple
-            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx"
+            accept="image/*,.pdf,.doc,.docx"
             class="w-full rounded-lg border border-slate-200 p-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700"
         >
-        <p class="mt-1 text-xs text-slate-400">Select up to 5 files to add (5 MB maximum each).
+        <p class="mt-1 text-xs text-slate-400">Select up to 5 files to add (10 MB maximum each).
             Existing files will be kept.</p>
     </div>
     <div class="flex flex-wrap gap-3 pt-2">

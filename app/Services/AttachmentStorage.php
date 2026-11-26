@@ -12,7 +12,7 @@ use RuntimeException;
 class AttachmentStorage
 {
     /** Cloudinary stores these as "image" assets (PDF included, so it can make page thumbnails). */
-    private const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
+    private const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'pdf'];
 
     /**
      * Save an uploaded file and return the values stored in the attachments table.

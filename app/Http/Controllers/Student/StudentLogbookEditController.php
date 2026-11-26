@@ -55,13 +55,13 @@ class StudentLogbookEditController extends Controller
             'description' => 'required|string|min:10',
             'activity_date' => 'required|date',
             'attachments' => 'nullable|array|max:5',
-            'attachments.*' => 'file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
+            'attachments.*' => 'file|max:10240|mimes:jpg,jpeg,png,gif,webp,heic,heif,pdf,doc,docx',
         ], [
             'description.required' => 'No description written. Please describe what you did before saving.',
             'description.min' => 'Your description is too short. Please write at least 10 characters.',
             'attachments.max' => 'You can add up to 5 attachments at a time.',
-            'attachments.*.mimes' => 'Each attachment must be a JPG, PNG, GIF, WEBP, PDF or Word file.',
-            'attachments.*.max' => 'Each attachment must be 5 MB or smaller.',
+            'attachments.*.mimes' => 'Each attachment must be a JPG, PNG, GIF, WEBP, HEIC, HEIF, PDF or Word file.',
+            'attachments.*.max' => 'Each attachment must be 10 MB or smaller.',
         ]);
 
         try {

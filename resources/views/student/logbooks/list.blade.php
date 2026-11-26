@@ -132,11 +132,12 @@
         </div>
         <div>
             <label class="mb-1 block text-xs font-semibold text-[#334155]">Upload Attachment (image,
-                PDF or Word, max 5 MB)</label>
+                PDF or Word, max 10 MB)</label>
             <input
                 type="file"
                 name="attachment"
                 data-ai-file
+                accept="image/*,.pdf,.doc,.docx"
                 class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-[#E8EFFF] file:px-3 file:py-2 file:text-sm file:font-bold file:text-[#1F45D6]"
             >
         </div>

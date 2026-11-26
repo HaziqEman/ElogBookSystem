@@ -26,7 +26,7 @@ class StoreLogbookRequest extends FormRequest
             'week_no' => 'nullable|integer|min:1|max:60',
             'description' => 'required|string|min:10',
             'activity_date' => 'required|date',
-            'attachment' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,heic,heif,pdf,doc,docx',
         ];
     }
 
@@ -35,8 +35,8 @@ class StoreLogbookRequest extends FormRequest
         return [
             'description.required' => 'No description written. Please describe what you did before saving.',
             'description.min' => 'Your description is too short. Please write at least 10 characters.',
-            'attachment.mimes' => 'The attachment must be a JPG, PNG, GIF, WEBP, PDF or Word file.',
-            'attachment.max' => 'The attachment is too large. The limit is 5 MB.',
+            'attachment.mimes' => 'The attachment must be a JPG, PNG, GIF, WEBP, HEIC, HEIF, PDF or Word file.',
+            'attachment.max' => 'The attachment is too large. The limit is 10 MB.',
         ];
     }
 }
