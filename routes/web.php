@@ -42,20 +42,20 @@ use Illuminate\Support\Facades\Route;
 
 // Home Page
 Route::get('/', function () {
-    return view('login');
+    return view('auth.login');
 })->name('login.home');
 
-Route::get('/login', function () {
-    return redirect('/');
-})->name('login');
+Route::get('/login', fn() => redirect()->route('login.home'))->name('login');
 
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:10,1')
+    ->name('login.store');
 
 // Registration
-Route::get('/register', [AuthController::class, 'showRegister']);
-Route::post('/register', [AuthController::class, 'register']);
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 
-Route::get('/logout', [AuthController::class, 'logout']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/module/{role}', [AuthController::class, 'switchModule'])->name('module.switch');
 
@@ -210,7 +210,7 @@ Route::middleware('auth:admin')->group(function () {
 foreach (['student', 'lecturer', 'supervisor'] as $notificationRole) {
     $guards = $notificationRole === 'supervisor'
         ? ['auth:supervisor', EnsureSupervisorPasswordChanged::class]
-        : ['auth:'.$notificationRole];
+        : ['auth:' . $notificationRole];
 
     Route::middleware($guards)->group(function () use ($notificationRole) {
         Route::get("/{$notificationRole}/notifications", [NotificationController::class, 'index']);
@@ -220,8 +220,9 @@ foreach (['student', 'lecturer', 'supervisor'] as $notificationRole) {
     });
 }
 
-// Called by an outside scheduler to send the daily reminders (needs the X-Cron-Token header).
+// Cron-job.org endpoints use the X-Cron-Token header; no Laravel scheduler is required.
 Route::get('/internal/run-reminders', [CronController::class, 'reminders'])->middleware('throttle:10,1');
+Route::get('/internal/run-weekly-batches', [CronController::class, 'weeklyBatches'])->middleware('throttle:10,1');
 
 // Private MC certificates: the controller checks who may open each file.
 Route::get('/attendance/{id}/mc', [AttendanceMcController::class, 'show'])

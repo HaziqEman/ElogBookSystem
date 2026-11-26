@@ -9,6 +9,7 @@ use App\Models\Todo;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class StudentCalendarController extends Controller
 {
@@ -56,6 +57,7 @@ class StudentCalendarController extends Controller
 
             for ($i = 0; $i < 7; $i++) {
                 $key = $cursor->toDateString();
+                $dayLogs = $logsByDate->get($key, collect());
                 $dayTodos = $todosByDate->get($key, collect());
 
                 $week[] = [
@@ -63,10 +65,20 @@ class StudentCalendarController extends Controller
                     'in_month' => $cursor->month === $month->month,
                     'is_today' => $key === $today->toDateString(),
                     'is_weekend' => $cursor->isWeekend(),
-                    'logs' => $logsByDate->get($key, collect())->count(),
+                    'logs' => $dayLogs->count(),
                     'attendance' => $attendanceByDate->get($key),
                     'tasks_open' => $dayTodos->where('is_done', false)->count(),
                     'tasks_done' => $dayTodos->where('is_done', true)->count(),
+                    'log_items' => $dayLogs->map(fn ($log) => [
+                        'title' => 'Week '.$log->week_no,
+                        'summary' => Str::limit(trim((string) $log->description), 90),
+                        'locked' => ! $log->isEditableByStudent(),
+                    ])->values()->all(),
+                    'task_items' => $dayTodos->map(fn ($todo) => [
+                        'title' => $todo->title,
+                        'done' => (bool) $todo->is_done,
+                        'assigned' => ! empty($todo->supervisor_id),
+                    ])->values()->all(),
                 ];
 
                 $cursor->addDay();

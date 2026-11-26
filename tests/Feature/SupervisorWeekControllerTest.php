@@ -61,11 +61,23 @@ class SupervisorWeekControllerTest extends TestCase
         $supervisor = $this->createSupervisor();
         $student = $this->createStudent($supervisor);
         $this->createSubmission($student, 1, '2026-11-16 09:00:00');
-        $this->createEntry($student, 1, '2026-11-16', null);
+        $entry = $this->createEntry($student, 1, '2026-11-16', null);
+        foreach (['report.pdf', 'photo.jpg'] as $fileName) {
+            Attachment::create([
+                'logbook_id' => $entry->logbook_id,
+                'file_name' => $fileName,
+                'file_path' => 'uploads/'.$fileName,
+                'upload_date' => '2026-11-16',
+            ]);
+        }
 
         $this->actingAs($supervisor, 'supervisor')
             ->get('/supervisor/students/'.$student->student_id.'?week=1')
             ->assertOk()
+            ->assertSee('data-attachment-carousel', false)
+            ->assertSee('1 / 2')
+            ->assertSee('report.pdf')
+            ->assertSee('photo.jpg')
             ->assertViewHas('selected', fn ($selected) => $selected['number'] === 1
                 && $selected['pending'] === 1
                 && $selected['entries']->count() === 1);

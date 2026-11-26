@@ -202,9 +202,20 @@ document.addEventListener('keydown', function (event) {
 
     async function openEditModal(href) {
         if (!modal || !modalBody) {
-            window.location.assign(href);
+            if (window.asyncToast) window.asyncToast('The edit popup is unavailable. Reload the page and try again.', 'error');
             return;
         }
+
+        var refreshUrl = new URL(window.location.href);
+        var weekSection = byId('logbook-week');
+        var selectedWeek = weekSection && weekSection.getAttribute('data-selected-week');
+
+        if (selectedWeek) refreshUrl.searchParams.set('week', selectedWeek);
+        refreshUrl.hash = 'logbook-week';
+
+        modalBody.innerHTML = '<div role="status" aria-live="polite" class="flex items-center gap-3 py-8 text-sm font-semibold text-slate-500"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Loading edit form...</div>';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
 
         try {
             var response = await fetch(href, {
@@ -213,7 +224,7 @@ document.addEventListener('keydown', function (event) {
             });
 
             if (response.redirected) {
-                window.location.assign(href);
+                window.location.assign(response.url);
                 return;
             }
 
@@ -221,19 +232,22 @@ document.addEventListener('keydown', function (event) {
                 var message = 'This entry cannot be edited.';
 
                 try { message = (await response.json()).message || message; } catch (e) {}
+                closeEditModal();
                 if (window.asyncToast) window.asyncToast(message, 'error');
 
                 return;
             }
 
             modalBody.innerHTML = await response.text();
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            var editForm = modalBody.querySelector('form[data-edit-logbook-form]');
+            if (editForm) editForm.dataset.refreshUrl = refreshUrl.toString();
 
             var first = modalBody.querySelector('textarea, input:not([type="hidden"])');
             if (first) first.focus();
-        } catch (e) {
-            window.location.assign(href);
+        } catch (error) {
+            console.error('Could not load the logbook edit form.', error);
+            closeEditModal();
+            if (window.asyncToast) window.asyncToast('Could not load the edit form. Please try again.', 'error');
         }
     }
 
@@ -501,29 +515,6 @@ document.addEventListener('keydown', function (event) {
             error.textContent = '';
             error.classList.add('hidden');
         }
-    });
-
-    document.addEventListener('click', function (event) {
-        var button = event.target.closest ? event.target.closest('[data-carousel-step]') : null;
-        if (!button) return;
-
-        var carousel = button.closest('[data-attachment-carousel]');
-        if (!carousel) return;
-
-        var slides = Array.prototype.slice.call(carousel.querySelectorAll('[data-carousel-slide]'));
-        if (slides.length < 2) return;
-
-        var current = slides.findIndex(function (slide) { return !slide.classList.contains('hidden'); });
-        if (current < 0) current = 0;
-
-        var step = parseInt(button.dataset.carouselStep, 10) || 1;
-        var next = (current + step + slides.length) % slides.length;
-        slides.forEach(function (slide, index) {
-            slide.classList.toggle('hidden', index !== next);
-        });
-
-        var counter = carousel.querySelector('[data-carousel-count]');
-        if (counter) counter.textContent = (next + 1) + ' / ' + slides.length;
     });
 
     document.addEventListener('click', async function (event) {

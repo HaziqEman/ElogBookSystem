@@ -169,7 +169,7 @@
                     $dashboardHref = '/' . request()->segment(1) . '/dashboard';
                 @endphp
 
-                <x-layouts.app-sidebar
+                <x-dashboard.sidebar
                     :display-name="$displayName"
                     :role-short="$roleShort"
                     :supervisor-name="$supervisorName"
@@ -180,7 +180,7 @@
 
                 {{-- TOP BAR + MAIN CONTENT --}}
                 <main class="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
-                    <x-layouts.app-header
+                    <x-dashboard.header
                         :page-title="$pageTitle"
                         :portal-name="$portalName"
                         :today-label="$todayLabel"
@@ -244,7 +244,7 @@
             class="pointer-events-none fixed left-0 top-0 z-[100] h-0.5 w-0 bg-sky-400 opacity-0 transition-all duration-300"
         ></div>
 
-        @include('components.layouts.scripts.async-navigation')
+        @include('components.dashboard.scripts.async-navigation')
     @else
         <div class="min-h-screen">
             @yield('content')

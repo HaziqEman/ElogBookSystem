@@ -31,22 +31,21 @@ class GuestViteAssetsTest extends TestCase
         $response = $this->get('/register');
 
         $response->assertOk()
-            ->assertSee('Portal Registration')
-            ->assertSee('Account Category')
-            ->assertSee('id="role"', false)
+            ->assertSee('Create your')
+        ->assertSee("I'm registering", false)
             ->assertSee('name="role"', false)
-            ->assertSee('Full Name')
+            ->assertSee('Full name')
             ->assertSee('name="name"', false)
-            ->assertSee('Email Address')
+            ->assertSee('Email address')
             ->assertSee('name="email"', false)
             ->assertSee('Password')
             ->assertSee('name="password"', false)
-            ->assertSee('Matric Number')
-            ->assertSee('Phone Number')
+            ->assertSee('Matric number')
+            ->assertSee('Phone number')
             ->assertSee('Course')
-            ->assertSee('Assign Lecturer')
+            ->assertSee('Assign lecturer')
             ->assertSee('Faculty')
-            ->assertSee('Complete Registration');
+            ->assertSee('Create account');
 
         $this->assertGuestViteAssets($response);
     }

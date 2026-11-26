@@ -172,7 +172,7 @@
         {{-- CLOCK-IN CARD | HISTORY --}}
         <div class="att-grid">
             <div class="min-w-0">
-                @include('student.partials.attendance-card')
+                @include('student.attendance.card')
             </div>
 
             <div

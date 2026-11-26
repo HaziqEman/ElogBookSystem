@@ -44,9 +44,9 @@ class SupervisorWeekController extends Controller
         $student = $this->ownStudent($id);
         $now = Carbon::now(Attendance::TIMEZONE);
         $supervisor = $this->supervisor();
-        $data = $weekService->pageData($student, $supervisor, $now, $request->query('week'));
+        $data = $weekService->pageData($student, $now, $request->query('week'));
 
-        return view('supervisor.student-week', [
+        return view('supervisor.students.week', [
             'student' => $student,
             'supervisor' => $supervisor,
         ] + $data);
@@ -70,7 +70,7 @@ class SupervisorWeekController extends Controller
         }
 
         return response()->json([
-            'html' => view('supervisor.partials.week-summary', [
+            'html' => view('supervisor.students.week-summary', [
                 'summary' => $data['summary'],
                 'missing' => $data['missing'],
                 'generatedAt' => $data['generatedAt'],

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    @include('supervisor.partials.portal-font')
+    @include('supervisor.shared.portal-font')
 
     @php
         use Illuminate\Support\Str;

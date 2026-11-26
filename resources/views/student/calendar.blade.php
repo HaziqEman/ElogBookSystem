@@ -96,9 +96,25 @@
                                     : ($day['is_weekend']
                                         ? 'bg-slate-50/50'
                                         : 'bg-white hover:bg-slate-50/60'));
+                            $payload = [
+                                'label' => $day['date']->format('l, j F Y'),
+                                'logs' => $day['log_items'],
+                                'tasks' => $day['task_items'],
+                                'attendance' => $attendance
+                                    ? [
+                                        'status' => $attendance->status === \App\Models\Attendance::STATUS_LEAVE ? 'Leave' : 'Present',
+                                        'in' => $attendance->checkInLocal(),
+                                        'note' => $attendance->note,
+                                    ]
+                                    : null,
+                            ];
                         @endphp
                         <div
-                            class="{{ $cellClass }} relative min-h-[4.75rem] border-b border-r border-slate-100 p-1.5 transition sm:min-h-[7rem] sm:p-2.5">
+                            @if ($day['in_month'])
+                                data-day="{{ json_encode($payload) }}"
+                                role="button" tabindex="0"
+                            @endif
+                            class="{{ $cellClass }} {{ $day['in_month'] ? 'day-cell cursor-pointer' : '' }} relative min-h-[4.75rem] border-b border-r border-slate-100 p-1.5 transition sm:min-h-[7rem] sm:p-2.5">
                             @if ($day['is_today'])
                                 <span
                                     class="absolute inset-x-0 top-0 h-0.5 bg-blue-600"
@@ -183,4 +199,62 @@
             </div>
         </div>
     </div>
+
+    <div id="dayModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+        <div class="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+            <div class="flex items-start justify-between">
+                <h3 id="dayTitle" class="text-lg font-extrabold text-slate-800"></h3>
+                <button type="button" id="dayClose" class="text-slate-400 hover:text-slate-600" aria-label="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="dayBody" class="mt-4 space-y-4 text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const modal = document.getElementById('dayModal');
+            const body = document.getElementById('dayBody');
+            const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+                ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+            const section = (title, items) => items
+                ? `<div><p class="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-400">${title}</p><div class="space-y-1.5">${items}</div></div>` : '';
+
+            function open(d) {
+                document.getElementById('dayTitle').textContent = d.label;
+                let html = '';
+
+                html += section('Logbook', d.logs.map(l =>
+                    `<a href="/student/logbooks#logbook-week" class="block rounded-lg bg-blue-50 px-3 py-2 hover:bg-blue-100">
+                        <span class="font-semibold text-blue-700">${esc(l.title)}</span>${l.locked ? '<span class="text-xs text-emerald-600"> · Validated</span>' : ''}
+                        <br><span class="text-slate-600">${esc(l.summary)}</span>
+                    </a>`).join(''));
+
+                if (d.attendance) {
+                    html += section('Attendance',
+                        `<div class="rounded-lg bg-slate-50 px-3 py-2">${esc(d.attendance.status)}${d.attendance.in ? ' · In ' + esc(d.attendance.in) : ''}${d.attendance.note ? '<br><span class="text-slate-500">' + esc(d.attendance.note) + '</span>' : ''}</div>`);
+                }
+
+                html += section('Tasks', d.tasks.map(t =>
+                    `<div class="rounded-lg bg-indigo-50 px-3 py-2 text-indigo-700 ${t.done ? 'line-through opacity-60' : ''}">
+                        ${esc(t.title)}${t.assigned ? ' <span class="text-xs text-indigo-400">· From supervisor</span>' : ''}
+                    </div>`).join(''));
+
+                body.innerHTML = html || '<p class="text-slate-400">Nothing recorded for this day.</p>';
+                modal.classList.replace('hidden', 'flex');
+            }
+            const close = () => modal.classList.replace('flex', 'hidden');
+
+            document.querySelectorAll('.day-cell').forEach(c => {
+                const go = () => open(JSON.parse(c.dataset.day));
+                c.addEventListener('click', go);
+                c.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), go()));
+            });
+            document.getElementById('dayClose').onclick = close;
+            modal.addEventListener('click', e => e.target === modal && close());
+            document.addEventListener('keydown', e => e.key === 'Escape' && close());
+        })();
+    </script>
 @endsection

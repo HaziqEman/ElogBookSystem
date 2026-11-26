@@ -37,7 +37,7 @@ class WeekBatchService
 
     /**
      * Create the batch for every closed week that has entries and was not sent yet.
-     * With $notify = false (back-fill) the supervisor is not notified.
+     * With $notify = false (back-fill) neither reviewer is notified.
      *
      * @return int number of batches created
      */
@@ -48,7 +48,7 @@ class WeekBatchService
 
         $students = Student::whereNotNull('supervisor_id')
             ->whereNotNull('internship_start')
-            ->with('supervisor')
+            ->with(['supervisor', 'lecturer'])
             ->get();
 
         foreach ($students as $student) {
@@ -86,6 +86,10 @@ class WeekBatchService
 
                 if ($notify) {
                     $notifications->weekSent($student->supervisor, $student, $week, (int) $counts[$week]);
+
+                    if ($student->lecturer) {
+                        $notifications->weekSentToLecturer($student->lecturer, $student, $week, (int) $counts[$week]);
+                    }
                 }
             }
         }

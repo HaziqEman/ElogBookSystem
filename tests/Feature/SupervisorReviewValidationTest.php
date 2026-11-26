@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attachment;
 use App\Models\Lecturer;
 use App\Models\Logbook;
 use App\Models\Student;
@@ -62,6 +63,44 @@ class SupervisorReviewValidationTest extends TestCase
             ->assertSee('Your review')
             ->assertSee('Validate')
             ->assertSee('Request revision');
+    }
+
+    public function test_supervisor_review_page_shows_attachment_preview_carousel(): void
+    {
+        foreach (['report.pdf', 'photo.jpg'] as $fileName) {
+            Attachment::create([
+                'logbook_id' => $this->logbook->logbook_id,
+                'file_name' => $fileName,
+                'file_path' => 'uploads/'.$fileName,
+                'upload_date' => now()->toDateString(),
+            ]);
+        }
+
+        $this->actingAs($this->supervisor, 'supervisor')
+            ->get('/supervisor/logbook/'.$this->logbook->logbook_id)
+            ->assertOk()
+            ->assertSee('data-attachment-carousel', false)
+            ->assertSee('data-carousel-step="1"', false)
+            ->assertSee('1 / 2')
+            ->assertSee('Open report.pdf')
+            ->assertSee('Open photo.jpg');
+    }
+
+    public function test_supervisor_review_page_shows_a_single_attachment_without_carousel_controls(): void
+    {
+        Attachment::create([
+            'logbook_id' => $this->logbook->logbook_id,
+            'file_name' => 'report.pdf',
+            'file_path' => 'uploads/report.pdf',
+            'upload_date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->supervisor, 'supervisor')
+            ->get('/supervisor/logbook/'.$this->logbook->logbook_id)
+            ->assertOk()
+            ->assertDontSee('data-attachment-carousel', false)
+            ->assertSee('Open report.pdf')
+            ->assertSee('aria-label="PDF file preview"', false);
     }
 
     public function test_revision_request_requires_a_comment(): void

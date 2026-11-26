@@ -64,7 +64,7 @@ class LogbookPdfController extends Controller
         $university = $student->university;
         $universityLogo = $university && $university->logo_url ? $this->logoDataUri($university->logo_url) : null;
 
-        return Pdf::loadView('logbook.pdf', compact('student', 'logbooks', 'lecturer', 'supervisor', 'period', 'university', 'universityLogo'))
+        return Pdf::loadView('logbooks.pdf', compact('student', 'logbooks', 'lecturer', 'supervisor', 'period', 'university', 'universityLogo'))
             ->setPaper('a4')
             ->download($this->filename($student));
     }

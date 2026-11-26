@@ -27,7 +27,7 @@
         </a>
     </div>
 
-    @include('admin.partials.flash')
+    @include('components.feedback.flash')
 
     {{-- Quick filters --}}
     <div class="flex flex-wrap gap-2">
@@ -41,7 +41,7 @@
     </div>
 
     {{-- Search and filters --}}
-    <x-admin.filter-shell action="/admin/supervisors" grid-class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" :has-filters="$hasFilters" :per-page="$perPage" :sort-options="$sortOptions">
+    <x-admin.filter action="/admin/supervisors" grid-class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" :has-filters="$hasFilters" :per-page="$perPage" :sort-options="$sortOptions">
             <div class="relative lg:col-span-2">
                 <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                 <input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, email, company or position" class="{{ $inputClass }} pl-9">
@@ -60,7 +60,7 @@
                 <option value="no_students" {{ request('state') === 'no_students' ? 'selected' : '' }}>No students</option>
                 <option value="temp_password" {{ request('state') === 'temp_password' ? 'selected' : '' }}>Temporary password</option>
             </select>
-    </x-admin.filter-shell>
+    </x-admin.filter>
 
     {{-- Bulk actions --}}
     <x-admin.bulk-actions :action="'/admin/supervisors/bulk?'.http_build_query(request()->except('page'))" :input-class="$inputClass" noun="supervisors" :total="$supervisors->total()">
@@ -190,5 +190,5 @@
     </div>
 </div>
 
-@include('admin.partials.bulk-js')
+@include('components.admin.bulk-actions-script')
 @endsection

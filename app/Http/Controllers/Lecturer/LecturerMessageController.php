@@ -54,7 +54,7 @@ class LecturerMessageController extends Controller
 
         $contacts = app(ChatContacts::class)->forLecturer($lecturer, (int) $conversation->conversation_id);
 
-        return view('lecturer.messages.chat', compact('conversation', 'lecturer', 'contacts'));
+        return view('lecturer.messages.conversation', compact('conversation', 'lecturer', 'contacts'));
     }
 
     public function store(Request $request, $conversationId)

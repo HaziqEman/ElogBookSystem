@@ -12,7 +12,7 @@
         </a>
     </div>
 
-    @include('admin.partials.flash')
+    @include('components.feedback.flash')
 
     @if(session('import_passwords') && count(session('import_passwords')))
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">

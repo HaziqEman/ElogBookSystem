@@ -114,6 +114,17 @@ Tests use the `testing` environment configured in `phpunit.xml` and an in-memory
 
 Database fixtures do not prove that Pusher authorization/realtime delivery, Firebase push delivery, Cloudinary uploads, email sending, or Gemini requests work. Verify those integrations manually in a non-production environment with their own credentials and test endpoints.
 
+## Cron-job.org reminders
+
+Set a private `CRON_TOKEN` environment variable in the application and configure two HTTPS `GET` requests in cron-job.org. Both requests must include the `X-Cron-Token` header with that same token; do not put the token in the URL.
+
+| Endpoint | cron-job.org schedule (Malaysia time) | Runs |
+| --- | --- | --- |
+| `/internal/run-reminders` | Daily at 5:00 p.m. (`Asia/Kuala_Lumpur`) | Student logbook/task reminders and overdue supervisor follow-ups |
+| `/internal/run-weekly-batches` | Mondays at 8:00 a.m. (`Asia/Kuala_Lumpur`) | Closed-week batch notifications to supervisors and lecturers |
+
+Use the full URL by prefixing the endpoint with the deployed application URL. No Laravel `schedule:run` process is needed. After token validation, the endpoints ignore client disconnects and set PHP's execution limit to 300 seconds. Hosting-level hard timeouts may still terminate the process. Invalid tokens return 404; command failures return a non-success HTTP response.
+
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

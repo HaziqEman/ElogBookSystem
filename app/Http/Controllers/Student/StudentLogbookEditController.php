@@ -31,12 +31,14 @@ class StudentLogbookEditController extends Controller
             return redirect('/student/dashboard')->with('error', self::LOCKED);
         }
 
-        // The pop-up on the dashboard asks for just the form.
-        if ($request->ajax()) {
-            return response(view('student.partials.logbook-edit-form', compact('logbook'))->render());
+        if (! $request->ajax()) {
+            $week = filter_var($request->query('week'), FILTER_VALIDATE_INT);
+            $target = '/student/logbooks'.($week !== false && $week > 0 ? '?week='.$week : '');
+
+            return redirect($target.'#logbook-week');
         }
 
-        return view('student.logbook_edit', compact('logbook'));
+        return response(view('student.logbooks.edit-form', compact('logbook'))->render());
     }
 
     public function update(Request $request, $id, AttachmentStorage $storage)

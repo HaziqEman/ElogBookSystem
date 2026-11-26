@@ -21,7 +21,7 @@
         @csrf
         @method('PUT')
 
-        @include('admin.universities._form', ['university' => $university])
+        @include('admin.universities.form', ['university' => $university])
 
         <label class="flex items-center gap-3">
             <input type="hidden" name="is_verified" value="0">

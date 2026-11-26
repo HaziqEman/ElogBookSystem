@@ -73,7 +73,7 @@ class SupervisorMessageController extends Controller
 
         $contacts = app(ChatContacts::class)->forSupervisor($supervisor, (int) $conversation->conversation_id);
 
-        return view('supervisor.messages.chat', compact('conversation', 'supervisor', 'messages', 'contacts'));
+        return view('supervisor.messages.conversation', compact('conversation', 'supervisor', 'messages', 'contacts'));
     }
 
     public function store(Request $request, $conversationId)

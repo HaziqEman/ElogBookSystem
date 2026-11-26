@@ -22,6 +22,14 @@
             'bg-teal-600',
         ];
 
+        // Banner icon follows the time-of-day greeting
+        $greetingLower = Str::lower((string) $greeting);
+        $greetingIcon = Str::contains($greetingLower, 'morning')
+            ? 'fa-sun'
+            : (Str::contains($greetingLower, 'afternoon')
+                ? 'fa-cloud-sun'
+                : 'fa-moon');
+
         // 1. Four KPI cards only (white cards, one accent colour per icon)
         $statCards = [
             [
@@ -75,7 +83,8 @@
 
         $statusBadge = [
             \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED => 'bg-emerald-100 text-emerald-700',
-            \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED => 'bg-rose-100 text-rose-700',
+            \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED =>
+                'bg-rose-100 text-rose-700',
             \App\Models\Logbook::SUPERVISOR_STATUS_PENDING => 'bg-amber-100 text-amber-800',
         ];
 
@@ -116,27 +125,45 @@
             ->sortByDesc('waiting_count')
             ->take(5)
             ->values();
+
+        // 7. Latest entries: ONE row per student (their most recent entry), top 5.
+        // Set to false if you want every entry listed, even several from the same student.
+        $onePerStudent = true;
+        $latestRows = collect($latestEntries);
+        if ($onePerStudent) {
+            $latestRows = $latestRows->unique(
+                fn($e) => optional($e->student)->id ?? 'entry-' . $e->id,
+            );
+        }
+        $latestRows = $latestRows->take(5);
     @endphp
 
     <div class="space-y-6">
 
-        {{-- Header --}}
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <h2 class="text-2xl font-bold text-slate-800">{{ $greeting }}, {{ $adminName }}
-                </h2>
-                <p class="mt-1 flex flex-wrap items-center gap-x-3 text-sm text-slate-500">
-                    <span>{{ $todayLabel }}</span>
-                    <span
-                        class="{{ $databaseStatus === 'Connected' ? 'text-emerald-600' : 'text-rose-600' }} inline-flex items-center gap-1.5"
-                        title="Database: {{ $databaseStatus }}"
-                    >
-                        <i class="fa-solid fa-circle text-[7px]"></i>
-                        {{ $databaseStatus === 'Connected' ? 'System online' : 'Database problem' }}
-                    </span>
-                </p>
+        {{-- Welcome banner: greeting + date + status + quick actions --}}
+        <div
+            class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-gradient-to-r from-blue-50 via-white to-white px-6 py-4 shadow-sm shadow-slate-200/40 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-4">
+                <div
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                    <i class="fa-solid {{ $greetingIcon }} text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="truncate text-xl font-bold text-slate-800">{{ $greeting }},
+                        {{ $adminName }}</h2>
+                    <p class="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm text-slate-500">
+                        <span>{{ $todayLabel }}</span>
+                        <span
+                            class="{{ $databaseStatus === 'Connected' ? 'text-emerald-600' : 'text-rose-600' }} inline-flex items-center gap-1.5"
+                            title="Database: {{ $databaseStatus }}"
+                        >
+                            <i class="fa-solid fa-circle text-[7px]"></i>
+                            {{ $databaseStatus === 'Connected' ? 'System online' : 'Database problem' }}
+                        </span>
+                    </p>
+                </div>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex shrink-0 flex-wrap gap-2">
                 <a
                     href="/admin/reports"
                     class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
@@ -409,11 +436,16 @@
             </div>
         </div>
 
-        {{-- 7. Latest 5 entries, fewer columns --}}
+        {{-- 7. Latest entries: one row per student --}}
         <div
             class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/40">
             <div class="flex items-center justify-between px-6 py-5">
-                <h3 class="text-base font-bold text-slate-800">Latest logbook entries</h3>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Latest logbook entries</h3>
+                    <p class="mt-0.5 text-xs text-slate-400">
+                        {{ $onePerStudent ? 'Most recent entry for each student' : 'Most recent submissions' }}
+                    </p>
+                </div>
                 <a
                     href="/admin/reports"
                     class="text-xs font-semibold text-blue-600 hover:underline"
@@ -427,39 +459,82 @@
                             <th class="px-6 py-3 text-left">Company supervisor</th>
                             <th class="px-6 py-3 text-left">Submitted</th>
                             <th class="px-6 py-3 text-left">Status</th>
+                            <th class="px-6 py-3 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white text-slate-700">
-                        @forelse($latestEntries->take(5) as $entry)
-                            @php $status = $entry->supervisor_status ?: \App\Models\Logbook::SUPERVISOR_STATUS_PENDING; @endphp
-                            <tr>
-                                <td class="px-6 py-3.5 font-medium text-slate-800">
-                                    {{ optional($entry->student)->name ?? 'Unknown' }}</td>
+                        @forelse($latestRows as $entry)
+                            @php
+                                $status =
+                                    $entry->supervisor_status ?:
+                                    \App\Models\Logbook::SUPERVISOR_STATUS_PENDING;
+                                $studentName = optional($entry->student)->name ?? 'Unknown';
+                                $dot =
+                                    [
+                                        \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED =>
+                                            'bg-emerald-500',
+                                        \App\Models\Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED =>
+                                            'bg-rose-500',
+                                        \App\Models\Logbook::SUPERVISOR_STATUS_PENDING =>
+                                            'bg-amber-500',
+                                    ][$status] ?? 'bg-slate-400';
+                            @endphp
+                            <tr class="transition hover:bg-slate-50">
+                                <td class="px-6 py-3.5">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="{{ $avatarColors[$loop->index % count($avatarColors)] }} flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white">
+                                            {{ $initials($studentName) }}</div>
+                                        <span
+                                            class="font-semibold text-slate-800">{{ $studentName }}</span>
+                                    </div>
+                                </td>
                                 <td class="px-6 py-3.5">
                                     @if (optional($entry->student)->supervisor)
-                                        {{ $entry->student->supervisor->name }}
+                                        <span
+                                            class="font-medium text-slate-700">{{ $entry->student->supervisor->name }}</span>
                                         <span
                                             class="block text-xs text-slate-400">{{ $entry->student->supervisor->company_name }}</span>
                                     @else
-                                        <span class="text-slate-400">Unassigned</span>
+                                        <span
+                                            class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400"
+                                        >
+                                            <i class="fa-solid fa-user-slash"></i> Unassigned
+                                        </span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-3.5">
-                                    {{ $entry->created_at?->format('d M Y') }}
+                                    <span
+                                        class="font-medium text-slate-700">{{ $entry->created_at?->format('d M Y') }}</span>
                                     <span
                                         class="block text-xs text-slate-400">{{ $entry->created_at?->diffForHumans() }}</span>
                                 </td>
                                 <td class="px-6 py-3.5">
                                     <span
-                                        class="{{ $statusBadge[$status] ?? 'bg-slate-100 text-slate-600' }} rounded-full px-2.5 py-1 text-xs font-semibold"
-                                    >{{ $status }}</span>
+                                        class="{{ $statusBadge[$status] ?? 'bg-slate-100 text-slate-600' }} inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+                                    >
+                                        <span
+                                            class="{{ $dot }} h-1.5 w-1.5 rounded-full"></span>
+                                        {{ $status }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-3.5 text-right">
+                                    @if (optional($entry->student)->id)
+                                        {{-- Adjust this URL if your student detail route is different --}}
+                                        <a
+                                            href="/admin/students/{{ $entry->student->id }}"
+                                            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-600"
+                                        >
+                                            View <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                                        </a>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td
-                                    colspan="4"
-                                    class="px-6 py-6 text-center text-slate-500"
+                                    colspan="5"
+                                    class="px-6 py-10 text-center text-slate-500"
                                 >No logbook entries yet.</td>
                             </tr>
                         @endforelse

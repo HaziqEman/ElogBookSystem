@@ -18,6 +18,6 @@
         <p class="text-sm text-slate-500">Chat with your students.</p>
     </div>
 
-    @include('partials.chat-room', ['chat' => $chat])
+    @include('chat.chat-room', ['chat' => $chat])
 </div>
 @endsection

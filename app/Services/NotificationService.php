@@ -129,6 +129,21 @@ class NotificationService
     }
 
     /**
+     * Tell the lecturer that a student's finished week is ready to view.
+     */
+    public function weekSentToLecturer(Lecturer $lecturer, Student $student, int $week, int $entries): void
+    {
+        $this->notify(
+            $lecturer,
+            'week',
+            "{$student->name} submitted Week {$week}",
+            $entries.' '.Str::plural('entry', $entries).' ready to view.',
+            '/lecturer/students/'.$student->student_id.'?week='.$week.'#logbook',
+            'weeksent:'.$student->student_id.':'.$week
+        );
+    }
+
+    /**
      * One follow-up when a week is still waiting after a few days.
      */
     public function weekReminder(Supervisor $supervisor, Student $student, int $week, int $pending): void

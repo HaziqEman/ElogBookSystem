@@ -18,10 +18,10 @@ use Throwable;
 class SendLogbookReminders extends Command
 {
     protected $signature = 'reminders:send
-        {--force : Ignore working days and the first-week delay (for testing)}
+        {--force : Ignore internship dates and working days (for testing)}
         {--to= : Send every email to this address instead of the real recipients (for testing)}';
 
-    protected $description = 'Remind students about today, and tell supervisors (in-app and by email) when a student week is ready';
+    protected $description = 'Remind students about missing logbook entries and tasks for today';
 
     public function handle(NotificationService $notifications): int
     {
@@ -35,11 +35,11 @@ class SendLogbookReminders extends Command
         $today = $now->toDateString();
         $force = (bool) $this->option('force');
 
-        $withEntry = Logbook::where('activity_date', $today)->pluck('student_id')->flip();
+        $withEntry = Logbook::whereDate('activity_date', $today)->pluck('student_id')->flip();
 
         $onLeave = collect();
         if (Schema::hasTable('attendances')) {
-            $onLeave = Attendance::where('attendance_date', $today)
+            $onLeave = Attendance::whereDate('attendance_date', $today)
                 ->where('status', Attendance::STATUS_LEAVE)
                 ->pluck('student_id')
                 ->flip();
@@ -48,7 +48,7 @@ class SendLogbookReminders extends Command
         $dueCounts = collect();
         if (Schema::hasTable('todos')) {
             $dueCounts = Todo::where('is_done', false)
-                ->where('due_date', $today)
+                ->whereDate('due_date', $today)
                 ->selectRaw('student_id, COUNT(*) as total')
                 ->groupBy('student_id')
                 ->pluck('total', 'student_id');
@@ -56,7 +56,6 @@ class SendLogbookReminders extends Command
 
         $entryReminders = 0;
         $taskReminders = 0;
-        $weekNotices = 0;
         $emails = 0;
         $emailFailures = 0;
 
@@ -82,29 +81,22 @@ class SendLogbookReminders extends Command
         };
 
         $studentMail = [];
-        $supervisorMail = [];
 
-        Student::with(['supervisor', 'lecturer'])->chunkById(100, function ($students) use ($notifications, $withEntry, $onLeave, $dueCounts, $now, $today, $force, &$studentMail, &$supervisorMail, &$entryReminders, &$taskReminders, &$weekNotices) {
+        Student::chunkById(100, function ($students) use ($notifications, $withEntry, $onLeave, $dueCounts, $now, $today, $force, &$studentMail, &$entryReminders, &$taskReminders) {
             foreach ($students as $student) {
                 $planner = new WeekPlanner($student, $now);
                 $week = $planner->currentWeek();
-                $inRange = $week === null || ($week >= 1 && $week <= $planner->totalWeeks());
-                $working = $planner->isWorkingDay($now->copy()->startOfDay()) && $inRange;
+                $inRange = $planner->hasStart()
+                    && $week !== null
+                    && $week >= 1
+                    && $week <= $planner->totalWeeks();
+                $working = $inRange && $planner->isWorkingDay($now->copy()->startOfDay());
 
                 if (! $working && ! $force) {
                     continue;
                 }
 
-                // Student reminders start on the Monday AFTER the week they began.
-                // e.g. started on a Tuesday -> first reminder the following Monday.
-                $remindersStarted = true;
-
-                if ($week !== null && $week >= 1) {
-                    $remindFrom = $planner->weekStart(1)->copy()->startOfWeek(Carbon::MONDAY)->addWeek();
-                    $remindersStarted = $now->copy()->startOfDay()->gte($remindFrom);
-                }
-
-                if (($remindersStarted || $force) && ! $onLeave->has($student->student_id)) {
+                if (! $onLeave->has($student->student_id)) {
                     if (! $withEntry->has($student->student_id)) {
                         $title = 'No logbook entry for today';
                         $body = 'You have not written an entry for '.$now->format('d M Y').' yet. Add it before you finish for the day.';
@@ -140,35 +132,6 @@ class SendLogbookReminders extends Command
                         }
                     }
                 }
-
-                // Last working day of the week: tell the reviewers the week is ready.
-                $lastDay = max($planner->workingDays());
-
-                if (($working && $now->isoWeekday() === $lastDay) || ($force && $week !== null && $week >= 1)) {
-                    $weekStart = $planner->weekStart($week);
-                    $count = Logbook::where('student_id', $student->student_id)
-                        ->whereBetween('activity_date', [$weekStart->toDateString(), $weekStart->copy()->addDays(6)->toDateString()])
-                        ->count();
-
-                    if ($count > 0) {
-                        $title = "Week {$week} is ready to review: {$student->name}";
-                        $body = $count.' '.($count === 1 ? 'entry was' : 'entries were').' written this week.';
-                        $key = 'week:'.$student->student_id.':'.$week;
-
-                        if ($student->supervisor && $notifications->notify($student->supervisor, 'review', $title, $body, '/supervisor/logbook', $key)) {
-                            $weekNotices++;
-                            $supervisorMail[$student->supervisor->getKey()]['to'] = $student->supervisor;
-                            $supervisorMail[$student->supervisor->getKey()]['items'][] = [
-                                'title' => $student->name,
-                                'detail' => "Week {$week}: {$count} ".($count === 1 ? 'entry' : 'entries').' ready for your review',
-                            ];
-                        }
-
-                        // if ($student->lecturer && $notifications->notify($student->lecturer, 'review', $title, $body, '/lecturer/logbook', $key)) {
-                        //     $weekNotices++;
-                        // }
-                    }
-                }
             }
         }, 'student_id');
 
@@ -179,14 +142,7 @@ class SendLogbookReminders extends Command
             $sendMail($row['to'], 'Smart eLogBook: '.$subject, 'Here is what needs your attention in your logbook today:', $row['items'], '/student/dashboard', 'Open my logbook');
         }
 
-        foreach ($supervisorMail as $row) {
-            $n = count($row['items']);
-            $subject = $n === 1 ? '1 student logbook is ready for review' : "{$n} student logbooks are ready for review";
-
-            $sendMail($row['to'], 'Smart eLogBook: '.$subject, 'This week\'s logbook entries are ready for your review and validation:', $row['items'], '/supervisor/logbook', 'Review logbooks');
-        }
-
-        $this->info("Sent {$entryReminders} entry reminders, {$taskReminders} task reminders and {$weekNotices} week-ready notices. Emails sent: {$emails}".($emailFailures ? " ({$emailFailures} failed, see storage/logs)" : '').'.');
+        $this->info("Sent {$entryReminders} entry reminders and {$taskReminders} task reminders. Emails sent: {$emails}".($emailFailures ? " ({$emailFailures} failed, see storage/logs)" : '').'.');
 
         return self::SUCCESS;
     }

@@ -2,13 +2,10 @@ import './async-forms';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import './chat';
+import './student-dashboard.js';
 
-if (
-	document.getElementById('logbook-week')
-	|| document.getElementById('calendar-card')
-	|| document.querySelector('[data-edit-logbook-form]')
-) {
-	import('./student-dashboard.js');
+if (document.querySelector('[data-attachment-carousel]')) {
+	import('./attachment-carousel.js');
 }
 
 if ('serviceWorker' in navigator) {

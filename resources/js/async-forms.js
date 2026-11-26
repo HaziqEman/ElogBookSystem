@@ -139,7 +139,7 @@ document.addEventListener('submit', async function (event) {
         toast(data.message, 'success');
 
         if (form.dataset.refresh !== 'false') {
-            await refreshLive();
+            await refreshLive(form.dataset.refreshUrl || undefined);
         }
     } catch (error) {
         var caughtMessage = error.message || 'Something went wrong. Please try again.';

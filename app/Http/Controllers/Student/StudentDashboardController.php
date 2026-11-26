@@ -593,7 +593,7 @@ class StudentDashboardController extends Controller
                 ->withQueryString();
         }
 
-        return view('student.logbook-all', compact(
+        return view('student.logbooks.index', compact(
             'student',
             'universities',
             'today',

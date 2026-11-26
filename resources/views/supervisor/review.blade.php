@@ -52,19 +52,19 @@
             </div>
 
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-[#94A3B8]">Activity description</p>
-                <p class="mt-2 whitespace-pre-line break-words text-sm leading-6 text-[#334155]">{{ $logbook->description }}</p>
-            </div>
-
-            <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-[#94A3B8]">Attachment</p>
-                @if($logbook->attachments->count())
-                    @foreach($logbook->attachments as $attachment)
-                        <a href="{{ $attachment->url }}" target="_blank" class="mt-1 block break-all text-sm text-[#1F45D6] underline">{{ $attachment->file_name }}</a>
-                    @endforeach
+                @if ($logbook->attachments->isNotEmpty())
+                    @include('supervisor.students.attachment-previews', [
+                        'attachments' => $logbook->attachments,
+                    ])
                 @else
                     <p class="mt-1 text-sm text-[#5B6478]">No file attached.</p>
                 @endif
+            </div>
+
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-[#94A3B8]">Activity description</p>
+                <p class="mt-2 whitespace-pre-line break-words text-sm leading-6 text-[#334155]">{{ $logbook->description }}</p>
             </div>
 
             @if($logbook->feedbacks->count())

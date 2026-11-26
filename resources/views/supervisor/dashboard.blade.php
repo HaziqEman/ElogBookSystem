@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    @include('supervisor.partials.portal-font')
+    @include('supervisor.shared.portal-font')
 
     @php
         use Illuminate\Support\Str;
@@ -353,7 +353,7 @@
 
             {{-- ROW 2 LEFT: Tasks you assigned (partial; the wrapper makes it fill the row) --}}
             <div class="lg:col-span-3 [&>*]:h-full">
-                @include('supervisor.partials.task-card')
+                @include('supervisor.dashboard.task-card')
             </div>
 
             {{-- ROW 2 RIGHT: Review progress --}}

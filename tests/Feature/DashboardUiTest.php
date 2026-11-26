@@ -258,19 +258,23 @@ class DashboardUiTest extends TestCase
         $loginResponse = $this->get('/');
         $loginResponse->assertStatus(200);
         $loginResponse->assertSee('UiTM E-Logbook Portal');
-        $loginResponse->assertDontSee('Smart eLogBook');
+        $loginResponse->assertSee('Smart eLogBook');
+        $loginResponse->assertDontSee('id="sidebar"', false);
+        $loginResponse->assertDontSee('id="page-content"', false);
 
         $registerResponse = $this->get('/register');
         $registerResponse->assertStatus(200);
-        $registerResponse->assertSee('Portal Registration');
-        $registerResponse->assertDontSee('Smart eLogBook');
+        $registerResponse->assertSee('Create your');
+        $registerResponse->assertSee('Smart eLogBook');
+        $registerResponse->assertDontSee('id="sidebar"', false);
+        $registerResponse->assertDontSee('id="page-content"', false);
     }
 
     public function test_registration_page_renders_only_supported_roles(): void
     {
         $this->get('/register')
             ->assertOk()
-            ->assertSee('Portal Registration')
+            ->assertSee('Create your')
             ->assertSee('Student')
             ->assertSee('Lecturer')
             ->assertDontSee('Administrator');
@@ -288,9 +292,9 @@ class DashboardUiTest extends TestCase
 
         $this->get('/register')
             ->assertOk()
-            ->assertSee('Portal Registration')
-            ->assertSee('for="role"', false)
-            ->assertSee('id="role"', false);
+            ->assertSee('Create your')
+            ->assertSee('name="role"', false)
+            ->assertSee('value="student"', false);
     }
 
     public function test_lecturer_dashboard_shows_assigned_students_and_logbook_statuses(): void
@@ -352,7 +356,10 @@ class DashboardUiTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Assigned students');
-        $response->assertSee('Showing 2 of 2 students');
+        $this->assertMatchesRegularExpression(
+            '/Showing\s+2\s+of\s+2\s+students/',
+            $response->getContent()
+        );
         $response->assertSee('Pending review');
         $response->assertSee('Aina Aziz');
         $response->assertSee('Nadia Rahman');

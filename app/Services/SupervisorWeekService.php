@@ -47,7 +47,7 @@ class SupervisorWeekService
     /**
      * @return array{chips: array, total: int, current: ?int, selected: ?array}
      */
-    public function pageData(Student $student, Supervisor $supervisor, Carbon $now, mixed $requestedWeek): array
+    public function pageData(Student $student, Carbon $now, mixed $requestedWeek): array
     {
         $planner = new WeekPlanner($student, $now);
         $batch = app(WeekBatchService::class);

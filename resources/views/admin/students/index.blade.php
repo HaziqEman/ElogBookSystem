@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    @include('admin.partials.flash')
+    @include('components.feedback.flash')
 
     {{-- Quick filters --}}
     <div class="flex flex-wrap gap-2">
@@ -57,7 +57,7 @@
     </div>
 
     {{-- Search and filters --}}
-    <x-admin.filter-shell action="/admin/students" grid-class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6" :has-filters="$hasFilters" :per-page="$perPage" :sort-options="$sortOptions">
+    <x-admin.filter action="/admin/students" grid-class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6" :has-filters="$hasFilters" :per-page="$perPage" :sort-options="$sortOptions">
             <div class="relative lg:col-span-2">
                 <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                 <input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, matric or email" class="{{ $inputClass }} pl-9">
@@ -93,7 +93,7 @@
                 <option value="finished" {{ request('status') === 'finished' ? 'selected' : '' }}>Finished</option>
                 <option value="not_set" {{ request('status') === 'not_set' ? 'selected' : '' }}>Dates not set</option>
             </select>
-    </x-admin.filter-shell>
+    </x-admin.filter>
 
     {{-- Bulk actions (appears once rows are ticked) --}}
     <x-admin.bulk-actions :action="'/admin/students/bulk?'.http_build_query(request()->except('page'))" :input-class="$inputClass" noun="students" :total="$students->total()">
@@ -267,5 +267,5 @@
     </div>
 </div>
 
-@include('admin.partials.bulk-js')
+@include('components.admin.bulk-actions-script')
 @endsection

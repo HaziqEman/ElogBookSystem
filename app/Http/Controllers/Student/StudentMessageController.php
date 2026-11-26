@@ -111,7 +111,7 @@ class StudentMessageController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        return view('student.messages.chat', compact(
+        return view('student.messages.conversation', compact(
             'conversation',
             'partner',
             'partnerRole',

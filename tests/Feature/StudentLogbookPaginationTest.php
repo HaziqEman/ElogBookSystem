@@ -199,7 +199,24 @@ class StudentLogbookPaginationTest extends TestCase
             ->assertOk()
             ->assertSee('Selected week entry')
             ->assertSee('week-entry.pdf')
-            ->assertSee('Selected week feedback');
+            ->assertSee('Selected week feedback')
+            ->assertSee('data-edit-entry', false)
+            ->assertSee('data-no-ajax', false);
+    }
+
+    public function test_selected_week_is_available_to_the_edit_refresh(): void
+    {
+        $student = $this->createStudent();
+        $student->forceFill([
+            'internship_start' => now()->startOfWeek(Carbon::MONDAY)->toDateString(),
+            'internship_weeks' => 7,
+        ]);
+
+        $this->actingAs($student, 'student')
+            ->get('/student/logbooks?week=5')
+            ->assertOk()
+            ->assertSee('data-selected-week="5"', false)
+            ->assertSee('Week 5');
     }
 
     public function test_student_logbook_query_count_does_not_grow_per_entry(): void

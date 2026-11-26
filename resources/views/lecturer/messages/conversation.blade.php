@@ -1,0 +1,27 @@
+@extends('layouts.app')
+
+@section('content')
+@php
+    $student = $conversation->student;
+    $chat = [
+        'conversation_id' => $conversation->conversation_id,
+        'me' => ['type' => \App\Models\Lecturer::class, 'role' => 'lecturer', 'id' => (int) $lecturer->lecturer_id, 'name' => $lecturer->name],
+        'partner' => [
+            'role' => 'student',
+            'title' => $student->name,
+            'name' => 'Student',
+            'sub' => 'ID '.$student->student_id,
+            'initials' => strtoupper(mb_substr($student->name, 0, 2)),
+            'tone' => 'blue',
+        ],
+        'contacts' => $contacts,
+        'list' => ['channel' => 'private-lecturer.'.$lecturer->lecturer_id, 'partnerType' => \App\Models\Student::class, 'openBase' => null],
+        'empty' => 'No students assigned yet.',
+        'back' => ['href' => '/lecturer/messages', 'label' => 'All conversations'],
+        'messages' => $conversation->messages->map(fn ($m) => $m->toChatPayload())->values()->all(),
+    ];
+@endphp
+
+<div class="space-y-4 -mt-4 md:-mt-8">    @include('chat.chat-room', ['chat' => $chat])
+</div>
+@endsection

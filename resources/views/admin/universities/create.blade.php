@@ -20,7 +20,7 @@
     <form method="POST" action="/admin/universities" enctype="multipart/form-data" class="grid gap-4 rounded-xl border border-slate-200 bg-white p-6">
         @csrf
 
-        @include('admin.universities._form', ['university' => null])
+        @include('admin.universities.form', ['university' => null])
 
         <div class="flex gap-3">
             <button type="submit" class="inline-flex justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Save University</button>
