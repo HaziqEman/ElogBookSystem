@@ -217,7 +217,7 @@
                     src="{{ $attendance->mapEmbedUrl() }}"
                     loading="lazy"
                     referrerpolicy="no-referrer"
-                    class="h-44 w-full rounded-2xl border border-[#E3E8F2]"
+                    class="h-28 w-full rounded-2xl border border-[#E3E8F2] sm:h-36 md:h-44"
                 ></iframe>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wider text-[#5B6478]">

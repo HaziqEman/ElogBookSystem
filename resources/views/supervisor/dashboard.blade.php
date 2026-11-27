@@ -34,15 +34,16 @@
                 'label' => 'Assigned students',
                 'value' => $kpis['students'],
                 'icon' => 'fa-user-group',
-                'tile' => 'bg-[#E8EFFF] text-[#1F45D6]',
+                'surface' => 'border-[#D3E0FF] bg-[#EEF3FF]',
+                'tile' => 'text-[#1F45D6]',
                 'note' => null,
-                'alert' => false,
             ],
             [
                 'label' => 'Weeks waiting for you',
                 'value' => $kpis['weeks_waiting'],
                 'icon' => 'fa-hourglass-half',
-                'tile' => 'bg-[#FFF3D6] text-[#B45309]',
+                'surface' => 'border-[#FDE2B8] bg-[#FFF7EA]',
+                'tile' => 'text-[#B45309]',
                 'note' =>
                     $kpis['pending'] .
                     ' ' .
@@ -51,39 +52,38 @@
                     $kpis['students_waiting'] .
                     ' ' .
                     Str::plural('student', $kpis['students_waiting']),
-                'alert' => false,
             ],
             [
                 'label' => 'Validated',
                 'value' => $kpis['validated'],
                 'icon' => 'fa-circle-check',
-                'tile' => 'bg-[#DDF5E8] text-[#047857]',
+                'surface' => 'border-[#BFEBD3] bg-[#EEFAF3]',
+                'tile' => 'text-[#047857]',
                 'note' =>
                     $kpis['reviewed_rate'] !== null
                         ? $kpis['reviewed_rate'] . '% of sent entries'
                         : 'Nothing sent yet',
-                'alert' => false,
             ],
             [
                 'label' => 'Revision requested',
                 'value' => $kpis['revision'],
                 'icon' => 'fa-rotate-left',
-                'tile' => 'bg-[#FFE9E7] text-[#BE123C]',
+                'surface' => 'border-[#FBCFCB] bg-[#FFF1EF]',
+                'tile' => 'text-[#BE123C]',
                 'note' => 'sent back to students',
-                'alert' => false,
             ],
             [
                 'label' => 'Overdue weeks',
                 'value' => $kpis['overdue'],
                 'icon' => 'fa-triangle-exclamation',
-                'tile' => 'bg-[#F0EAFF] text-[#6D28D9]',
+                'surface' => 'border-[#DDD0FB] bg-[#F5F0FF]',
+                'tile' => 'text-[#6D28D9]',
                 'note' => 'waiting more than 7 days',
-                'alert' => $kpis['overdue'] > 0,
             ],
         ];
     @endphp
 
-    <div class="portal-font space-y-6">
+    <div class="portal-font space-y-4 sm:space-y-6">
 
         {{-- Flash messages --}}
         @if (session('success'))
@@ -105,19 +105,19 @@
 
         {{-- Hero (same pattern as the student dashboard) --}}
         <section
-            class="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#4F6BFF] via-[#5E7CFF] to-[#B7C4FF] px-8 py-8 text-white shadow-[0_14px_30px_rgba(79,107,255,0.25)]"
+            class="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#4F6BFF] via-[#5E7CFF] to-[#B7C4FF] px-5 py-5 text-white shadow-[0_10px_24px_rgba(79,107,255,0.22)] sm:px-6"
         >
             <div
-                class="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-white/10"
+                class="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full bg-white/10"
                 aria-hidden="true"
             ></div>
             <div
-                class="pointer-events-none absolute -bottom-24 right-40 h-64 w-64 rounded-full bg-white/10"
+                class="pointer-events-none absolute -bottom-20 right-32 h-44 w-44 rounded-full bg-white/10"
                 aria-hidden="true"
             ></div>
 
-            <div class="relative flex flex-wrap items-center justify-between gap-6">
-                <div class="max-w-2xl">
+            <div class="relative flex flex-wrap items-center justify-between gap-4 sm:gap-6">
+                <div class="min-w-0 max-w-2xl">
                     <span
                         class="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold"
                     >
@@ -127,19 +127,19 @@
                         ></i>
                         {{ $today->format('l, d F Y') }}
                     </span>
-                    <h1 class="mt-3 text-[34px] font-extrabold leading-tight tracking-tight">
+                    <h1 class="mt-2 text-2xl font-extrabold leading-tight tracking-tight sm:mt-3 sm:text-[34px]">
                         {{ $greeting }}, {{ $supervisor->name }}!
                     </h1>
-                    <p class="mt-1.5 text-[15px] text-white/90">
+                    <p class="mt-1 text-sm text-white/90 sm:mt-1.5 sm:text-[15px]">
                         {{ $supervisor->company_name }} &middot; {{ $supervisor->position }}.
                         Each student's week reaches you as one batch when it ends.
                     </p>
 
-                    <div class="mt-5 flex flex-wrap gap-3">
+                    <div class="mt-4 flex flex-wrap gap-2.5 sm:mt-5 sm:gap-3">
                         @if ($kpis['weeks_waiting'] > 0)
                             <a
                                 href="{{ route('supervisor.weeks.next') }}"
-                                class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-[#1F45D6] transition hover:bg-[#F1F4FF]"
+                                class="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1F45D6] transition hover:bg-[#F1F4FF] sm:min-h-11 sm:px-5"
                             >
                                 <i
                                     class="fa-solid fa-clipboard-check"
@@ -150,7 +150,7 @@
                         @endif
                         <a
                             href="#students"
-                            class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-5 text-sm font-bold text-white transition hover:bg-white/25"
+                            class="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/30 bg-white/15 px-4 text-sm font-bold text-white transition hover:bg-white/25 sm:min-h-11 sm:px-5"
                         >
                             <i
                                 class="fa-solid fa-user-group"
@@ -162,7 +162,7 @@
                 </div>
 
                 <div
-                    class="hidden h-28 w-28 items-center justify-center rounded-full bg-white/20 text-5xl md:flex"
+                    class="hidden h-28 w-28 items-center justify-center rounded-full bg-white/20 text-5xl lg:flex"
                     aria-hidden="true"
                 >
                     <i class="fa-solid fa-clipboard-user"></i>
@@ -173,17 +173,15 @@
         {{-- KPIs --}}
         <section
             aria-label="Key figures"
-            class="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-5"
+            class="grid grid-cols-2 gap-3.5 xl:grid-cols-5"
         >
             @foreach ($kpiCards as $kpi)
-                <div @class([
-                    'rounded-[20px] border bg-white px-[18px] py-4 shadow-[0_6px_18px_rgba(15,27,77,0.05)]',
-                    'border-[#E3E8F2]' => !$kpi['alert'],
-                    'border-[#FBCFCB]' => $kpi['alert'],
-                ])>
+                <div
+                    class="{{ $kpi['surface'] }} {{ $loop->last ? 'col-span-2 xl:col-span-1' : '' }} rounded-[20px] border px-3 py-3.5 shadow-[0_6px_18px_rgba(15,27,77,0.05)] sm:px-[18px] sm:py-4"
+                >
                     <div class="flex items-center gap-3">
                         <span
-                            class="{{ $kpi['tile'] }} flex h-11 w-11 flex-none items-center justify-center rounded-2xl"
+                            class="{{ $kpi['tile'] }} flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-white sm:h-11 sm:w-11"
                         >
                             <i
                                 class="fa-solid {{ $kpi['icon'] }}"
@@ -191,28 +189,28 @@
                             ></i>
                         </span>
                         <div class="min-w-0">
-                            <div class="truncate text-xs font-semibold text-[#5B6478]">
+                            <div class="line-clamp-2 text-[11px] font-semibold leading-tight text-[#334155] sm:text-xs">
                                 {{ $kpi['label'] }}</div>
-                            <div class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">
+                            <div class="text-2xl font-extrabold leading-tight text-[#0F1B4D] sm:text-[28px]">
                                 {{ $kpi['value'] }}</div>
                         </div>
                     </div>
                     @if ($kpi['note'])
-                        <p class="mt-2 text-xs text-[#5B6478]">{{ $kpi['note'] }}</p>
+                        <p class="mt-1.5 text-[11px] leading-tight text-[#5B6478] sm:mt-2 sm:text-xs">{{ $kpi['note'] }}</p>
                     @endif
                 </div>
             @endforeach
         </section>
 
         {{-- Two rows, two cards each. Cards in the same row stretch to the same height, so there are no gaps. --}}
-        <section class="grid gap-5 lg:grid-cols-5">
+        <section class="grid gap-4 lg:grid-cols-5 lg:gap-5">
 
             {{-- ROW 1 LEFT: Needs your review --}}
-            <div class="{{ $card }} flex h-full flex-col p-6 lg:col-span-3">
+            <div class="{{ $card }} flex h-full flex-col p-4 sm:p-6 lg:col-span-3">
                 <div class="mb-1 flex items-center justify-between gap-3">
-                    <h2 class="flex items-center gap-3 text-lg font-extrabold text-[#0F1B4D]">
+                    <h2 class="flex items-center gap-2.5 text-base font-extrabold text-[#0F1B4D] sm:gap-3 sm:text-lg">
                         <span
-                            class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFE9E7] text-[#BE123C]"
+                            class="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#FFE9E7] text-[#BE123C] sm:h-9 sm:w-9"
                         >
                             <i
                                 class="fa-solid fa-inbox text-sm"
@@ -232,7 +230,7 @@
                 <ul class="divide-y divide-[#EDF0F7]">
                     @forelse ($needsReview as $item)
                         @php $student = $item['student']; @endphp
-                        <li class="flex flex-wrap items-center gap-x-4 gap-y-3 py-3.5">
+                        <li class="flex flex-wrap items-center gap-x-3 gap-y-2.5 py-2.5 sm:gap-x-4 sm:gap-y-3 sm:py-3.5">
                             <span
                                 class="flex h-11 w-11 flex-none items-center justify-center rounded-full text-sm font-extrabold text-white"
                                 style="background: {{ $avatarColor($student) }}"
@@ -295,10 +293,10 @@
             </div>
 
             {{-- ROW 1 RIGHT: This week so far --}}
-            <div class="{{ $card }} h-full p-6 lg:col-span-2">
-                <h2 class="flex items-center gap-3 text-lg font-extrabold text-[#0F1B4D]">
+            <div class="{{ $card }} h-full p-4 sm:p-6 lg:col-span-2">
+                <h2 class="flex items-center gap-2.5 text-base font-extrabold text-[#0F1B4D] sm:gap-3 sm:text-lg">
                     <span
-                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]"
+                        class="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6] sm:h-9 sm:w-9"
                     >
                         <i
                             class="fa-regular fa-clock text-sm"
@@ -307,11 +305,11 @@
                     </span>
                     This week so far
                 </h2>
-                <p class="mb-4 mt-1 text-xs text-[#5B6478]">
+                <p class="mb-3 mt-1 text-xs text-[#5B6478] sm:mb-4">
                     Not sent to you yet. Each week arrives after the student's last working day.
                 </p>
 
-                <div class="space-y-4">
+                <div class="space-y-3 sm:space-y-4">
                     @forelse ($inProgress as $row)
                         <div>
                             <div class="flex items-center justify-between gap-2 text-[13px]">
@@ -357,10 +355,10 @@
             </div>
 
             {{-- ROW 2 RIGHT: Review progress --}}
-            <div class="{{ $card }} h-full p-6 lg:col-span-2">
-                <h2 class="mb-4 flex items-center gap-3 text-lg font-extrabold text-[#0F1B4D]">
+            <div class="{{ $card }} h-full p-4 sm:p-6 lg:col-span-2">
+                <h2 class="mb-3 flex items-center gap-2.5 text-base font-extrabold text-[#0F1B4D] sm:mb-4 sm:gap-3 sm:text-lg">
                     <span
-                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#DDF5E8] text-[#047857]"
+                        class="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#DDF5E8] text-[#047857] sm:h-9 sm:w-9"
                     >
                         <i
                             class="fa-solid fa-chart-line text-sm"
@@ -370,7 +368,7 @@
                     Review progress
                 </h2>
 
-                <div class="space-y-4">
+                <div class="space-y-3 sm:space-y-4">
                     @foreach ($trend as $row)
                         <div>
                             <div class="flex items-start justify-between gap-3">
@@ -408,7 +406,7 @@
         {{-- Student progress --}}
         <section
             id="students"
-            class="{{ $card }} scroll-mt-6 p-6"
+            class="{{ $card }} scroll-mt-6 p-4 sm:p-5 md:p-6"
         >
             <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>

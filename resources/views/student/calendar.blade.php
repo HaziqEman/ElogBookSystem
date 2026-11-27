@@ -6,73 +6,74 @@
     @endphp
 
     <div class="space-y-5">
-        {{-- Hero: month + quick stats + navigation --}}
-        <div
-            class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-5 text-white shadow-lg shadow-blue-900/10 md:p-8">
+        {{-- Header banner --}}
+        <section
+            class="relative overflow-hidden rounded-3xl px-6 py-4 text-white shadow-[0_14px_34px_rgba(47,91,255,0.20)] md:px-9"
+            style="background: linear-gradient(120deg, #3B5BFF 0%, #5C7CFF 40%, #A9BAFF 75%, #D6DEFF 100%);"
+        >
             <div
                 class="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10"
                 aria-hidden="true"
             ></div>
-            <div
-                class="pointer-events-none absolute -bottom-28 right-40 h-56 w-56 rounded-full bg-white/[0.07]"
-                aria-hidden="true"
-            ></div>
 
-            <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div>
+            <div class="relative flex flex-wrap items-center justify-between gap-5">
+                <div class="min-w-0 flex-1 basis-72">
                     <div
-                        class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur">
+                        class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-[#E4EAFF]"
+                    >
                         <i class="fa-regular fa-calendar"></i> My calendar
                     </div>
-                    <h2 class="mt-3 text-3xl font-extrabold tracking-tight md:text-4xl">
-                        {{ $month->format('F Y') }}</h2>
-                    <p class="mt-1.5 max-w-md text-sm text-blue-50/90">
+                    <h1 class="mb-1 mt-2 text-2xl font-extrabold tracking-tight md:text-3xl">
+                        {{ $month->format('F Y') }}
+                    </h1>
+                    <p class="max-w-lg text-sm leading-relaxed text-[#E4EAFF]">
                         Track your logbook entries, attendance and task deadlines in one place.
                     </p>
                 </div>
 
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    {{-- Stats --}}
-                    <div class="grid grid-cols-3 gap-2.5">
-                        <div class="rounded-2xl bg-white/15 px-4 py-2.5 backdrop-blur">
-                            <p class="text-2xl font-extrabold leading-none">{{ $monthLogs }}</p>
-                            <p class="mt-1 text-[11px] font-medium text-blue-50/90">
-                                {{ Str::plural('Entry', $monthLogs) }}</p>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="min-w-[76px] rounded-xl border border-white/15 bg-white/15 px-3 py-2 backdrop-blur">
+                            <p class="text-xl font-extrabold leading-none">{{ $monthLogs }}</p>
+                            <p class="mt-1 text-[10px] font-medium leading-tight text-blue-50/90">
+                                {{ Str::plural('Entry', $monthLogs) }}
+                            </p>
                         </div>
-                        <div class="rounded-2xl bg-white/15 px-4 py-2.5 backdrop-blur">
-                            <p class="text-2xl font-extrabold leading-none">{{ $monthPresent }}</p>
-                            <p class="mt-1 text-[11px] font-medium text-blue-50/90">
-                                {{ $monthPresent === 1 ? 'Day present' : 'Days present' }}</p>
+                        <div class="min-w-[76px] rounded-xl border border-white/15 bg-white/15 px-3 py-2 backdrop-blur">
+                            <p class="text-xl font-extrabold leading-none">{{ $monthPresent }}</p>
+                            <p class="mt-1 text-[10px] font-medium leading-tight text-blue-50/90">
+                                {{ $monthPresent === 1 ? 'Day present' : 'Days present' }}
+                            </p>
                         </div>
-                        <div class="rounded-2xl bg-white/15 px-4 py-2.5 backdrop-blur">
-                            <p class="text-2xl font-extrabold leading-none">{{ $monthTasks }}</p>
-                            <p class="mt-1 text-[11px] font-medium text-blue-50/90">Open
-                                {{ Str::plural('task', $monthTasks) }}</p>
+                        <div class="min-w-[76px] rounded-xl border border-white/15 bg-white/15 px-3 py-2 backdrop-blur">
+                            <p class="text-xl font-extrabold leading-none">{{ $monthTasks }}</p>
+                            <p class="mt-1 text-[10px] font-medium leading-tight text-blue-50/90">
+                                Open {{ Str::plural('task', $monthTasks) }}
+                            </p>
                         </div>
                     </div>
 
-                    {{-- Navigation --}}
                     <div class="flex items-center gap-2">
                         <a
                             href="/student/calendar?month={{ $prevMonth }}"
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+                            class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
                             aria-label="Previous month"
                         ><i class="fa-solid fa-chevron-left"></i></a>
                         @unless ($isCurrentMonth)
                             <a
                                 href="/student/calendar"
-                                class="flex h-11 items-center rounded-xl bg-white px-4 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50"
+                                class="flex h-9 items-center rounded-xl bg-white px-3 text-xs font-bold text-blue-700 shadow-sm transition hover:bg-blue-50"
                             >Today</a>
                         @endunless
                         <a
                             href="/student/calendar?month={{ $nextMonth }}"
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+                            class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
                             aria-label="Next month"
                         ><i class="fa-solid fa-chevron-right"></i></a>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
         {{-- Calendar grid --}}
         <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">

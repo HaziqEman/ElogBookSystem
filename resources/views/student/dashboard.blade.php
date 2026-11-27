@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@include('partials.google-fonts', ['includeCaveat' => true])
 <style>
     .cal-day.is-today { color: #2F5BFF; background: #fff; box-shadow: inset 0 0 0 2px #2F5BFF; }
     .cal-day.is-sel { color: #fff; background: #2F5BFF; border-color: #2F5BFF; box-shadow: none; }
@@ -55,7 +54,7 @@
     $workingDaysCsv = implode(',', $planner->workingDays());
 @endphp
 
-<div class="space-y-6" style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif">
+<div class="space-y-4 sm:space-y-6">
 
     @if(session('success'))
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>
@@ -74,10 +73,6 @@
             </ul>
         </div>
     @endif
-
-
-    @include('partials.reminder-popup', ['reminderStudentId' => $student->student_id])
-
     @include('student.dashboard.overview')
 </div>
 

@@ -1,6 +1,6 @@
     {{-- HERO --}}
     <section
-        class="relative overflow-hidden rounded-3xl px-6 py-6 text-white shadow-[0_14px_34px_rgba(47,91,255,0.20)] md:px-9 md:py-7"
+        class="relative overflow-hidden rounded-3xl px-4 py-4 text-white shadow-[0_14px_34px_rgba(47,91,255,0.20)] sm:px-6 sm:py-6 md:px-9 md:py-7"
         style="background: linear-gradient(120deg, #3B5BFF 0%, #5C7CFF 40%, #A9BAFF 75%, #D6DEFF 100%);"
     >
         <div
@@ -131,13 +131,13 @@
         $statUnread = (int) ($unreadMessages ?? 0);
 
         $statCard =
-            'group flex items-center gap-3.5 rounded-[20px] border border-[#E3E8F2] bg-white px-4 py-4 shadow-[0_6px_18px_rgba(15,27,77,0.05)] transition hover:shadow-md';
+            'group flex items-center gap-2.5 rounded-[20px] border border-[#E3E8F2] bg-white px-3 py-3 shadow-[0_6px_18px_rgba(15,27,77,0.05)] transition hover:shadow-md sm:gap-3.5 sm:px-4 sm:py-4';
     @endphp
 
     <div
         id="stats-grid"
         data-live
-        class="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4"
+        class="grid grid-cols-2 gap-2.5 sm:gap-3.5 xl:grid-cols-4"
     >
 
         {{-- Logbook --}}
@@ -146,13 +146,13 @@
             class="{{ $statCard }} hover:border-[#9DB4FF]"
         >
             <span
-                class="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#E8EFFF] text-[#1F45D6]"
+                class="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-[#E8EFFF] text-[#1F45D6] sm:h-12 sm:w-12"
             ><i class="fa-solid fa-book"></i></span>
             <div class="min-w-0 flex-1">
                 <div class="truncate text-xs font-semibold text-[#5B6478]">Logbook entries</div>
                 <div class="flex items-baseline gap-1.5">
                     <span
-                        class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">{{ $statEntries }}</span>
+                        class="text-2xl font-extrabold leading-tight text-[#0F1B4D] sm:text-[28px]">{{ $statEntries }}</span>
                     <span class="text-sm font-semibold text-[#5B6478]">written</span>
                 </div>
                 <div class="mt-0.5 truncate text-xs font-medium text-[#5B6478]">
@@ -169,14 +169,14 @@
             class="{{ $statCard }} hover:border-[#8FD6B3]"
         >
             <span
-                class="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#D1FAE5] text-[#047857]"
+                class="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-[#D1FAE5] text-[#047857] sm:h-12 sm:w-12"
             ><i class="fa-solid fa-user-check"></i></span>
             <div class="min-w-0 flex-1">
                 <div class="truncate text-xs font-semibold text-[#5B6478]">Attendance this month
                 </div>
                 <div class="flex items-baseline gap-1.5">
                     <span
-                        class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">{{ $statPresent }}</span>
+                        class="text-2xl font-extrabold leading-tight text-[#0F1B4D] sm:text-[28px]">{{ $statPresent }}</span>
                     <span
                         class="text-sm font-semibold text-[#5B6478]">{{ $statPresent === 1 ? 'day' : 'days' }}
                         present</span>
@@ -195,13 +195,13 @@
             class="{{ $statCard }} {{ $statOverdue > 0 ? 'border-[#FBCFCB] hover:border-[#F3A5B5]' : 'hover:border-[#FDE68A]' }}"
         >
             <span
-                class="{{ $statOverdue > 0 ? 'bg-[#FFE4E6] text-[#BE123C]' : 'bg-[#FEF3C7] text-[#B45309]' }} flex h-12 w-12 flex-none items-center justify-center rounded-2xl"
+                class="{{ $statOverdue > 0 ? 'bg-[#FFE4E6] text-[#BE123C]' : 'bg-[#FEF3C7] text-[#B45309]' }} flex h-10 w-10 flex-none items-center justify-center rounded-2xl sm:h-12 sm:w-12"
             ><i class="fa-solid fa-list-check"></i></span>
             <div class="min-w-0 flex-1">
                 <div class="truncate text-xs font-semibold text-[#5B6478]">Open tasks</div>
                 <div class="flex items-baseline gap-1.5">
                     <span
-                        class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">{{ $statOpen }}</span>
+                        class="text-2xl font-extrabold leading-tight text-[#0F1B4D] sm:text-[28px]">{{ $statOpen }}</span>
                     <span class="text-sm font-semibold text-[#5B6478]">to do</span>
                 </div>
                 <div class="mt-0.5">
@@ -226,13 +226,13 @@
             class="{{ $statCard }} {{ $statUnread > 0 ? 'border-[#FBCFCB] hover:border-[#F3A5B5]' : 'hover:border-[#B9A7F5]' }}"
         >
             <span
-                class="{{ $statUnread > 0 ? 'bg-[#FFE4E6] text-[#BE123C]' : 'bg-[#F0EAFF] text-[#6D28D9]' }} flex h-12 w-12 flex-none items-center justify-center rounded-2xl"
+                class="{{ $statUnread > 0 ? 'bg-[#FFE4E6] text-[#BE123C]' : 'bg-[#F0EAFF] text-[#6D28D9]' }} flex h-10 w-10 flex-none items-center justify-center rounded-2xl sm:h-12 sm:w-12"
             ><i class="fa-solid fa-envelope"></i></span>
             <div class="min-w-0 flex-1">
                 <div class="truncate text-xs font-semibold text-[#5B6478]">Unread messages</div>
                 <div class="flex items-baseline gap-1.5">
                     <span
-                        class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">{{ $statUnread }}</span>
+                        class="text-2xl font-extrabold leading-tight text-[#0F1B4D] sm:text-[28px]">{{ $statUnread }}</span>
                     <span class="text-sm font-semibold text-[#5B6478]">new</span>
                 </div>
                 <div
@@ -267,46 +267,46 @@
         </div>
 
         <div class="flex min-w-0 flex-[1_1_360px] flex-col gap-4">
-            <div class="{{ $card }} p-5">
-                <h2 class="mb-3.5 text-base font-extrabold">Quick actions</h2>
-                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <div class="{{ $card }} p-3 sm:p-5">
+                <h2 class="mb-2.5 text-base font-extrabold sm:mb-3.5">Quick actions</h2>
+                <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
                     <a
                         href="#new-entry"
                         data-write-date="{{ $todayKey }}"
-                        class="flex items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-3 transition hover:border-[#9DB4FF] hover:bg-white hover:shadow-md"
+                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#9DB4FF] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
                     >
                         <span
-                            class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#2F5BFF] text-white"
+                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#2F5BFF] text-white sm:h-10 sm:w-10"
                         ><i class="fa-solid fa-plus"></i></span>
-                        <span class="text-[13px] font-bold leading-tight">New logbook entry</span>
+                        <span class="text-xs font-bold leading-tight sm:text-[13px]">New logbook entry</span>
                     </a>
                     <a
                         href="/student/calendar"
-                        class="flex items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-3 transition hover:border-[#8FD6B3] hover:bg-white hover:shadow-md"
+                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#8FD6B3] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
                     >
                         <span
-                            class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#047857] text-white"
+                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#047857] text-white sm:h-10 sm:w-10"
                         ><i class="fa-solid fa-calendar-days"></i></span>
-                        <span class="text-[13px] font-bold leading-tight">View calendar</span>
+                        <span class="text-xs font-bold leading-tight sm:text-[13px]">View calendar</span>
                     </a>
                     <a
                         href="#new-entry"
                         data-focus="attachment"
-                        class="flex items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-3 transition hover:border-[#B9A7F5] hover:bg-white hover:shadow-md"
+                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#B9A7F5] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
                     >
                         <span
-                            class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#6D28D9] text-white"
+                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#6D28D9] text-white sm:h-10 sm:w-10"
                         ><i class="fa-solid fa-arrow-up-from-bracket"></i></span>
-                        <span class="text-[13px] font-bold leading-tight">Upload files</span>
+                        <span class="text-xs font-bold leading-tight sm:text-[13px]">Upload files</span>
                     </a>
                     <a
                         href="{{ $chatHref }}"
-                        class="flex items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-3 transition hover:border-[#F3A5B5] hover:bg-white hover:shadow-md"
+                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#F3A5B5] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
                     >
                         <span
-                            class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-[#BE123C] text-white"
+                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#BE123C] text-white sm:h-10 sm:w-10"
                         ><i class="fa-solid fa-comment"></i></span>
-                        <span class="text-[13px] font-bold leading-tight">Chat with
+                        <span class="text-xs font-bold leading-tight sm:text-[13px]">Chat with
                             supervisor</span>
                     </a>
                 </div>
@@ -314,7 +314,7 @@
 
             @if ($aiReady)
                 <div
-                    class="flex flex-col gap-2 rounded-[22px] border border-[#E3E8F2] bg-white px-5 py-4 shadow-[0_6px_18px_rgba(15,27,77,0.05)]">
+                    class="flex flex-col gap-2 rounded-[22px] border border-[#E3E8F2] bg-white px-3 py-3 shadow-[0_6px_18px_rgba(15,27,77,0.05)] sm:px-5 sm:py-4">
                     <div class="flex items-center gap-2.5">
                         <span
                             class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#F0EAFF] text-[#6D28D9]"

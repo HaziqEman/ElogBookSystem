@@ -1,8 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-    @include('partials.google-fonts', ['includeCaveat' => false])
-
     {{-- Plain CSS so the layout works even if the Tailwind build is out of date --}}
     <style>
         .att-grid {
@@ -51,10 +49,7 @@
             'flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[9px] px-3 text-xs font-bold transition';
     @endphp
 
-    <div
-        class="space-y-6"
-        style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif"
-    >
+    <div class="space-y-6">
 
         @if (session('success'))
             <div

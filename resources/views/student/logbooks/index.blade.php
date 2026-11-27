@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-    @include('partials.google-fonts', ['includeCaveat' => true])
     @php
         $pill = function (string $status) {
             if (in_array($status, [\App\Models\Logbook::STATUS_APPROVED, \App\Models\Logbook::SUPERVISOR_STATUS_VALIDATED], true)) {
@@ -46,65 +45,50 @@
     @endphp
 
     {{-- The layout already gives the page its width and padding, so no extra wrapper padding here --}}
-    <div
-        class="space-y-5"
-        style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif"
-    >
+    <div class="space-y-5">
 
-        {{-- Hero banner --}}
-        <div
-            class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-5 text-white shadow-lg shadow-blue-900/10 md:p-8">
+        {{-- Header banner --}}
+        <section
+            class="relative overflow-hidden rounded-3xl px-6 py-5 text-white shadow-[0_14px_34px_rgba(47,91,255,0.20)] md:px-9"
+            style="background: linear-gradient(120deg, #3B5BFF 0%, #5C7CFF 40%, #A9BAFF 75%, #D6DEFF 100%);"
+        >
             <div
                 class="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10"
                 aria-hidden="true"
             ></div>
-            <div
-                class="pointer-events-none absolute -bottom-28 right-40 h-56 w-56 rounded-full bg-white/[0.07]"
-                aria-hidden="true"
-            ></div>
 
-            <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div>
+            <div class="relative flex flex-wrap items-center justify-between gap-5">
+                <div class="min-w-0 flex-1 basis-72">
                     <div
-                        class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur">
-                        <i class="fa-solid fa-book"></i> My logbook
-                    </div>
-                    <h2 class="mt-3 text-3xl font-extrabold tracking-tight md:text-4xl">Daily logbook
-                    </h2>
-                    <p class="mt-1.5 max-w-lg text-sm text-blue-50/90">
-                        Write one entry for each working day. Your supervisor reviews every week once it
-                        ends.
-                    </p>
-                    <a
-                        href="#new-entry"
-                        data-write-date="{{ $todayKey }}"
-                        class="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50"
+                        class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-[#E4EAFF]"
                     >
-                        <i class="fa-solid fa-pen-to-square"></i> Write an entry
-                    </a>
+                        <i class="fa-regular fa-calendar"></i>
+                        {{ \Carbon\Carbon::parse($todayKey)->format('l, d F Y') }}
+                    </div>
+                    <h1 class="mb-1.5 mt-2.5 text-3xl font-extrabold tracking-tight">Daily logbook</h1>
+                    <p class="max-w-lg text-sm leading-relaxed text-[#E4EAFF]">
+                        Record each working day here. Your supervisor reviews entries when the week ends.
+                    </p>
                 </div>
 
                 <div class="flex flex-wrap gap-2.5">
                     @if ($heroWeek)
-                        <div class="rounded-2xl bg-white/15 px-5 py-3 backdrop-blur">
-                            <p class="text-2xl font-extrabold leading-none">{{ $heroWeek }}<span
-                                    class="text-base font-bold text-blue-100"
-                                > / {{ $planner->totalWeeks() }}</span></p>
+                        <div class="min-w-[132px] rounded-2xl border border-white/20 bg-white/15 px-4 py-3 backdrop-blur">
+                            <p class="text-2xl font-extrabold leading-none">{{ $heroWeek }}<span class="text-sm font-bold text-blue-100"> / {{ $planner->totalWeeks() }}</span></p>
                             <p class="mt-1 text-[11px] font-medium text-blue-50/90">Current week</p>
                         </div>
                     @endif
                     @if (!$hasFilters)
-                        <div class="rounded-2xl bg-white/15 px-5 py-3 backdrop-blur">
-                            <p class="text-2xl font-extrabold leading-none">
-                                {{ $counts['all'] }}</p>
+                        <div class="min-w-[132px] rounded-2xl border border-white/20 bg-white/15 px-4 py-3 backdrop-blur">
+                            <p class="text-2xl font-extrabold leading-none">{{ $counts['all'] }}</p>
                             <p class="mt-1 text-[11px] font-medium text-blue-50/90">
-                                {{ \Illuminate\Support\Str::plural('Entry', $counts['all']) }}
-                                written</p>
+                                {{ \Illuminate\Support\Str::plural('Entry', $counts['all']) }} written
+                            </p>
                         </div>
                     @endif
                 </div>
             </div>
-        </div>
+        </section>
 
         @if (session('success'))
             <div

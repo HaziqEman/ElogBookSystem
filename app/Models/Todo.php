@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -33,6 +34,24 @@ class Todo extends Model
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(Supervisor::class, 'supervisor_id', 'supervisor_id');
+    }
+
+    public function scopeCurrentOpen(Builder $query, string $today): Builder
+    {
+        return $query->where('is_done', false)
+            ->where(fn (Builder $query) => $query->whereNull('due_date')->orWhereDate('due_date', '>=', $today));
+    }
+
+    public function scopeOverdueAsOf(Builder $query, string $today): Builder
+    {
+        return $query->where('is_done', false)
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<', $today);
+    }
+
+    public function scopeCompleted(Builder $query): Builder
+    {
+        return $query->where('is_done', true);
     }
 
     public function isAssigned(): bool

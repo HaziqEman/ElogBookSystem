@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.google-fonts', ['includeCaveat' => false])
+
     @php
         use Illuminate\Support\Str;
 
@@ -22,22 +24,14 @@
             'bg-teal-600',
         ];
 
-        // Banner icon follows the time-of-day greeting
-        $greetingLower = Str::lower((string) $greeting);
-        $greetingIcon = Str::contains($greetingLower, 'morning')
-            ? 'fa-sun'
-            : (Str::contains($greetingLower, 'afternoon')
-                ? 'fa-cloud-sun'
-                : 'fa-moon');
-
-        // 1. Four KPI cards only (white cards, one accent colour per icon)
         $statCards = [
             [
                 'label' => 'Students',
                 'value' => $students,
                 'note' => $studentsWithSupervisor . ' with a company supervisor',
                 'icon' => 'fa-user-graduate',
-                'iconColor' => 'bg-blue-50 text-blue-600',
+                'surface' => 'border-[#D3E0FF] bg-[#EEF3FF]',
+                'iconColor' => 'text-[#1F45D6]',
                 'href' => '/admin/students',
             ],
             [
@@ -45,7 +39,8 @@
                 'value' => $lecturers,
                 'note' => 'faculty evaluators',
                 'icon' => 'fa-user-tie',
-                'iconColor' => 'bg-emerald-50 text-emerald-600',
+                'surface' => 'border-[#DDD0FB] bg-[#F5F0FF]',
+                'iconColor' => 'text-[#6D28D9]',
                 'href' => '/admin/lecturers',
             ],
             [
@@ -53,7 +48,8 @@
                 'value' => $supervisors,
                 'note' => $supervisorsWithStudents . ' with students',
                 'icon' => 'fa-building-user',
-                'iconColor' => 'bg-violet-50 text-violet-600',
+                'surface' => 'border-[#BFEBD3] bg-[#EEFAF3]',
+                'iconColor' => 'text-[#047857]',
                 'href' => '/admin/supervisors',
             ],
             [
@@ -61,7 +57,8 @@
                 'value' => $awaitingReview,
                 'note' => $overdueReviews . ' overdue (over 7 days)',
                 'icon' => 'fa-hourglass-half',
-                'iconColor' => 'bg-amber-50 text-amber-600',
+                'surface' => 'border-[#FDE2B8] bg-[#FFF7EA]',
+                'iconColor' => 'text-[#B45309]',
                 'href' => '/admin/supervisors?state=waiting',
             ],
         ];
@@ -138,23 +135,34 @@
         $latestRows = $latestRows->take(5);
     @endphp
 
-    <div class="space-y-6">
+    <div
+        class="space-y-6"
+        style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif"
+    >
 
-        {{-- Welcome banner: greeting + date + status + quick actions --}}
-        <div
-            class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-gradient-to-r from-blue-50 via-white to-white px-6 py-4 shadow-sm shadow-slate-200/40 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex min-w-0 items-center gap-4">
-                <div
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
-                    <i class="fa-solid {{ $greetingIcon }} text-lg"></i>
-                </div>
+        {{-- Hero card follows the lecturer dashboard while retaining admin shortcuts. --}}
+        <section
+            class="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#4F6BFF] via-[#5E7CFF] to-[#B7C4FF] px-6 py-5 text-white shadow-[0_10px_24px_rgba(79,107,255,0.22)]"
+        >
+            <div
+                class="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full bg-white/10"
+                aria-hidden="true"
+            ></div>
+            <div
+                class="pointer-events-none absolute -bottom-20 right-32 h-44 w-44 rounded-full bg-white/10"
+                aria-hidden="true"
+            ></div>
+
+            <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
-                    <h2 class="truncate text-xl font-bold text-slate-800">{{ $greeting }},
-                        {{ $adminName }}</h2>
-                    <p class="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm text-slate-500">
+                    <h1 class="text-2xl font-extrabold leading-tight tracking-tight">
+                        {{ $greeting }}, {{ $adminName }}
+                    </h1>
+                    <p class="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-white/90">
                         <span>{{ $todayLabel }}</span>
+                        <span aria-hidden="true">&middot;</span>
                         <span
-                            class="{{ $databaseStatus === 'Connected' ? 'text-emerald-600' : 'text-rose-600' }} inline-flex items-center gap-1.5"
+                            class="{{ $databaseStatus === 'Connected' ? 'text-emerald-100' : 'text-rose-100' }} inline-flex items-center gap-1.5"
                             title="Database: {{ $databaseStatus }}"
                         >
                             <i class="fa-solid fa-circle text-[7px]"></i>
@@ -162,22 +170,22 @@
                         </span>
                     </p>
                 </div>
+                <div class="flex shrink-0 flex-wrap gap-2">
+                    <a
+                        href="/admin/reports"
+                        class="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/40 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
+                    >
+                        <i class="fa-solid fa-chart-line"></i> Reports
+                    </a>
+                    <a
+                        href="/admin/students/create"
+                        class="inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#1F45D6] shadow-sm transition hover:bg-[#F3F5FC]"
+                    >
+                        <i class="fa-solid fa-plus"></i> Add Student
+                    </a>
+                </div>
             </div>
-            <div class="flex shrink-0 flex-wrap gap-2">
-                <a
-                    href="/admin/reports"
-                    class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                    <i class="fa-solid fa-chart-line"></i> Reports
-                </a>
-                <a
-                    href="/admin/students/create"
-                    class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                >
-                    <i class="fa-solid fa-plus"></i> Add Student
-                </a>
-            </div>
-        </div>
+        </section>
 
         @if (session('success'))
             <div
@@ -185,25 +193,26 @@
                 {{ session('success') }}</div>
         @endif
 
-        {{-- 1. KPI row (4 cards) --}}
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {{-- KPI cards use the lecturer dashboard's tinted card treatment. --}}
+        <section class="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
             @foreach ($statCards as $card)
                 <a
                     href="{{ $card['href'] }}"
-                    class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40 transition hover:border-slate-300 hover:shadow-md"
+                    class="{{ $card['surface'] }} rounded-[20px] border p-4 transition hover:shadow-md"
                 >
                     <div class="flex items-center gap-3">
                         <div
-                            class="{{ $card['iconColor'] }} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+                            class="{{ $card['iconColor'] }} flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-white"
+                        >
                             <i class="fa-solid {{ $card['icon'] }}"></i>
                         </div>
-                        <p class="text-sm font-semibold text-slate-600">{{ $card['label'] }}</p>
+                        <p class="min-w-0 text-xs font-semibold text-[#334155]">{{ $card['label'] }}</p>
                     </div>
-                    <p class="mt-4 text-4xl font-extrabold text-slate-900">{{ $card['value'] }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ $card['note'] }}</p>
+                    <p class="mt-2 text-[28px] font-extrabold leading-tight text-slate-900">{{ $card['value'] }}</p>
+                    <p class="mt-2 text-xs text-[#5B6478]">{{ $card['note'] }}</p>
                 </a>
             @endforeach
-        </div>
+        </section>
 
         {{-- 2 + 4. Needs attention  |  Review status --}}
         <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">

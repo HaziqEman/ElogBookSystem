@@ -63,56 +63,84 @@
     };
 @endphp
 
-<section class="p-6 {{ $shell }}">
+<section class="p-4 {{ $shell }} sm:p-6">
     {{-- ========================= TOP: UPCOMING DEADLINES ========================= --}}
-    <div id="deadlines-card" data-live>
-        <div class="mb-3 flex items-center justify-between gap-3">
-            <h2 class="text-base font-extrabold">Upcoming deadlines</h2>
-            <a href="/student/calendar" class="{{ $link }}">View all</a>
-        </div>
+    <details open data-mobile-fold="deadlines" class="group">
+        <summary class="mb-3 flex cursor-pointer list-none items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] px-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5BFF] md:hidden">
+            <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]">
+                <i class="fa-solid fa-calendar-check"></i>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block text-sm font-extrabold">Upcoming deadlines</span>
+                <span class="block text-xs text-[#5B6478]">See what's due next</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-xs text-[#5B6478] transition-transform group-open:rotate-180"></i>
+        </summary>
 
-        @if(count($deadlines) === 0)
-            <p class="text-sm text-[#5B6478]">No upcoming deadlines.</p>
-        @else
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach($deadlines as $deadline)
-                    @php
-                        $isSoon = $deadline['days'] <= 1;
-                        $tone = $isSoon
-                            ? 'bg-[#FEF3C7] text-[#7C2D12]'
-                            : 'bg-[#E8EFFF] text-[#1F45D6]';
-
-                        $when = $deadline['days'] <= 0
-                            ? 'Today'
-                            : ($deadline['days'] === 1
-                                ? 'Tomorrow'
-                                : 'In ' . $deadline['days'] . ' days');
-                    @endphp
-
-                    <div class="flex items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-3">
-                        <div class="flex h-[52px] w-12 flex-none flex-col items-center justify-center gap-0.5 rounded-xl {{ $tone }}">
-                            <span class="text-[11px] font-bold uppercase">{{ $deadline['date']->format('M') }}</span>
-                            <span class="text-lg font-extrabold leading-none">{{ $deadline['date']->format('d') }}</span>
-                        </div>
-
-                        <div class="min-w-0 flex-1">
-                            <div class="break-words text-sm font-bold leading-snug">
-                                {{ $deadline['title'] }}
-                            </div>
-                            <span class="mt-1 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold {{ $tone }}">
-                                {{ $when }}
-                            </span>
-                        </div>
-                    </div>
-                @endforeach
+        <div id="deadlines-card" data-live>
+            <div class="mb-3 hidden items-center justify-between gap-3 md:flex">
+                <h2 class="text-base font-extrabold">Upcoming deadlines</h2>
+                <a href="/student/calendar" class="{{ $link }}">View all</a>
             </div>
-        @endif
-    </div>
+            <div class="mb-3 flex justify-end md:hidden">
+                <a href="/student/calendar" class="{{ $link }}">View all</a>
+            </div>
+
+            @if(count($deadlines) === 0)
+                <p class="text-sm text-[#5B6478]">No upcoming deadlines.</p>
+            @else
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    @foreach($deadlines as $deadline)
+                        @php
+                            $isSoon = $deadline['days'] <= 1;
+                            $tone = $isSoon
+                                ? 'bg-[#FEF3C7] text-[#7C2D12]'
+                                : 'bg-[#E8EFFF] text-[#1F45D6]';
+
+                            $when = $deadline['days'] <= 0
+                                ? 'Today'
+                                : ($deadline['days'] === 1
+                                    ? 'Tomorrow'
+                                    : 'In ' . $deadline['days'] . ' days');
+                        @endphp
+
+                        <div class="flex items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-3">
+                            <div class="flex h-[52px] w-12 flex-none flex-col items-center justify-center gap-0.5 rounded-xl {{ $tone }}">
+                                <span class="text-[11px] font-bold uppercase">{{ $deadline['date']->format('M') }}</span>
+                                <span class="text-lg font-extrabold leading-none">{{ $deadline['date']->format('d') }}</span>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div class="break-words text-sm font-bold leading-snug">
+                                    {{ $deadline['title'] }}
+                                </div>
+                                <span class="mt-1 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold {{ $tone }}">
+                                    {{ $when }}
+                                </span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </details>
 
     {{-- ========================= SECTION SPACING ========================= --}}
-    <div aria-hidden="true" class="my-8 border-t border-[#E3E8F2]"></div>
+    <div aria-hidden="true" class="my-5 border-t border-[#E3E8F2] md:my-8"></div>
 
     {{-- ========================= CALENDAR + TODO ========================= --}}
+    <details open data-mobile-fold="planner" class="group">
+        <summary class="mb-3 flex cursor-pointer list-none items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] px-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5BFF] md:hidden">
+            <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E0E7FF] text-[#3730A3]">
+                <i class="fa-solid fa-calendar-days"></i>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block text-sm font-extrabold">My planner</span>
+                <span class="block text-xs text-[#5B6478]">Calendar and to-do list</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-xs text-[#5B6478] transition-transform group-open:rotate-180"></i>
+        </summary>
+
     <div class="grid grid-cols-1 items-stretch gap-6 pt-2 xl:grid-cols-2 xl:gap-0">
 
         {{-- ============================== LEFT: CALENDAR ============================== --}}
@@ -321,6 +349,7 @@
             @endif
         </div>
     </div>
+    </details>
 
     
 </section>

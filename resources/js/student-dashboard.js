@@ -657,6 +657,32 @@ document.addEventListener('keydown', function (event) {
         applyTodoTab();
     });
 
+    var dashboardFoldMedia = window.matchMedia('(max-width: 767px)');
+
+    function syncDashboardFolds() {
+        var mobile = dashboardFoldMedia.matches;
+        document.querySelectorAll('details[data-mobile-fold]').forEach(function (section) {
+            section.open = !mobile;
+        });
+    }
+
+    syncDashboardFolds();
+    if (dashboardFoldMedia.addEventListener) {
+        dashboardFoldMedia.addEventListener('change', syncDashboardFolds);
+    } else {
+        dashboardFoldMedia.addListener(syncDashboardFolds);
+    }
+    document.addEventListener('page:loaded', syncDashboardFolds);
+
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        var taskLink = target && target.closest ? target.closest('a[href="#todo-list"]') : null;
+        if (!taskLink) return;
+
+        var planner = document.querySelector('details[data-mobile-fold="planner"]');
+        if (planner) planner.open = true;
+    }, true);
+
     applyCalendar(null);
     applyTodoTab();
 

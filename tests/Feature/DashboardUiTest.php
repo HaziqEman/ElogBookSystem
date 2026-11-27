@@ -42,6 +42,10 @@ class DashboardUiTest extends TestCase
         $response->assertSee('Smart eLogBook');
         $response->assertSee('Student Portal');
         $response->assertSee('Logbook entries');
+        $response->assertSee('data-mobile-fold="deadlines"', false);
+        $response->assertSee('data-mobile-fold="planner"', false);
+        $response->assertSee('id="reminder-popup"', false);
+        $response->assertSee("font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif", false);
     }
 
     public function test_logbook_partial_is_rendered_only_on_the_full_logbook_page(): void
@@ -66,11 +70,14 @@ class DashboardUiTest extends TestCase
         $this->get('/student/dashboard')
             ->assertOk()
             ->assertSee('Student Portal')
+            ->assertSee('id="reminder-popup"', false)
             ->assertDontSee('Logbook by week');
 
         $this->get('/student/logbooks')
             ->assertOk()
-            ->assertSee('Logbook by week');
+            ->assertSee('Logbook by week')
+            ->assertSee('id="reminder-popup"', false)
+            ->assertSee("font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif", false);
     }
 
     public function test_university_form_lists_only_visible_universities_in_name_order(): void

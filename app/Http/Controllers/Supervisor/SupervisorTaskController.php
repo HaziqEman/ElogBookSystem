@@ -34,11 +34,16 @@ class SupervisorTaskController extends Controller
         return back()->with($ok ? 'success' : 'error', $message);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $supervisor = $this->supervisor();
         $today = $this->today();
         $ready = Schema::hasTable('todos') && Schema::hasColumn('todos', 'supervisor_id');
+        $filter = $request->query('filter', 'all');
+
+        if (! in_array($filter, ['all', 'open', 'overdue', 'done'], true)) {
+            $filter = 'all';
+        }
 
         $students = Student::where('supervisor_id', $supervisor->supervisor_id)
             ->orderBy('name')
@@ -50,22 +55,32 @@ class SupervisorTaskController extends Controller
         if ($ready) {
             $mine = fn () => Todo::where('supervisor_id', $supervisor->supervisor_id);
 
-            $tasks = $mine()
-                ->with('student:student_id,name,matric_no')
+            $taskQuery = $mine()->with('student:student_id,name,matric_no');
+
+            if ($filter === 'open') {
+                $taskQuery->currentOpen($today);
+            } elseif ($filter === 'overdue') {
+                $taskQuery->overdueAsOf($today);
+            } elseif ($filter === 'done') {
+                $taskQuery->completed();
+            }
+
+            $tasks = $taskQuery
                 ->orderBy('is_done')
                 ->orderByRaw('due_date IS NULL')
                 ->orderBy('due_date')
                 ->orderByDesc('todo_id')
-                ->paginate(12);
+                ->paginate(12)
+                ->withQueryString();
 
             $counts = [
-                'open' => $mine()->where('is_done', false)->count(),
-                'overdue' => $mine()->where('is_done', false)->whereNotNull('due_date')->where('due_date', '<', $today)->count(),
-                'done' => $mine()->where('is_done', true)->count(),
+                'open' => $mine()->currentOpen($today)->count(),
+                'overdue' => $mine()->overdueAsOf($today)->count(),
+                'done' => $mine()->completed()->count(),
             ];
         }
 
-        return view('supervisor.tasks', compact('supervisor', 'students', 'tasks', 'counts', 'today', 'ready'));
+        return view('supervisor.tasks', compact('supervisor', 'students', 'tasks', 'counts', 'today', 'ready', 'filter'));
     }
 
     public function store(Request $request)

@@ -39,6 +39,7 @@ class NotificationService
                 $existing = UserNotification::where('recipient_type', get_class($recipient))
                     ->where('recipient_id', $recipient->getKey())
                     ->where('group_key', $groupKey)
+                    ->whereNull('dismissed_at')
                     ->orderByDesc('notification_id')
                     ->first();
 

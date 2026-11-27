@@ -25,10 +25,12 @@ class UserNotification extends Model
         'group_key',
         'merged_count',
         'read_at',
+        'dismissed_at',
     ];
 
     protected $casts = [
         'read_at' => 'datetime',
+        'dismissed_at' => 'datetime',
         'merged_count' => 'integer',
     ];
 }

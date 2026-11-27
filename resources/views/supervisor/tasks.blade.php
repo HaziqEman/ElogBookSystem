@@ -34,6 +34,7 @@
             ? [
                 [
                     'label' => 'Open',
+                    'filter' => 'open',
                     'value' => $counts['open'],
                     'icon' => 'fa-list-check',
                     'tile' => 'bg-[#FFF3D6] text-[#B45309]',
@@ -41,6 +42,7 @@
                 ],
                 [
                     'label' => 'Overdue',
+                    'filter' => 'overdue',
                     'value' => $counts['overdue'],
                     'icon' => 'fa-triangle-exclamation',
                     'tile' => 'bg-[#FFE9E7] text-[#BE123C]',
@@ -48,6 +50,7 @@
                 ],
                 [
                     'label' => 'Done',
+                    'filter' => 'done',
                     'value' => $counts['done'],
                     'icon' => 'fa-circle-check',
                     'tile' => 'bg-[#DDF5E8] text-[#047857]',
@@ -57,7 +60,7 @@
             : [];
     @endphp
 
-    <div class="portal-font space-y-6">
+    <div class="portal-font space-y-4 sm:space-y-6">
 
         {{-- Flash messages --}}
         @if (session('success'))
@@ -96,7 +99,7 @@
 
         {{-- Hero (same pattern as the dashboard) --}}
         <section
-            class="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#4F6BFF] via-[#5E7CFF] to-[#B7C4FF] px-8 py-7 text-white shadow-[0_14px_30px_rgba(79,107,255,0.25)]"
+            class="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#4F6BFF] via-[#5E7CFF] to-[#B7C4FF] px-5 py-5 text-white shadow-[0_14px_30px_rgba(79,107,255,0.25)] sm:rounded-[28px] sm:px-8 sm:py-7"
         >
             <div
                 class="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10"
@@ -107,11 +110,11 @@
                 aria-hidden="true"
             ></div>
 
-            <div class="relative flex flex-wrap items-center justify-between gap-6">
+            <div class="relative flex flex-wrap items-center justify-between gap-4 sm:gap-6">
                 <div class="max-w-3xl">
-                    <h1 class="text-[30px] font-extrabold leading-tight tracking-tight">Tasks for your
+                    <h1 class="text-2xl font-extrabold leading-tight tracking-tight sm:text-[30px]">Tasks for your
                         students</h1>
-                    <p class="mt-1.5 text-[15px] text-white/90">
+                    <p class="mt-1.5 text-sm text-white/90 sm:text-[15px]">
                         Assign a task with a deadline. Students see it in their to-do list, get a
                         notification and a
                         reminder, and you see when they finish it. You only see the tasks you assigned.
@@ -121,7 +124,7 @@
                 </div>
 
                 <div
-                    class="hidden h-24 w-24 flex-none items-center justify-center rounded-full bg-white/20 text-4xl md:flex"
+                    class="hidden h-24 w-24 flex-none items-center justify-center rounded-full bg-white/20 text-4xl lg:flex"
                     aria-hidden="true"
                 >
                     <i class="fa-solid fa-list-check"></i>
@@ -137,10 +140,10 @@
                 The task feature is not set up yet. Ask the administrator to run the database update.
             </div>
         @else
-            <div class="grid items-start gap-6 lg:grid-cols-3">
+            <div class="grid min-w-0 items-start gap-4 sm:gap-6 lg:grid-cols-3">
 
                 {{-- Assign a task --}}
-                <div class="{{ $card }} p-6">
+                <div class="{{ $card }} min-w-0 p-4 sm:p-6">
                     <h2 class="mb-4 flex items-center gap-3 text-lg font-extrabold text-[#0F1B4D]">
                         <span
                             class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]"
@@ -255,18 +258,22 @@
                 <div
                     id="task-list"
                     data-live
-                    class="space-y-5 lg:col-span-2"
+                    class="min-w-0 space-y-4 sm:space-y-5 lg:col-span-2"
                 >
-                    <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3.5">
                         @foreach ($kpiCards as $kpi)
-                            <div @class([
-                                'rounded-[20px] border bg-white px-[18px] py-4 shadow-[0_6px_18px_rgba(15,27,77,0.05)]',
+                            <a
+                                href="{{ route('supervisor.tasks.index', ['filter' => $kpi['filter']]) }}"
+                                aria-current="{{ $filter === $kpi['filter'] ? 'page' : 'false' }}"
+                                @class([
+                                'group rounded-[20px] border bg-white p-3 shadow-[0_6px_18px_rgba(15,27,77,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(15,27,77,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5BFF] sm:px-[18px] sm:py-4',
                                 'border-[#E3E8F2]' => !$kpi['alert'],
                                 'border-[#FBCFCB]' => $kpi['alert'],
+                                'ring-2 ring-[#2F5BFF]/30' => $filter === $kpi['filter'],
                             ])>
-                                <div class="flex items-center gap-3">
+                                <div class="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
                                     <span
-                                        class="{{ $kpi['tile'] }} flex h-11 w-11 flex-none items-center justify-center rounded-2xl"
+                                        class="{{ $kpi['tile'] }} flex h-8 w-8 flex-none items-center justify-center rounded-xl sm:h-11 sm:w-11 sm:rounded-2xl"
                                     >
                                         <i
                                             class="fa-solid {{ $kpi['icon'] }}"
@@ -274,18 +281,18 @@
                                         ></i>
                                     </span>
                                     <div class="min-w-0">
-                                        <div class="truncate text-xs font-semibold text-[#5B6478]">
+                                        <div class="truncate text-[10px] font-semibold text-[#5B6478] sm:text-xs">
                                             {{ $kpi['label'] }}</div>
                                         <div
-                                            class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">
+                                            class="text-xl font-extrabold leading-tight text-[#0F1B4D] sm:text-[28px]">
                                             {{ $kpi['value'] }}</div>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
                         @endforeach
                     </div>
 
-                    <div class="{{ $card }} p-6">
+                    <div class="{{ $card }} min-w-0 p-4 sm:p-6">
                         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                             <h2 class="flex items-center gap-3 text-lg font-extrabold text-[#0F1B4D]">
                                 <span
@@ -298,14 +305,20 @@
                                 </span>
                                 Assigned tasks
                             </h2>
-                            <span
-                                class="rounded-full bg-[#EEF1F7] px-3 py-1 text-xs font-bold text-[#5B6478]"
-                            >
-                                {{ $tasks->total() }} {{ Str::plural('task', $tasks->total()) }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                @if ($filter !== 'all')
+                                    <a
+                                        href="{{ route('supervisor.tasks.index', ['filter' => 'all']) }}"
+                                        class="rounded-full border border-[#CBD3E3] bg-white px-3 py-1 text-xs font-bold text-[#1F45D6] transition hover:bg-[#F3F5FC]"
+                                    >All tasks</a>
+                                @endif
+                                <span class="rounded-full bg-[#EEF1F7] px-3 py-1 text-xs font-bold text-[#5B6478]">
+                                    {{ $tasks->total() }} {{ Str::plural('task', $tasks->total()) }}
+                                </span>
+                            </div>
                         </div>
 
-                        <div class="overflow-x-auto rounded-2xl border border-[#EDF0F7]">
+                        <div class="max-w-full overflow-x-auto rounded-2xl border border-[#EDF0F7]">
                             <table class="w-full min-w-[680px] text-left text-sm">
                                 <caption class="sr-only">Tasks assigned to your students</caption>
                                 <thead
@@ -466,7 +479,15 @@
                                                     class="fa-solid fa-clipboard-check mb-2 block text-3xl text-[#34D399]"
                                                     aria-hidden="true"
                                                 ></i>
-                                                No tasks yet. Assign the first one on the left.
+                                                @if ($filter === 'open')
+                                                    No current open tasks.
+                                                @elseif ($filter === 'overdue')
+                                                    No overdue tasks.
+                                                @elseif ($filter === 'done')
+                                                    No completed tasks yet.
+                                                @else
+                                                    No tasks yet. Assign the first one on the left.
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforelse

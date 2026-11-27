@@ -257,18 +257,31 @@ class SupervisorController extends Controller
             ->whereIn('student_id', $ids);
 
         $taskCounts = [
-            'done' => (clone $tasks)->where('is_done', true)->count(),
-            'overdue' => (clone $tasks)->where('is_done', false)->whereDate('due_date', '<', $todayKey)->count(),
-            'open' => (clone $tasks)->where('is_done', false)
-                ->where(fn ($q) => $q->whereNull('due_date')->orWhereDate('due_date', '>=', $todayKey))
-                ->count(),
+            'done' => (clone $tasks)->completed()->count(),
+            'overdue' => (clone $tasks)->overdueAsOf($todayKey)->count(),
+            'open' => (clone $tasks)->currentOpen($todayKey)->count(),
         ];
 
-        // Four tasks that need attention: most overdue first, no-deadline tasks last.
-        $taskPreview = (clone $tasks)->with('student')
-            ->where('is_done', false)
+        $taskFilter = $request->query('task_filter', 'open');
+
+        if (! in_array($taskFilter, ['open', 'overdue', 'done'], true)) {
+            $taskFilter = 'open';
+        }
+
+        $taskPreviewQuery = (clone $tasks)->with('student');
+
+        if ($taskFilter === 'open') {
+            $taskPreviewQuery->currentOpen($todayKey);
+        } elseif ($taskFilter === 'overdue') {
+            $taskPreviewQuery->overdueAsOf($todayKey);
+        } else {
+            $taskPreviewQuery->completed();
+        }
+
+        $taskPreview = $taskPreviewQuery
             ->orderByRaw('due_date IS NULL')
             ->orderBy('due_date')
+            ->orderByDesc('todo_id')
             ->limit(4)
             ->get();
 
@@ -288,6 +301,7 @@ class SupervisorController extends Controller
             'filter' => $filter,
             'taskCounts' => $taskCounts,
             'taskPreview' => $taskPreview,
+            'taskFilter' => $taskFilter,
         ]);
     }
 

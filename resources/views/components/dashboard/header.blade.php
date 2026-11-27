@@ -147,6 +147,7 @@
                     var sub = document.getElementById('notif-panel-sub');
                     var readAllBtn = document.getElementById('notif-panel-readall');
                     if (!wrap || !bell || !badge || !panel) return;
+                    var viewAllLink = panel.querySelector('[data-notif-view-all]');
 
                     var unread = 0;
                     var MAX_ITEMS = 8;
@@ -198,7 +199,6 @@
                         list.appendChild(box);
                     }
 
-                    // Hitting the /open route marks it as read on the server; the redirect is not followed.
                     function markRead(data, row, btn, dot, title) {
                         if (data.unread !== '1') return;
                         data.unread = '0';
@@ -207,19 +207,38 @@
                         title.classList.remove('font-bold', 'text-slate-900');
                         title.classList.add('font-semibold', 'text-slate-700');
 
-                        fetch(data.openUrl, {
-                            method: 'GET',
+                        fetch(data.readUrl, {
+                            method: 'POST',
                             credentials: 'same-origin',
-                            redirect: 'manual',
                             headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrf(),
                                 'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        }).catch(function() {}).then(refreshCount);
+                            },
+                            body: JSON.stringify({ ids: data.ids })
+                        }).then(function(response) {
+                            if (!response.ok) throw new Error('Could not mark notification as read.');
+                            return refreshCount();
+                        }).catch(function(error) {
+                            data.unread = '1';
+                            btn.classList.add('bg-blue-50/60');
+                            if (dot && !dot.isConnected) btn.appendChild(dot);
+                            title.classList.remove('font-semibold', 'text-slate-700');
+                            title.classList.add('font-bold', 'text-slate-900');
+                            if (window.asyncToast) window.asyncToast(error.message, 'error');
+                            else console.error(error);
+                        });
                     }
 
                     function buildRow(src) {
                         var data = {
                             openUrl: src.getAttribute('data-open-url'),
+                            readUrl: src.getAttribute('data-read-url'),
+                            ids: (src.getAttribute('data-notification-ids') || '')
+                                .split(',')
+                                .map(function(id) { return parseInt(id, 10); })
+                                .filter(function(id) { return id > 0; }),
                             type: src.getAttribute('data-type'),
                             unread: src.getAttribute('data-unread'),
                             title: src.getAttribute('data-title') || '',
@@ -325,7 +344,28 @@
                             });
                     }
 
+                    function fitPanelToViewport() {
+                        if (!window.matchMedia('(max-width: 639px)').matches) {
+                            panel.style.width = '';
+                            panel.style.right = '';
+                            return;
+                        }
+
+                        var viewportWidth = document.documentElement.clientWidth;
+                        var gutter = Math.min(16, viewportWidth / 2);
+                        var panelWidth = Math.min(384, viewportWidth - (gutter * 2));
+                        var wrapRight = wrap.getBoundingClientRect().right;
+                        var left = Math.max(
+                            gutter,
+                            Math.min(wrapRight - panelWidth, viewportWidth - gutter - panelWidth)
+                        );
+
+                        panel.style.width = panelWidth + 'px';
+                        panel.style.right = (wrapRight - left - panelWidth) + 'px';
+                    }
+
                     function openPanel() {
+                        fitPanelToViewport();
                         panel.classList.remove('hidden');
                         bell.setAttribute('aria-expanded', 'true');
                         loadList();
@@ -337,10 +377,18 @@
                         bell.setAttribute('aria-expanded', 'false');
                     }
 
+                    if (viewAllLink) {
+                        viewAllLink.addEventListener('click', closePanel);
+                    }
+
                     bell.addEventListener('click', function(e) {
                         e.stopPropagation();
                         if (panel.classList.contains('hidden')) openPanel();
                         else closePanel();
+                    });
+
+                    window.addEventListener('resize', function() {
+                        if (!panel.classList.contains('hidden')) fitPanelToViewport();
                     });
 
                     readAllBtn.addEventListener('click', function() {

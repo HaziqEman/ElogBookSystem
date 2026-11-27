@@ -52,6 +52,7 @@
 
         <a
             href="/{{ $role }}/notifications"
+            data-notif-view-all
             class="block border-t border-slate-100 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-blue-700 transition hover:bg-slate-100"
         >
             View all notifications

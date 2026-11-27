@@ -216,7 +216,11 @@ foreach (['student', 'lecturer', 'supervisor'] as $notificationRole) {
         Route::get("/{$notificationRole}/notifications", [NotificationController::class, 'index']);
         Route::get("/{$notificationRole}/notifications/unread-count", [NotificationController::class, 'unreadCount']);
         Route::get("/{$notificationRole}/notifications/{id}/open", [NotificationController::class, 'open'])->whereNumber('id');
+        Route::post("/{$notificationRole}/notifications/read", [NotificationController::class, 'readMany']);
         Route::post("/{$notificationRole}/notifications/read-all", [NotificationController::class, 'readAll']);
+        Route::post("/{$notificationRole}/notifications/dismiss", [NotificationController::class, 'dismiss']);
+        Route::post("/{$notificationRole}/notifications/dismiss-read", [NotificationController::class, 'dismissRead']);
+        Route::post("/{$notificationRole}/notifications/dismiss-all", [NotificationController::class, 'dismissAll']);
     });
 }
 

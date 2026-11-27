@@ -42,6 +42,12 @@
     >
     <title>E-Logbook System</title>
 
+    @if (request()->is('student*'))
+        @include('partials.google-fonts', [
+            'includeCaveat' => request()->is('student/dashboard*') || request()->is('student/logbooks*'),
+        ])
+    @endif
+
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @else
@@ -53,7 +59,10 @@
     >
 </head>
 
-<body class="bg-slate-50 font-sans text-slate-800 antialiased">
+<body
+    class="bg-slate-50 font-sans text-slate-800 antialiased"
+    @if (request()->is('student*')) style="font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif" @endif
+>
 
     @php
         $showDashboardShell =
@@ -200,6 +209,10 @@
                 </main>
             </div>
         </div>
+
+        @if ($currentStudent)
+            @include('partials.reminder-popup', ['reminderStudentId' => $currentStudent->student_id])
+        @endif
 
         <script>
             (function() {
