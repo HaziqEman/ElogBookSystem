@@ -324,11 +324,11 @@ class SupervisorWeekService
             ->get()
             ->groupBy(fn ($logbook) => Carbon::parse($logbook->activity_date)->toDateString());
 
-        $off = Attendance::where('student_id', $student->student_id)
-            ->where('status', Attendance::STATUS_LEAVE)
+        $attendance = Attendance::where('student_id', $student->student_id)
             ->whereBetween('attendance_date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy(fn ($attendance) => $attendance->attendance_date->toDateString());
+        $off = $attendance->filter(fn (Attendance $record) => $record->isDayOff());
 
         $today = $now->copy()->startOfDay();
         $days = collect();
@@ -357,8 +357,10 @@ class SupervisorWeekService
                 'date' => $date,
                 'key' => $key,
                 'state' => $state,
+                'working' => $working,
                 'extra' => $entries->isNotEmpty() && ! $working,
                 'entries' => $entries,
+                'attendance' => $attendance->get($key),
                 'off' => $off->get($key),
             ]);
         }

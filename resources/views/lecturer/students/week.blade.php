@@ -179,7 +179,11 @@
                     @foreach ($row['issues'] as $issue)
                         <li class="flex flex-wrap items-center gap-2 text-sm">
                             <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $priorityClass[$issue['priority']] }}">{{ $issue['priority'] }}</span>
-                            <span class="text-[#334155]">{{ $issue['text'] }}</span>
+                            @if (!empty($issue['href']))
+                                <a href="{{ $issue['href'] }}" class="text-[#334155] underline decoration-[#CBD3E3] underline-offset-2 hover:text-[#1F45D6] hover:decoration-[#1F45D6]">{{ $issue['text'] }} <i class="fa-solid fa-arrow-right text-xs"></i></a>
+                            @else
+                                <span class="text-[#334155]">{{ $issue['text'] }}</span>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
@@ -241,6 +245,7 @@
                     <div class="space-y-3">
                         @foreach ($selected['days'] as $day)
                             <article
+                                id="day-{{ $day['key'] }}"
                                 class="{{ $day['state'] === 'missing' ? 'border-[#FBCFCB] bg-[#FFF8F7]' : ($day['state'] === 'upcoming' ? 'border-[#E7ECF6] bg-[#F7F9FD]' : 'border-[#E7ECF6] bg-white') }} flex flex-wrap items-start gap-4 rounded-[20px] border p-4"
                             >
                                 <div class="w-14 flex-none pt-0.5 text-center">
@@ -256,6 +261,31 @@
                                 </div>
 
                                 <div class="min-w-0 flex-[1_1_300px] space-y-3">
+                                    @if ($day['attendance'] && $day['attendance']->check_in)
+                                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#D1FAE5] px-2.5 py-1 font-bold text-[#065F46]">
+                                                <i class="fa-solid fa-circle-check"></i> Attendance recorded
+                                            </span>
+                                            <span class="text-[#5B6478]">
+                                                Clock in {{ $day['attendance']->checkInLocal() }}
+                                                @if ($day['attendance']->check_out)
+                                                    · Clock out {{ $day['attendance']->checkOutLocal() }}
+                                                @endif
+                                                @if ($day['attendance']->workModeLabel())
+                                                    · {{ $day['attendance']->workModeLabel() }}
+                                                @endif
+                                            </span>
+                                        </div>
+                                    @elseif ($day['working'] && $day['date']->lt($today->copy()->startOfDay()) && $day['state'] !== 'dayoff')
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#FFE4E6] px-2.5 py-1 text-xs font-bold text-[#9F1239]">
+                                            <i class="fa-solid fa-circle-exclamation"></i> No attendance recorded
+                                        </span>
+                                    @elseif ($day['working'] && $day['date']->isSameDay($today) && $day['state'] !== 'dayoff')
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] px-2.5 py-1 text-xs font-bold text-[#3730A3]">
+                                            <i class="fa-regular fa-clock"></i> Attendance not recorded yet
+                                        </span>
+                                    @endif
+
                                     @if ($day['state'] === 'entries')
                                         @foreach ($day['entries'] as $entry)
                                             @php

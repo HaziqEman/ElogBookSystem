@@ -61,6 +61,13 @@
             container-name: dashboard-attendance;
         }
 
+        @media (min-width: 1024px) {
+            #attendance-card[data-dashboard-attendance] [data-dashboard-attendance-row] {
+                grid-template-columns: minmax(0, 1fr) 17rem;
+                column-gap: 0.75rem;
+            }
+        }
+
         @container dashboard-attendance (min-width: 640px) {
             #attendance-card[data-dashboard-attendance] [data-dashboard-attendance-row] {
                 grid-template-columns: minmax(0, 1fr) 17rem;

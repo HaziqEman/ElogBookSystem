@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Attachment;
+use App\Models\Attendance;
 use App\Models\Lecturer;
 use App\Models\Logbook;
 use App\Models\Student;
@@ -96,11 +97,24 @@ class LecturerStudentWeekViewTest extends TestCase
             'ai_hash' => app(WeekSummaryService::class)->hash(collect([$entry])),
             'ai_generated_at' => '2026-11-17 10:00:00',
         ]);
+        Attendance::create([
+            'student_id' => $student->student_id,
+            'attendance_date' => '2026-11-17',
+            'check_in' => '2026-11-17 01:00:00',
+            'status' => Attendance::STATUS_PRESENT,
+        ]);
 
         $this->actingAs($lecturer, 'lecturer')
             ->get('/lecturer/students/'.$student->student_id.'?week=1')
             ->assertOk()
             ->assertSee('Week at a glance')
+            ->assertSee('Needs attention')
+            ->assertSee('1 missing attendance day (last 5 working days)')
+            ->assertSee('/lecturer/students/'.$student->student_id.'?week=1#day-2026-11-16', false)
+            ->assertSee('id="day-2026-11-16"', false)
+            ->assertSee('No attendance recorded')
+            ->assertSee('Attendance recorded')
+            ->assertSee('Clock in 09:00')
             ->assertSee('Completed the planned implementation and testing.')
             ->assertSee('weekly-report.pdf')
             ->assertSee('implementation-photo.jpg')

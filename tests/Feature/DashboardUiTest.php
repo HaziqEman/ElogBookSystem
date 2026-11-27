@@ -75,6 +75,8 @@ class DashboardUiTest extends TestCase
         $response->assertSee('Dashboard test workplace');
         $response->assertSee('View map');
         $response->assertSee('data-dashboard-map-preview', false);
+        $response->assertSee('@media (min-width: 1024px)', false);
+        $response->assertSee('grid-template-columns: minmax(0, 1fr) 17rem;', false);
         $response->assertSee('Clock-in map preview');
         $response->assertDontSee('Map showing where you clocked in', false);
         $response->assertDontSee('accurate to about', false);

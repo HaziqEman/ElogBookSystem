@@ -203,8 +203,8 @@ class LecturerInsights
         ];
 
         $issues = [];
-        $add = function (string $priority, string $text) use (&$issues) {
-            $issues[] = ['priority' => $priority, 'text' => $text];
+        $add = function (string $priority, string $text, ?string $href = null) use (&$issues) {
+            $issues[] = ['priority' => $priority, 'text' => $text, 'href' => $href];
         };
 
         if (! $planner->hasStart()) {
@@ -272,11 +272,29 @@ class LecturerInsights
         $entriesDone = count(array_filter($counted, fn ($day) => $day['entry']));
         $attendanceDone = count(array_filter($counted, fn ($day) => $day['present']));
         $missingEntries = $expected - $entriesDone;
-        $recentMissingAttendance = count(array_filter(array_slice($counted, -5), fn ($day) => ! $day['present']));
-        $missingWeeks = collect($counted)->filter(fn ($day) => ! $day['entry'])->pluck('week')->unique()->sort()->values()->all();
+        $recentMissingDays = array_values(array_filter(array_slice($counted, -5), fn ($day) => ! $day['present']));
+        $recentMissingAttendance = count($recentMissingDays);
+        $missingEntryDays = array_values(array_filter($counted, fn ($day) => ! $day['entry']));
+        $missingWeeks = collect($missingEntryDays)->pluck('week')->unique()->sort()->values()->all();
 
         $lastKey = $last ? $last->toDateString() : null;
-        $quietDays = count(array_filter($counted, fn ($day) => $lastKey === null || $day['key'] > $lastKey));
+        $quietDayRows = array_values(array_filter($counted, fn ($day) => $lastKey === null || $day['key'] > $lastKey));
+        $quietDays = count($quietDayRows);
+        $dayHref = fn (array $day): string => '/lecturer/students/'.$student->student_id.'?week='.$day['week'].'#day-'.$day['key'];
+        $entryHref = function (?Logbook $entry) use ($planner, $student): ?string {
+            if (! $entry) {
+                return null;
+            }
+
+            $date = Carbon::parse($entry->activity_date);
+            $week = $planner->weekNumberFor($date);
+
+            return $week && $week >= 1 && $week <= $planner->totalWeeks()
+                ? '/lecturer/students/'.$student->student_id.'?week='.$week.'#day-'.$date->toDateString()
+                : null;
+        };
+        $revisionEntry = $entries->first(fn ($entry) => $entry->supervisor_status === Logbook::SUPERVISOR_STATUS_REVISION_REQUESTED);
+        $staleEntry = $pending->first(fn ($entry) => Carbon::parse($entry->activity_date)->toDateString() < $staleKey);
 
         $attToday = $attByDate->get($todayKey);
         $workingToday = $active && $planner->isWorkingDay($todayStart);
@@ -312,9 +330,11 @@ class LecturerInsights
 
         // Issues, using the rules shown on the dashboard.
         if ($active && $recentMissingAttendance > 0) {
+            $latestMissingAttendance = $recentMissingDays[count($recentMissingDays) - 1];
             $add(
                 $recentMissingAttendance >= 3 ? 'High' : 'Medium',
-                $recentMissingAttendance.' missing attendance '.Str::plural('day', $recentMissingAttendance).' (last 5 working days)'
+                $recentMissingAttendance.' missing attendance '.Str::plural('day', $recentMissingAttendance).' (last 5 working days)',
+                $dayHref($latestMissingAttendance)
             );
         }
 
@@ -322,20 +342,22 @@ class LecturerInsights
             $add(
                 $missingEntries >= 3 ? 'High' : 'Medium',
                 $missingEntries.' overdue logbook '.Str::plural('entry', $missingEntries)
-                    .($missingWeeks ? ' (Week '.implode(', ', $missingWeeks).')' : '')
+                    .($missingWeeks ? ' (Week '.implode(', ', $missingWeeks).')' : ''),
+                $missingEntryDays ? $dayHref($missingEntryDays[0]) : null
             );
         }
 
         if ($active && $quietDays >= 3) {
-            $add($quietDays >= 5 ? 'High' : 'Medium', 'No update for '.$quietDays.' working days');
+            $quietTarget = $quietDayRows ? $quietDayRows[count($quietDayRows) - 1] : null;
+            $add($quietDays >= 5 ? 'High' : 'Medium', 'No update for '.$quietDays.' working days', $quietTarget ? $dayHref($quietTarget) : null);
         }
 
         if ($revision > 0) {
-            $add('Medium', $revision.' '.Str::plural('entry', $revision).' need revision (company supervisor)');
+            $add('Medium', $revision.' '.Str::plural('entry', $revision).' need revision (company supervisor)', $entryHref($revisionEntry));
         }
 
         if ($stale > 0) {
-            $add('Medium', $stale.' '.Str::plural('entry', $stale).' waiting for the supervisor for over 7 days');
+            $add('Medium', $stale.' '.Str::plural('entry', $stale).' waiting for the supervisor for over 7 days', $entryHref($staleEntry));
         }
 
         if ($tasksOverdue > 0) {
