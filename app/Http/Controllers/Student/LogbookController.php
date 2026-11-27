@@ -137,8 +137,13 @@ class LogbookController extends Controller
             ]);
         }
 
+        $attachments = array_values($data['attachments'] ?? []);
+        if (isset($data['attachment'])) {
+            $attachments[] = $data['attachment'];
+        }
+
         try {
-            DB::transaction(function () use ($request, $student, $data, $date, $storage) {
+            DB::transaction(function () use ($student, $data, $date, $storage, $attachments) {
                 $logbook = $student->logbooks()->create([
                     'week_no' => $data['week_no'],
                     'title' => 'Week '.$data['week_no'],
@@ -148,8 +153,8 @@ class LogbookController extends Controller
                     'supervisor_status' => Logbook::SUPERVISOR_STATUS_PENDING,
                 ]);
 
-                if ($request->hasFile('attachment')) {
-                    $stored = $storage->store($request->file('attachment'));
+                foreach ($attachments as $file) {
+                    $stored = $storage->store($file);
 
                     Attachment::create([
                         'logbook_id' => $logbook->logbook_id,

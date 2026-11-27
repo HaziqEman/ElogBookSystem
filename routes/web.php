@@ -75,6 +75,9 @@ Route::middleware('auth:student')->group(function () {
     Route::redirect('/student/feedback', '/student/logbooks');
 
     Route::get('/student/calendar', [StudentCalendarController::class, 'index']);
+    Route::post('/student/calendar/daily-notes', [StudentCalendarController::class, 'saveDailyNote']);
+    Route::delete('/student/calendar/daily-note-images/{image}', [StudentCalendarController::class, 'deleteDailyNoteImage'])
+        ->whereNumber('image');
 
     Route::get('/student/attendance', [StudentAttendanceController::class, 'index']);
     Route::post('/student/attendance/clock-in', [StudentAttendanceController::class, 'clockIn']);

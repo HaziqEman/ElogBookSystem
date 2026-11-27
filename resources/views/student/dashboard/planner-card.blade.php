@@ -1,355 +1,330 @@
-{{--
-    resources/views/student/partials/planner-card.blade.php
-
-    One card:
-      LEFT   : My calendar (month grid)
-      RIGHT  : To-do list with 4 tabs: selected day | All | Overdue | Upcoming
-      BOTTOM : Upcoming deadlines (one row)
-
-    Replaces the old calendar card, to-do card and deadlines card.
-
-    Hooks used by student-dashboard.js:
-      #calendar-card, #todo-list, #deadlines-card   (data-live, siblings, never nested)
-      data-cal-day, data-cal-panel, .cal-day, .cal-dot
-      data-todo-tab, data-todo-view, data-todo-row (data-state), data-todo-empty
-      data-day-label, data-day-count
---}}
-
 @php
-    /* ---------- Shared styles ---------- */
-    $shell  = 'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
-    $navBtn = 'flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E3E8F2] bg-white transition hover:bg-[#F3F5FC]';
-    $link   = 'text-[13px] font-bold text-[#1F45D6] hover:underline';
-    $input  = 'min-h-11 min-w-0 flex-1 rounded-xl border border-[#CBD3E3] px-3 text-sm focus:border-[#2F5BFF] focus:outline-none';
-    $tabBtn = 'flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] px-1 text-[13px] font-bold transition';
-    $listH  = 'h-[252px]';                              // same height for the task list and the day panel
-
-    /* ---------- Calendar ---------- */
-    $cells     = $calendar['cells'];
-    $weeks     = (int) ceil(count($cells) / 7);          // 5 or 6 rows, the grid stretches to fill the card
-    $agendaBar = ['todo' => 'bg-[#2F5BFF]', 'log' => 'bg-[#047857]', 'due' => 'bg-[#C2410C]'];
-    $todayCount = count($calendar['agenda'][$todayKey] ?? []);
-    $todayShort = \Carbon\Carbon::parse($todayKey)->format('D j');
-
-    /* ---------- To-do tabs (the day tab is added in the markup) ---------- */
-    $tabs = [
-        'all'      => ['label' => 'All',      'count' => $openCount + $doneCount],
-        'overdue'  => ['label' => 'Overdue',  'count' => $overdueCount],
-        'upcoming' => ['label' => 'Upcoming', 'count' => $upcomingCount],
-    ];
-
-    /* State + badge for one to-do row: [state, badge text, badge classes] */
-    $todoBadge = function ($todo) use ($todayKey) {
-        $due      = $todo->due_date ? $todo->due_date->toDateString() : null;
-        $tomorrow = \Carbon\Carbon::parse($todayKey)->addDay()->toDateString();
-
-        if ($todo->is_done) {
-            return ['done', 'Done', 'bg-[#D1FAE5] text-[#065F46]'];
-        }
-        if ($due && $due < $todayKey) {
-            $days = (int) \Carbon\Carbon::parse($due)->diffInDays(\Carbon\Carbon::parse($todayKey));
-            return ['overdue', 'Overdue ' . $days . 'd', 'bg-[#FFE4E6] text-[#9F1239]'];
-        }
-        if ($due === $todayKey) {
-            return ['upcoming', 'Today', 'bg-[#FEF3C7] text-[#7C2D12]'];
-        }
-        if ($due === $tomorrow) {
-            return ['upcoming', 'Tomorrow', 'bg-[#FEF3C7] text-[#7C2D12]'];
-        }
-        if ($due) {
-            return ['upcoming', 'Upcoming', 'bg-[#E8EFFF] text-[#1F45D6]'];
-        }
-        return ['upcoming', 'No date', 'bg-[#EEF1F7] text-[#5B6478]'];
-    };
+    $card = 'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
+    $cells = $calendar['cells'];
+    $chatHref = (bool) optional($student)->supervisor_id ? '/student/messages/supervisor' : '/student/messages';
 @endphp
 
-<section class="p-4 {{ $shell }} sm:p-6">
-    {{-- ========================= TOP: UPCOMING DEADLINES ========================= --}}
-    <details open data-mobile-fold="deadlines" class="group">
-        <summary class="mb-3 flex cursor-pointer list-none items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] px-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5BFF] md:hidden">
-            <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#1F45D6]">
-                <i class="fa-solid fa-calendar-check"></i>
-            </span>
-            <span class="min-w-0 flex-1">
-                <span class="block text-sm font-extrabold">Upcoming deadlines</span>
-                <span class="block text-xs text-[#5B6478]">See what's due next</span>
-            </span>
-            <i class="fa-solid fa-chevron-down text-xs text-[#5B6478] transition-transform group-open:rotate-180"></i>
-        </summary>
+<section class="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,0.95fr)] xl:gap-5">
+    <div class="order-1 flex min-w-0 flex-col gap-4">
+        @if ($extrasReady)
+            @include('student.attendance.card')
+        @else
+            <div class="rounded-[22px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                Attendance and to-do tables are not set up yet. Ask the administrator to run the database update.
+            </div>
+        @endif
 
-        <div id="deadlines-card" data-live>
-            <div class="mb-3 hidden items-center justify-between gap-3 md:flex">
+        <details open data-mobile-fold="planner" class="group {{ $card }} p-4 sm:p-5">
+            <summary class="mb-3 flex cursor-pointer list-none items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] px-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5BFF] md:hidden">
+                <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E0E7FF] text-[#3730A3]">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-extrabold">My calendar</span>
+                    <span class="block text-xs text-[#5B6478]">{{ $calendar['title'] }}</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs text-[#5B6478] transition-transform group-open:rotate-180"></i>
+            </summary>
+
+            <div id="calendar-card" data-live data-today="{{ $todayKey }}" class="min-w-0 overflow-hidden rounded-2xl border border-[#DCE3F0] bg-white shadow-sm">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-lg font-extrabold">Calendar</h2>
+                    <div class="flex items-center gap-2">
+                        <a href="/student/calendar?month={{ $calendar['prev'] }}" aria-label="Previous month" class="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E3E8F2] bg-white transition hover:bg-[#F3F5FC]">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </a>
+                        <div class="min-w-[116px] text-center text-sm font-extrabold">{{ $calendar['title'] }}</div>
+                        <a href="/student/calendar?month={{ $calendar['next'] }}" aria-label="Next month" class="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E3E8F2] bg-white transition hover:bg-[#F3F5FC]">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </a>
+                    </div>
+                    <a href="/student/calendar" class="flex min-h-8 items-center text-[13px] font-bold text-[#1F45D6] hover:underline">View all</a>
+                </div>
+
+                <div class="grid grid-cols-7 border-b border-[#E7ECF5] bg-[#F7F9FD] text-center text-[10px] font-bold text-[#64748B] sm:text-xs">
+                    @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
+                        <div class="py-2.5 sm:py-3">{{ $weekday }}</div>
+                    @endforeach
+                </div>
+
+                <div class="grid grid-cols-7">
+                    @foreach ($cells as $cell)
+                        @if ($cell['in_month'])
+                            @php
+                                $agendaItems = $calendar['agenda'][$cell['key']] ?? [];
+                                $visibleItems = array_slice($agendaItems, 0, 2);
+                                $remainingItems = max(count($agendaItems) - count($visibleItems), 0);
+                            @endphp
+                            <button
+                                type="button"
+                                data-cal-day="{{ $cell['key'] }}"
+                                aria-label="{{ $cell['long'] }}"
+                                aria-pressed="false"
+                                class="cal-day {{ $cell['is_today'] ? 'is-today' : '' }} relative min-h-[4.5rem] border-b border-r border-[#E9EDF5] bg-white p-1.5 text-left align-top transition hover:bg-blue-50/70 sm:min-h-[6.75rem] sm:p-2"
+                            >
+                                @if ($cell['is_today'])
+                                    <span class="absolute inset-x-0 top-0 h-0.5 bg-blue-600" aria-hidden="true"></span>
+                                @endif
+                                <span class="cal-date {{ $cell['is_today'] ? 'bg-blue-600 text-white' : 'text-slate-700' }} inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-extrabold sm:h-7 sm:w-7 sm:text-xs">
+                                    {{ $cell['label'] }}
+                                </span>
+                                @if ($visibleItems)
+                                    <div class="mt-1 space-y-1">
+                                        @foreach ($visibleItems as $item)
+                                            @php
+                                                $eventStyle = match ($item['type']) {
+                                                    'log' => ['bg-blue-50 text-blue-700 ring-blue-100', 'fa-book'],
+                                                    'due' => ['bg-indigo-50 text-indigo-700 ring-indigo-100', 'fa-list-check'],
+                                                    'leave' => ['bg-amber-50 text-amber-700 ring-amber-100', 'fa-umbrella-beach'],
+                                                    'attendance' => ['bg-emerald-50 text-emerald-700 ring-emerald-100', 'fa-circle-check'],
+                                                    'note' => ['bg-violet-50 text-violet-700 ring-violet-100', 'fa-note-sticky'],
+                                                    default => ['bg-violet-50 text-violet-700 ring-violet-100', 'fa-circle-exclamation'],
+                                                };
+                                            @endphp
+                                            <span class="flex items-center gap-1 overflow-hidden rounded-md px-1 py-1 text-[9px] font-bold ring-1 ring-inset sm:px-1.5 sm:text-[10px] {{ $eventStyle[0] }}">
+                                                <i class="fa-solid {{ $eventStyle[1] }} flex-none"></i>
+                                                <span class="truncate">{{ $item['title'] }}</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if ($remainingItems > 0)
+                                    <span class="mt-1 block truncate text-[9px] font-semibold text-[#64748B]">+{{ $remainingItems }} more</span>
+                                @endif
+                            </button>
+                        @else
+                            <div class="min-h-[4.5rem] border-b border-r border-[#E9EDF5] bg-slate-50/60 p-1.5 text-left text-[10px] font-extrabold text-slate-300 sm:min-h-[6.75rem] sm:p-2 sm:text-xs">{{ $cell['label'] }}</div>
+                        @endif
+                    @endforeach
+                </div>
+
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[#E9EDF5] bg-[#FAFBFE] px-3 py-2.5 text-[10px] font-semibold text-[#64748B] sm:px-5 sm:text-xs">
+                    <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-book text-blue-600"></i> Logbook</span>
+                    <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i> Attendance</span>
+                    <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-umbrella-beach text-amber-600"></i> Leave</span>
+                    <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-list-check text-indigo-600"></i> Task due</span>
+                </div>
+
+                <div class="hidden" aria-hidden="true">
+                    @foreach ($cells as $cell)
+                        @if ($cell['in_month'])
+                            <div
+                                data-cal-panel="{{ $cell['key'] }}"
+                                data-cal-short="{{ \Carbon\Carbon::parse($cell['key'])->format('D j') }}"
+                                data-cal-count="{{ count($calendar['agenda'][$cell['key']] ?? []) }}"
+                                data-day-details="{{ json_encode($calendar['day_details'][$cell['key']] ?? []) }}"
+                            ></div>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <aside class="order-2 flex min-w-0 flex-col gap-4">
+        <details open data-mobile-fold="deadlines" class="group {{ $card }} p-4 sm:p-5">
+            <summary class="mb-2 flex cursor-pointer list-none items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5BFF]">
+                <span class="flex h-8 w-8 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#2F5BFF]">
+                    <i class="fa-regular fa-clock"></i>
+                </span>
                 <h2 class="text-base font-extrabold">Upcoming deadlines</h2>
-                <a href="/student/calendar" class="{{ $link }}">View all</a>
-            </div>
-            <div class="mb-3 flex justify-end md:hidden">
-                <a href="/student/calendar" class="{{ $link }}">View all</a>
+                <i class="fa-solid fa-chevron-down ml-auto text-xs text-[#5B6478] transition-transform group-open:rotate-180 md:hidden"></i>
+            </summary>
+            <div class="mb-3 flex justify-end">
+                <a href="/student/calendar" class="whitespace-nowrap text-xs font-bold text-[#1F45D6] hover:underline">View all</a>
             </div>
 
-            @if(count($deadlines) === 0)
+            @if (count($deadlines) === 0)
                 <p class="text-sm text-[#5B6478]">No upcoming deadlines.</p>
             @else
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    @foreach($deadlines as $deadline)
+                <div class="divide-y divide-[#EDF0F7]">
+                    @foreach ($deadlines as $deadline)
                         @php
                             $isSoon = $deadline['days'] <= 1;
-                            $tone = $isSoon
-                                ? 'bg-[#FEF3C7] text-[#7C2D12]'
-                                : 'bg-[#E8EFFF] text-[#1F45D6]';
-
+                            $tone = $isSoon ? 'bg-[#FEF3C7] text-[#7C2D12]' : 'bg-[#E8EFFF] text-[#1F45D6]';
                             $when = $deadline['days'] <= 0
                                 ? 'Today'
-                                : ($deadline['days'] === 1
-                                    ? 'Tomorrow'
-                                    : 'In ' . $deadline['days'] . ' days');
+                                : ($deadline['days'] === 1 ? 'Tomorrow' : 'In '.$deadline['days'].' days');
                         @endphp
-
-                        <div class="flex items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-3">
-                            <div class="flex h-[52px] w-12 flex-none flex-col items-center justify-center gap-0.5 rounded-xl {{ $tone }}">
-                                <span class="text-[11px] font-bold uppercase">{{ $deadline['date']->format('M') }}</span>
-                                <span class="text-lg font-extrabold leading-none">{{ $deadline['date']->format('d') }}</span>
+                        <div class="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                            <div class="flex h-11 w-11 flex-none flex-col items-center justify-center rounded-xl {{ $tone }}">
+                                <span class="text-[10px] font-bold uppercase">{{ $deadline['date']->format('M') }}</span>
+                                <span class="text-base font-extrabold leading-none">{{ $deadline['date']->format('d') }}</span>
                             </div>
-
                             <div class="min-w-0 flex-1">
-                                <div class="break-words text-sm font-bold leading-snug">
-                                    {{ $deadline['title'] }}
-                                </div>
-                                <span class="mt-1 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold {{ $tone }}">
-                                    {{ $when }}
-                                </span>
+                                <div class="break-words text-sm font-bold leading-snug">{{ $deadline['title'] }}</div>
+                                <span class="mt-1 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold {{ $tone }}">{{ $when }}</span>
                             </div>
+                            <i class="fa-solid fa-chevron-right text-xs text-[#94A3B8]"></i>
                         </div>
                     @endforeach
                 </div>
             @endif
-        </div>
-    </details>
+        </details>
 
-    {{-- ========================= SECTION SPACING ========================= --}}
-    <div aria-hidden="true" class="my-5 border-t border-[#E3E8F2] md:my-8"></div>
+        <section class="{{ $card }} p-4 sm:p-5">
+            <h2 class="mb-3 flex items-center gap-2 text-base font-extrabold">
+                <i class="fa-solid fa-bolt text-[#2F5BFF]"></i>
+                Quick actions
+            </h2>
+            <div class="grid grid-cols-2 gap-2">
+                <a href="#new-entry" data-write-date="{{ $todayKey }}" class="flex min-h-[72px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#E8EFFF] p-2 text-center text-xs font-bold text-[#1F45D6] transition hover:brightness-95">
+                    <i class="fa-solid fa-book-open text-lg"></i>
+                    New logbook entry
+                </a>
+                <a href="/student/calendar" class="flex min-h-[72px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#D1FAE5] p-2 text-center text-xs font-bold text-[#047857] transition hover:brightness-95">
+                    <i class="fa-solid fa-calendar-days text-lg"></i>
+                    View calendar
+                </a>
+                <a href="#new-entry" data-focus="attachment" class="flex min-h-[72px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#F0EAFF] p-2 text-center text-xs font-bold text-[#6D28D9] transition hover:brightness-95">
+                    <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                    Upload files
+                </a>
+                <a href="{{ $chatHref }}" class="flex min-h-[72px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#FFF1E6] p-2 text-center text-xs font-bold text-[#C2410C] transition hover:brightness-95">
+                    <i class="fa-solid fa-comments text-lg"></i>
+                    Chat with supervisor
+                </a>
+            </div>
+        </section>
 
-    {{-- ========================= CALENDAR + TODO ========================= --}}
-    <details open data-mobile-fold="planner" class="group">
-        <summary class="mb-3 flex cursor-pointer list-none items-center gap-3 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] px-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5BFF] md:hidden">
-            <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#E0E7FF] text-[#3730A3]">
-                <i class="fa-solid fa-calendar-days"></i>
-            </span>
-            <span class="min-w-0 flex-1">
-                <span class="block text-sm font-extrabold">My planner</span>
-                <span class="block text-xs text-[#5B6478]">Calendar and to-do list</span>
-            </span>
-            <i class="fa-solid fa-chevron-down text-xs text-[#5B6478] transition-transform group-open:rotate-180"></i>
-        </summary>
-
-    <div class="grid grid-cols-1 items-stretch gap-6 pt-2 xl:grid-cols-2 xl:gap-0">
-
-        {{-- ============================== LEFT: CALENDAR ============================== --}}
         <div
-            id="calendar-card"
-            data-live
-            data-today="{{ $todayKey }}"
-            class="flex min-w-0 flex-col xl:pr-6"
+            id="dashboard-calendar-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-calendar-popup-title"
+            tabindex="-1"
+            class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/45 p-3 backdrop-blur-sm sm:p-5"
         >
-
-            {{-- Header: title, month switch, full calendar link --}}
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-lg font-extrabold">My calendar</h2>
-                <div class="flex items-center gap-2.5">
-                    <a href="/student/calendar?month={{ $calendar['prev'] }}" aria-label="Previous month" class="{{ $navBtn }}"><i class="fa-solid fa-chevron-left text-xs"></i></a>
-                    <div class="min-w-[116px] text-center text-[15px] font-extrabold">{{ $calendar['title'] }}</div>
-                    <a href="/student/calendar?month={{ $calendar['next'] }}" aria-label="Next month" class="{{ $navBtn }}"><i class="fa-solid fa-chevron-right text-xs"></i></a>
-                </div>
-                <a href="/student/calendar" class="flex min-h-8 items-center {{ $link }}">Full calendar</a>
-            </div>
-
-            {{-- Weekday names --}}
-            <div class="mb-1.5 grid grid-cols-7 gap-1.5 text-center text-xs font-bold text-[#5B6478]">
-                @foreach(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
-                    <div>{{ $weekday }}</div>
-                @endforeach
-            </div>
-
-            {{-- Month grid: flex-1 so it stretches to the height of the to-do column (no empty gap) --}}
-            <div class="grid flex-1 grid-cols-7 gap-1.5" style="grid-template-rows: repeat({{ $weeks }}, minmax(48px, 1fr));">
-                @foreach($cells as $cell)
-                    @if($cell['in_month'])
-                        <button type="button" data-cal-day="{{ $cell['key'] }}" aria-label="{{ $cell['long'] }}"
-                                class="cal-day {{ $cell['is_today'] ? 'is-today' : '' }} flex h-full flex-col items-center justify-center gap-1 rounded-xl border border-[#EEF0FA] bg-[#F7F9FD] text-sm font-bold text-[#1E293B] transition hover:border-[#9DB4FF]">
-                            <span>{{ $cell['label'] }}</span>
-                            <span class="flex h-1.5 items-center gap-[3px]">
-                                @if($cell['has_log'])<span class="cal-dot h-1.5 w-1.5 rounded-full bg-[#2F5BFF]"></span>@endif
-                                @if($cell['has_due'])<span class="cal-dot h-1.5 w-1.5 rounded-full bg-[#C2410C]"></span>@endif
-                            </span>
-                        </button>
-                    @else
-                        <div class="flex h-full items-center justify-center rounded-xl text-sm font-bold text-[#8A92B8]">{{ $cell['label'] }}</div>
-                    @endif
-                @endforeach
-            </div>
-
-            {{-- Legend --}}
-            <div class="mt-3 flex flex-wrap gap-3.5 text-xs font-semibold text-[#5B6478]">
-                <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-[#2F5BFF]"></span>Log entry</span>
-                <span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-[#C2410C]"></span>Task due</span>
-            </div>
-        </div>
-
-        {{-- ============================ RIGHT: TO-DO + DAY ============================ --}}
-        <div id="todo-list" data-live class="flex min-w-0 flex-col border-t border-[#EDF0F7] pt-6 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
-
-            <div class="mb-3 flex min-h-9 items-center justify-between">
-                <h2 class="text-lg font-extrabold">To-do list</h2>
-                <span class="text-xs font-bold text-[#5B6478]">{{ $openCount }} open</span>
-            </div>
-            <p class="mb-3 text-[11px] text-[#5B6478]">Your own tasks are private. Your lecturer only sees how many you finish, and your supervisor only sees the tasks they assigned.</p>
-
-            @if($extrasReady)
-                {{-- Tabs: the JS switches between the day panel and the task list --}}
-                <div class="mb-3 flex gap-1 rounded-xl bg-[#F7F9FD] p-1" role="group" aria-label="Day and task filters">
-                    <button type="button" data-todo-tab="day" aria-pressed="false" class="{{ $tabBtn }} text-[#5B6478]">
-                        <span data-day-label>{{ $todayShort }}</span>
-                        <span data-day-count class="rounded-lg bg-[#E8EFFF] px-1.5 py-0.5 text-[11px] font-bold text-[#1F45D6]">{{ $todayCount }}</span>
+            <div class="flex max-h-[92vh] w-full max-w-[500px] flex-col overflow-hidden rounded-3xl border border-[#E0E7F2] bg-white shadow-[0_24px_70px_rgba(15,27,77,0.28)]">
+                <div class="flex items-start justify-between gap-3 border-b border-[#EDF0F7] px-4 py-3.5 sm:px-5">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-[#E8EFFF] text-[#2F5BFF]">
+                            <i class="fa-regular fa-calendar text-xl"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 id="dashboard-calendar-popup-title" data-popup-title class="text-base font-extrabold text-[#1E293B]"></h2>
+                            <p data-popup-subtitle class="mt-0.5 text-xs text-[#64748B]"></p>
+                        </div>
+                    </div>
+                    <button type="button" data-popup-close aria-label="Close day details" class="flex h-9 w-9 flex-none items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                        <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
-
-                    @foreach($tabs as $key => $tab)
-                        <button type="button" data-todo-tab="{{ $key }}" aria-pressed="{{ $key === 'all' ? 'true' : 'false' }}"
-                                class="{{ $tabBtn }} {{ $key === 'all' ? 'bg-white text-[#1E293B] shadow-sm' : 'text-[#5B6478]' }}">
-                            {{ $tab['label'] }}
-                            <span class="rounded-lg px-1.5 py-0.5 text-[11px] font-bold {{ $key === 'overdue' ? 'bg-[#FFE4E6] text-[#9F1239]' : 'bg-[#E8EFFF] text-[#1F45D6]' }}">{{ $tab['count'] }}</span>
-                        </button>
-                    @endforeach
                 </div>
 
-                {{-- ---------- View 1: selected-day panels (shown by the day tab) ---------- --}}
-                <div data-todo-view="day" class="hidden">
-                    @foreach($cells as $cell)
-                        @continue(! $cell['in_month'])
-                        @php
-                            $items     = $calendar['agenda'][$cell['key']] ?? [];
-                            $itemCount = count($items);
-                        @endphp
+                <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+                    <div class="grid grid-cols-4 divide-x divide-[#D9DDF0] rounded-2xl bg-[#F6F7FF] px-2 py-3.5 text-center">
+                        <div class="px-1">
+                            <i class="fa-solid fa-book-open text-lg text-blue-600"></i>
+                            <b data-popup-logs class="mt-1 block text-base leading-none text-[#1E293B]">0</b>
+                            <span class="mt-1 block text-[10px] text-[#64748B]">Logbook</span>
+                        </div>
+                        <div class="px-1">
+                            <i class="fa-solid fa-circle-check text-lg text-emerald-600"></i>
+                            <b data-popup-attendance-count class="mt-1 block text-base leading-none text-[#1E293B]">0</b>
+                            <span class="mt-1 block text-[10px] text-[#64748B]">Attendance</span>
+                        </div>
+                        <div class="px-1">
+                            <i class="fa-solid fa-umbrella-beach text-lg text-amber-600"></i>
+                            <b data-popup-leave class="mt-1 block text-base leading-none text-[#1E293B]">0</b>
+                            <span class="mt-1 block text-[10px] text-[#64748B]">Leave</span>
+                        </div>
+                        <div class="px-1">
+                            <i class="fa-solid fa-list-check text-lg text-violet-600"></i>
+                            <b data-popup-tasks-count class="mt-1 block text-base leading-none text-[#1E293B]">0</b>
+                            <span class="mt-1 block text-[10px] text-[#64748B]">Tasks</span>
+                        </div>
+                    </div>
 
-                        <div data-cal-panel="{{ $cell['key'] }}"
-                             data-cal-short="{{ \Carbon\Carbon::parse($cell['key'])->format('D j') }}"
-                             data-cal-count="{{ $itemCount }}"
-                             class="hidden {{ $listH }} rounded-2xl bg-[#F7F9FD] p-4">
-                            <div class="flex h-full flex-col">
-                                <div class="flex flex-none items-baseline justify-between gap-2">
-                                    <div class="text-[15px] font-extrabold">{{ $cell['long'] }}</div>
-                                    <div class="text-xs font-semibold text-[#5B6478]">
-                                        {{ $itemCount === 0 ? 'Free day' : $itemCount . ($itemCount === 1 ? ' item' : ' items') }}
-                                    </div>
-                                </div>
-
-                                <div class="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1 [scrollbar-width:thin]">
-                                    @forelse($items as $item)
-                                        <div class="flex flex-none items-center justify-between gap-3 rounded-xl border border-[#E3E8F2] bg-white px-3.5 py-2.5">
-                                            <div class="flex min-w-0 items-center gap-3">
-                                                <span class="h-8 w-1 flex-none rounded {{ $agendaBar[$item['type']] ?? 'bg-[#94A3B8]' }}"></span>
-                                                <div class="min-w-0">
-                                                    <div class="break-words text-sm font-bold">{{ $item['title'] }}</div>
-                                                    <div class="break-words text-xs text-[#5B6478]">{{ $item['meta'] }}</div>
-                                                </div>
-                                            </div>
-                                            @if(! empty($item['action']))
-                                                <a href="{{ $item['action']['href'] }}"
-                                                   @if(! empty($item['action']['date'])) data-write-date="{{ $item['action']['date'] }}" @endif
-                                                   class="flex-none rounded-[10px] bg-[#2F5BFF] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#1F45D6]">{{ $item['action']['label'] }}</a>
-                                            @endif
-                                        </div>
-                                    @empty
-                                        <div class="flex flex-none items-center gap-3 rounded-xl border border-[#E3E8F2] bg-white px-3.5 py-2.5">
-                                            <span class="h-8 w-1 flex-none rounded bg-[#CBD3E3]"></span>
-                                            <div>
-                                                <div class="text-sm font-bold">Nothing scheduled</div>
-                                                <div class="text-xs text-[#5B6478]">No log entry or task due on this day.</div>
-                                            </div>
-                                        </div>
-                                    @endforelse
-                                </div>
+                    <section data-popup-location-card class="rounded-2xl border border-[#E7ECF5] bg-white p-3">
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-extrabold text-[#1E293B]"><i class="fa-solid fa-location-dot mr-1.5 text-blue-600"></i>Attendance Details</h3>
+                            <span data-popup-attendance-status class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700"></span>
+                        </div>
+                        <div class="mb-3 flex flex-wrap items-end gap-x-5 gap-y-2">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-[#64748B]">Clock in</p>
+                                <p data-popup-check-in class="text-sm font-extrabold text-[#1E293B]"></p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-[#64748B]">Clock out</p>
+                                <p data-popup-check-out class="text-sm font-extrabold text-[#1E293B]"></p>
+                            </div>
+                            <span data-popup-work-mode class="hidden rounded-full bg-[#E8EFFF] px-2.5 py-1 text-[11px] font-bold text-[#1F45D6]"></span>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-[1.2fr_1fr] sm:items-center">
+                            <iframe data-popup-map title="Attendance location map" loading="lazy" referrerpolicy="no-referrer" class="hidden h-32 w-full rounded-xl border border-[#E3E8F2] sm:h-36"></iframe>
+                            <div class="min-w-0">
+                                <h4 class="mb-1 text-xs font-bold text-[#334155]"><i class="fa-solid fa-location-dot mr-1 text-blue-600"></i>Location</h4>
+                                <p data-popup-location-name class="break-words text-xs leading-5 text-[#64748B]"></p>
+                                <a data-popup-map-link target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-[#3158D8] hover:underline">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open map
+                                </a>
                             </div>
                         </div>
-                    @endforeach
-                </div>
+                    </section>
 
-                {{-- ---------- View 2: task list (All / Overdue / Upcoming) ---------- --}}
-                <div data-todo-view="list">
-                    {{-- Fixed height and scrolls, so many tasks never make the card taller --}}
-                    <div class="flex {{ $listH }} flex-col gap-2 overflow-y-auto pr-1 [scrollbar-width:thin]">
-                        @foreach($openTodos->concat($doneTodos) as $todo)
-                            @php
-                                [$state, $badgeText, $badgeClass] = $todoBadge($todo);
-                                $isDone   = $state === 'done';
-                                $assigned = ! empty($todo->supervisor_id);
-                            @endphp
-
-                            <div data-todo-row data-state="{{ $state }}">
-                                <div class="flex min-h-[52px] items-center gap-3 rounded-xl border border-[#E3E8F2] bg-white px-3 py-2">
-
-                                    {{-- Tick box --}}
-                                    <form method="POST" action="/student/todos/{{ $todo->todo_id }}/toggle" data-async>
-                                        @csrf
-                                        @if($isDone)
-                                            <button type="submit" aria-label="Mark as not done" class="flex h-6 w-6 flex-none items-center justify-center rounded-[7px] bg-[#047857] text-white"><i class="fa-solid fa-check text-[11px]"></i></button>
-                                        @else
-                                            <button type="submit" aria-label="Mark as done" class="flex h-6 w-6 flex-none items-center justify-center rounded-[7px] border-2 border-[#94A3B8] bg-white text-transparent transition hover:border-[#047857] hover:text-[#047857]"><i class="fa-solid fa-check text-[11px]"></i></button>
-                                        @endif
-                                    </form>
-
-                                    {{-- Title (+ supervisor tag) --}}
-                                    <div class="min-w-0 flex-1">
-                                        <div class="break-words text-sm font-medium {{ $isDone ? 'text-[#64748B] line-through' : '' }}">{{ $todo->title }}</div>
-                                        @if($assigned)
-                                            <span class="mt-0.5 inline-flex items-center gap-1 rounded-full bg-[#E0E7FF] px-2 py-0.5 text-[10px] font-bold text-[#3730A3]"><i class="fa-solid fa-building-user"></i> From {{ optional($todo->supervisor)->name ?? 'your supervisor' }}</span>
-                                        @endif
-                                    </div>
-
-                                    {{-- Status badge + due date --}}
-                                    <div class="flex flex-none flex-col items-end gap-1">
-                                        <span class="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold {{ $badgeClass }}">{{ $badgeText }}</span>
-                                        <span class="whitespace-nowrap text-[11px] font-medium text-[#5B6478]">{{ $todo->due_date ? 'Due ' . $todo->due_date->format('d M') : 'No due date' }}</span>
-                                    </div>
-
-                                    {{-- Lock (assigned by supervisor) or delete --}}
-                                    @if($assigned)
-                                        <span title="Assigned by your supervisor" class="text-[#CBD3E3]"><i class="fa-solid fa-lock"></i></span>
-                                    @else
-                                        <form method="POST" action="/student/todos/{{ $todo->todo_id }}" data-async onsubmit="return confirm('Delete this task?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" aria-label="Delete task" class="text-[#CBD3E3] transition hover:text-[#BE123C]"><i class="fa-solid fa-xmark"></i></button>
-                                        </form>
-                                    @endif
-                                </div>
+                    <section class="grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-2xl border border-[#E7ECF5] bg-[#FAFBFE] p-3">
+                            <h3 class="mb-2 text-xs font-extrabold text-[#1E293B]"><i class="fa-regular fa-note-sticky mr-1.5 text-sm text-violet-600"></i>Daily Notes</h3>
+                            <p data-popup-note class="text-xs leading-5 text-[#475569]"></p>
+                            <div data-popup-note-images class="mt-2 grid grid-cols-3 gap-1.5"></div>
+                        </div>
+                        <div class="rounded-2xl border border-[#E7ECF5] bg-[#FAFBFE] p-3">
+                            <div class="mb-2 flex items-center justify-between gap-2">
+                                <h3 class="text-xs font-extrabold text-[#1E293B]"><i class="fa-solid fa-list-check mr-1.5 text-sm text-blue-600"></i>Tasks for the Day</h3>
+                                <span data-popup-task-progress class="text-[11px] font-bold text-[#64748B]"></span>
                             </div>
-                        @endforeach
+                            <div data-popup-tasks class="space-y-1.5"></div>
+                        </div>
+                    </section>
 
-                        <p data-todo-empty class="{{ ($openTodos->count() + $doneTodos->count()) > 0 ? 'hidden' : '' }} py-3 text-center text-sm text-[#5B6478]">No tasks here.</p>
-                    </div>
-
-                    @if($openCount > $openTodos->count())
-                        <p class="mt-2 text-xs text-[#5B6478]">+ {{ $openCount - $openTodos->count() }} more open tasks</p>
-                    @endif
+                    <section class="rounded-2xl border border-[#DDE5F2] bg-gradient-to-r from-[#F8FAFF] to-[#F3F6FF] p-3">
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <h3 class="text-xs font-extrabold text-[#1E293B]"><i class="fa-solid fa-book-open mr-1.5 text-sm text-[#3158D8]"></i>Logbook Preview</h3>
+                            <a data-popup-logbook-link class="whitespace-nowrap text-[11px] font-bold text-[#3158D8] hover:underline">View Details <i class="fa-solid fa-arrow-right ml-0.5"></i></a>
+                        </div>
+                        <div data-popup-logbook class="space-y-2"></div>
+                    </section>
                 </div>
 
-                {{-- ---------- Add a task, with an optional due date (always visible) ---------- --}}
-                <form method="POST" action="/student/todos" data-async class="mt-4 space-y-2 border-t border-[#EDF0F7] pt-4">
-                    @csrf
-                    <div class="flex gap-2">
-                        <input type="text" name="title" required maxlength="150" placeholder="Add a task" aria-label="New task" class="{{ $input }}">
-                        <button type="submit" class="min-h-11 rounded-xl bg-[#2F5BFF] px-5 text-sm font-bold text-white transition hover:bg-[#1F45D6] disabled:opacity-60">Add</button>
+                <div class="border-t border-[#EDF0F7] bg-[#FAFBFE] p-3 sm:px-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#EEF3FF] px-3 py-2.5">
+                        <p class="min-w-0 flex-1 text-xs leading-4 text-[#475569]">
+                            <i class="fa-solid fa-lightbulb mr-1 text-blue-600"></i>
+                            Need to manage this date? Go to the full calendar for more options.
+                        </p>
+                        <a data-popup-full-calendar class="inline-flex min-h-9 items-center gap-2 rounded-xl bg-[#3158D8] px-3.5 text-xs font-bold text-white transition hover:bg-blue-700">
+                            View Full Calendar <i class="fa-solid fa-arrow-right"></i>
+                        </a>
                     </div>
-                    <label class="flex items-center gap-2.5 text-xs font-semibold text-[#334155]">
-                        <span class="flex flex-none items-center gap-1.5 text-[#5B6478]"><i class="fa-regular fa-calendar text-[#1F45D6]"></i> Due date <span class="font-normal">(optional)</span></span>
-                        <input type="date" name="due_date" aria-label="Due date (optional)" class="{{ $input }} min-h-10 py-2 text-[#334155]">
-                    </label>
-                </form>
-            @else
-                <p class="text-sm text-amber-800">The to-do table is not set up yet.</p>
-            @endif
+                </div>
+            </div>
         </div>
-    </div>
-    </details>
 
-    
+        <section class="{{ $card }} p-4 sm:p-5">
+            <div class="mb-2 flex items-center justify-between gap-3">
+                <h2 class="flex items-center gap-2 text-base font-extrabold">
+                    <i class="fa-solid fa-wave-square text-[#2F5BFF]"></i>
+                    Recent activities
+                </h2>
+                <a href="/student/logbooks" class="whitespace-nowrap text-xs font-bold text-[#1F45D6] hover:underline">View all</a>
+            </div>
+            @forelse ($recentActivities as $activity)
+                <a href="{{ $activity['href'] }}" class="flex items-center gap-3 border-t border-[#EDF0F7] py-2.5 first:border-0">
+                    <span class="flex h-9 w-9 flex-none items-center justify-center rounded-xl {{ $activity['tone'] }}">
+                        <i class="fa-solid {{ $activity['icon'] }}"></i>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate text-xs font-bold text-[#1E293B]">{{ $activity['label'] }}</span>
+                        <span class="mt-0.5 block text-[10px] text-[#64748B]">
+                            {{ $activity['date']->isToday() ? 'Today, '.$activity['date']->format('g:i A') : $activity['date']->format('M j, Y') }}
+                        </span>
+                    </span>
+                </a>
+            @empty
+                <p class="border-t border-[#EDF0F7] pt-3 text-sm text-[#5B6478]">Your recent activity will appear here.</p>
+            @endforelse
+        </section>
+
+    </aside>
 </section>

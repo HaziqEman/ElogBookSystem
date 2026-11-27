@@ -6,13 +6,27 @@ use App\Models\Attendance;
 use App\Models\Lecturer;
 use App\Models\Student;
 use Carbon\Carbon;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class StudentAttendanceControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Schema::table('students', function (Blueprint $table): void {
+            $table->date('internship_start')->nullable();
+            $table->unsignedInteger('internship_weeks')->nullable();
+            $table->string('working_days')->nullable();
+            $table->json('working_schedule')->nullable();
+        });
+    }
 
     public function test_index_summarizes_the_current_month_and_lists_recent_records(): void
     {
@@ -93,6 +107,64 @@ class StudentAttendanceControllerTest extends TestCase
             ->assertJsonFragment([
                 'message' => 'You already clocked in today at '.$attendance->checkInLocal().'.',
             ]);
+    }
+
+    public function test_week_and_date_filters_show_missing_days_location_and_live_hours(): void
+    {
+        $today = Carbon::parse('2026-11-17 12:00:00', Attendance::TIMEZONE);
+        $this->travelTo($today);
+        $student = $this->authenticateStudent();
+        $student->update([
+            'internship_start' => '2026-11-16',
+            'internship_weeks' => 3,
+            'working_days' => '1,2,3,4,5',
+            'working_schedule' => json_encode([['from' => '1970-01-01', 'days' => '1,2,3,4,5']]),
+        ]);
+        $attendance = $this->createAttendance($student, $today->toDateString(), [
+            'check_in' => now()->subHours(2),
+            'work_mode' => 'Workplace',
+            'location_status' => 'shared',
+            'latitude' => 3.139,
+            'longitude' => 101.6869,
+            'location_name' => 'Test workplace',
+        ]);
+        $this->createAttendance($student, '2026-11-02', [
+            'check_in' => $today->copy()->subDays(15)->subHours(2),
+        ]);
+
+        $this->get('/student/attendance?week=1')
+            ->assertOk()
+            ->assertSee('Missing')
+            ->assertSee('View map')
+            ->assertSee('Test workplace')
+            ->assertSee('Clock-in map preview')
+            ->assertSee('© OpenStreetMap contributors')
+            ->assertSee('Open clock-in map in OpenStreetMap')
+            ->assertSee('Worked so far')
+            ->assertSeeInOrder([
+                'Tuesday',
+                '17 Nov',
+                'Clock in',
+                'Clock out',
+                'Worked so far',
+                'Clock-in map preview',
+                'Test workplace',
+                'Clock out',
+                'Attendance history',
+            ])
+            ->assertViewHas('monthMinutes', 120)
+            ->assertViewHas('monthMissing', 1)
+            ->assertViewHas('records', fn ($records) => $records->count() === 2
+                && $records->where('status', Attendance::STATUS_MISSING)->count() === 1
+                && $records->contains(fn ($record) => $record->attendance_id === $attendance->attendance_id
+                    && $record->hasLocation()));
+
+        $this->get('/student/attendance?date=2026-11-16')
+            ->assertOk()
+            ->assertViewHas('historyLabel', 'Monday, 16 Nov 2026')
+            ->assertViewHas('missingCount', 1)
+            ->assertViewHas('records', fn ($records) => $records->count() === 1
+                && $records->first()->status === Attendance::STATUS_MISSING);
     }
 
     public function test_clock_out_requires_clock_in_and_records_worked_time(): void

@@ -44,7 +44,7 @@ class SupervisorWeekControllerTest extends TestCase
         $this->createSubmission($completedStudent, 1, '2026-11-01 09:00:00');
         $completedEntry = $this->createEntry($completedStudent, 1, '2026-11-02', 'Validated');
         $this->createSubmission($waitingStudent, 2, '2026-11-02 09:00:00');
-        $this->createEntry($waitingStudent, 2, '2026-11-09', null);
+        $this->createEntry($waitingStudent, 2, '2026-11-23', null);
 
         $this->actingAs($supervisor, 'supervisor')
             ->get('/supervisor/weeks/next')
@@ -185,6 +185,39 @@ class SupervisorWeekControllerTest extends TestCase
             'comment' => $comment,
         ]);
         $this->assertNotNull($submission->refresh()->reviewed_at);
+    }
+
+    public function test_out_of_week_entries_do_not_keep_the_visible_week_pending(): void
+    {
+        $supervisor = $this->createSupervisor();
+        $student = $this->createStudent($supervisor);
+        $submission = $this->createSubmission($student, 2, '2026-11-23 09:00:00');
+        $visibleEntry = $this->createEntry($student, 2, '2026-11-23', null);
+        $outOfWeekEntry = $this->createEntry($student, 2, '2026-11-09', 'Pending');
+        $url = '/supervisor/students/'.$student->student_id.'?week=2';
+
+        $this->actingAs($supervisor, 'supervisor')
+            ->post('/supervisor/students/'.$student->student_id.'/weeks/2/review', [
+                'decision' => [$visibleEntry->logbook_id => 'Validated'],
+                'comment' => [$visibleEntry->logbook_id => ''],
+            ])
+            ->assertRedirect('/supervisor/dashboard')
+            ->assertSessionHas('success', 'Week 2 saved: 1 validated.');
+
+        $this->assertNotNull($submission->refresh()->reviewed_at);
+        $this->assertDatabaseHas('logbooks', [
+            'logbook_id' => $outOfWeekEntry->logbook_id,
+            'supervisor_status' => 'Pending',
+        ]);
+
+        $this->get($url)
+            ->assertOk()
+            ->assertViewHas('chips', fn ($chips) => $chips[1]['state'] === 'reviewed'
+                && $chips[1]['pending'] === 0
+                && $chips[1]['entries'] === 1)
+            ->assertViewHas('selected', fn ($selected) => $selected['pending'] === 0
+                && $selected['validated'] === 1
+                && $selected['entries']->count() === 1);
     }
 
     private function createSupervisor(): Supervisor

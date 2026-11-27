@@ -3,19 +3,6 @@
 @section('content')
     {{-- Plain CSS so the layout works even if the Tailwind build is out of date --}}
     <style>
-        .att-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr);
-            gap: 1.25rem;
-            align-items: start;
-        }
-
-        @media (min-width: 1280px) {
-            .att-grid {
-                grid-template-columns: 440px minmax(0, 1fr);
-            }
-        }
-
         .att-scroll {
             max-height: 620px;
             overflow: auto;
@@ -28,9 +15,18 @@
         $statCard =
             'flex items-center gap-3.5 rounded-[20px] border border-[#E3E8F2] bg-white px-4 py-4 shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
         $todayKey = $today->toDateString();
+        $activeStartedAt =
+            $attendance && $attendance->check_in && ! $attendance->check_out
+                ? $attendance->check_in->timestamp
+                : null;
+        $activeMinutes = $activeStartedAt ? ($attendance->workedMinutes($today) ?? 0) : 0;
 
         // Colored pill for each row of the history table
         $statusPill = function ($record) {
+            if ($record->status === \App\Models\Attendance::STATUS_MISSING) {
+                return ['Missing', 'bg-[#FFE4E6] text-[#9F1239]'];
+            }
+
             if ($record->status === \App\Models\Attendance::STATUS_LEAVE) {
                 $label = $record->dayOffLabel();
                 $class = match ($label) {
@@ -106,7 +102,7 @@
         <div
             id="attendance-stats"
             data-live
-            class="grid grid-cols-1 gap-3.5 sm:grid-cols-3"
+            class="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4"
         >
             <div class="{{ $statCard }}">
                 <span
@@ -156,74 +152,133 @@
                     ></i></span>
                 <div class="min-w-0">
                     <div class="truncate text-xs font-semibold text-[#5B6478]">Hours worked</div>
-                    <div class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">
-                        {{ intdiv($monthMinutes, 60) }}h
-                        {{ str_pad((string) ($monthMinutes % 60), 2, '0', STR_PAD_LEFT) }}m</div>
+                    <div
+                        data-worked-total
+                        data-base-minutes="{{ max(0, $monthMinutes - $activeMinutes) }}"
+                        data-active-start="{{ $activeStartedAt ?? '' }}"
+                        class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]"
+                    ><span data-worked-hours>{{ intdiv($monthMinutes, 60) }}</span>h
+                        <span data-worked-minutes>{{ str_pad((string) ($monthMinutes % 60), 2, '0', STR_PAD_LEFT) }}</span>m</div>
                     <div class="mt-0.5 truncate text-xs font-medium text-[#5B6478]">This month</div>
+                </div>
+            </div>
+
+            <div class="{{ $statCard }}">
+                <span
+                    class="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#FFE4E6] text-[#BE123C]"
+                ><i class="fa-solid fa-calendar-xmark" aria-hidden="true"></i></span>
+                <div class="min-w-0">
+                    <div class="truncate text-xs font-semibold text-[#5B6478]">Missed clock-ins</div>
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-[28px] font-extrabold leading-tight text-[#0F1B4D]">{{ $monthMissing }}</span>
+                        <span class="text-sm font-semibold text-[#5B6478]">{{ $monthMissing === 1 ? 'day' : 'days' }}</span>
+                    </div>
+                    <div class="mt-0.5 truncate text-xs font-medium text-[#5B6478]">Scheduled workdays this month</div>
                 </div>
             </div>
         </div>
 
-        {{-- CLOCK-IN CARD | HISTORY --}}
-        <div class="att-grid">
-            <div class="min-w-0">
-                @include('student.attendance.card')
-            </div>
+        {{-- TODAY'S ATTENDANCE | HISTORY --}}
+        <div class="space-y-5">
+            @include('student.attendance.card', ['attendancePage' => true])
 
             <div
                 id="attendance-history"
                 data-live
                 class="{{ $shell }} min-w-0 overflow-hidden"
             >
-                {{-- Header + filter tabs --}}
-                <div
-                    class="flex flex-wrap items-center justify-between gap-3 border-b border-[#EDF0F7] px-5 py-4">
-                    <div>
-                        <h2 class="text-base font-extrabold text-[#1E293B]">Attendance history</h2>
-                        <p class="mt-0.5 text-xs text-[#5B6478]">Your latest 60 recorded days</p>
+                {{-- Header, filters and status tabs --}}
+                <div class="space-y-4 border-b border-[#EDF0F7] px-5 py-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-base font-extrabold text-[#1E293B]">Attendance history</h2>
+                            <p class="mt-0.5 text-xs text-[#5B6478]">{{ $historyLabel }}</p>
+                        </div>
+
+                        <div
+                            class="flex flex-wrap gap-1 rounded-xl bg-[#F7F9FD] p-1"
+                            role="group"
+                            aria-label="Filter attendance status"
+                        >
+                            <button
+                                type="button"
+                                data-att-filter="all"
+                                aria-pressed="true"
+                                class="{{ $tabBase }} bg-white text-[#1E293B] shadow-sm"
+                            >
+                                All <span class="rounded-lg bg-[#E8EFFF] px-1.5 py-0.5 text-[11px] text-[#1F45D6]">{{ $records->count() }}</span>
+                            </button>
+                            <button
+                                type="button"
+                                data-att-filter="present"
+                                aria-pressed="false"
+                                class="{{ $tabBase }} text-[#5B6478]"
+                            >
+                                Present <span class="rounded-lg bg-[#D1FAE5] px-1.5 py-0.5 text-[11px] text-[#065F46]">{{ $presentCount }}</span>
+                            </button>
+                            <button
+                                type="button"
+                                data-att-filter="off"
+                                aria-pressed="false"
+                                class="{{ $tabBase }} text-[#5B6478]"
+                            >
+                                Days off <span class="rounded-lg bg-[#FEF3C7] px-1.5 py-0.5 text-[11px] text-[#7C2D12]">{{ $offCount }}</span>
+                            </button>
+                            <button
+                                type="button"
+                                data-att-filter="missing"
+                                aria-pressed="false"
+                                class="{{ $tabBase }} text-[#5B6478]"
+                            >
+                                Missing <span class="rounded-lg bg-[#FFE4E6] px-1.5 py-0.5 text-[11px] text-[#9F1239]">{{ $missingCount }}</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div
-                        class="flex gap-1 rounded-xl bg-[#F7F9FD] p-1"
-                        role="group"
-                        aria-label="Filter history"
+                    <form
+                        id="attendance-history-filter"
+                        method="GET"
+                        action="/student/attendance"
+                        class="flex flex-wrap items-end gap-3"
                     >
+                        <label class="min-w-[220px] flex-1 text-xs font-semibold text-[#5B6478]">
+                            Week
+                            <select
+                                name="week"
+                                class="mt-1 min-h-10 w-full rounded-xl border border-[#CBD3E3] bg-white px-3 text-sm font-semibold text-[#1E293B] focus:border-[#2F5BFF] focus:outline-none focus:ring-2 focus:ring-[#2F5BFF]/20"
+                            >
+                                @foreach ($weekOptions as $option)
+                                    <option
+                                        value="{{ $option['value'] }}"
+                                        @selected($selectedWeek === $option['value'])
+                                    >{{ $option['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="min-w-[170px] flex-1 text-xs font-semibold text-[#5B6478]">
+                            Or find a date
+                            <input
+                                type="date"
+                                name="date"
+                                value="{{ $selectedDate }}"
+                                max="{{ $todayKey }}"
+                                class="mt-1 min-h-10 w-full rounded-xl border border-[#CBD3E3] bg-white px-3 text-sm font-semibold text-[#1E293B] focus:border-[#2F5BFF] focus:outline-none focus:ring-2 focus:ring-[#2F5BFF]/20"
+                            >
+                        </label>
                         <button
-                            type="button"
-                            data-att-filter="all"
-                            aria-pressed="true"
-                            class="{{ $tabBase }} bg-white text-[#1E293B] shadow-sm"
-                        >
-                            All <span
-                                class="rounded-lg bg-[#E8EFFF] px-1.5 py-0.5 text-[11px] text-[#1F45D6]"
-                            >{{ $records->count() }}</span>
-                        </button>
-                        <button
-                            type="button"
-                            data-att-filter="present"
-                            aria-pressed="false"
-                            class="{{ $tabBase }} text-[#5B6478]"
-                        >
-                            Present <span
-                                class="rounded-lg bg-[#D1FAE5] px-1.5 py-0.5 text-[11px] text-[#065F46]"
-                            >{{ $presentCount }}</span>
-                        </button>
-                        <button
-                            type="button"
-                            data-att-filter="off"
-                            aria-pressed="false"
-                            class="{{ $tabBase }} text-[#5B6478]"
-                        >
-                            Days off <span
-                                class="rounded-lg bg-[#FEF3C7] px-1.5 py-0.5 text-[11px] text-[#7C2D12]"
-                            >{{ $offCount }}</span>
-                        </button>
-                    </div>
+                            type="submit"
+                            class="min-h-10 rounded-xl bg-[#2F5BFF] px-4 text-sm font-bold text-white transition hover:bg-[#1F45D6]"
+                        >Search</button>
+                        <a
+                            href="/student/attendance?week=recent"
+                            class="inline-flex min-h-10 items-center rounded-xl border border-[#CBD3E3] bg-white px-4 text-sm font-bold text-[#334155] transition hover:bg-[#F7F9FD]"
+                        >Recent</a>
+                    </form>
                 </div>
 
                 {{-- Table scrolls inside this box, so the page never gets long --}}
                 <div class="att-scroll [scrollbar-width:thin]">
-                    <table class="w-full min-w-[620px] text-left text-sm">
+                    <table class="w-full min-w-[800px] text-left text-sm">
                         <thead
                             class="sticky top-0 z-10 bg-[#F7F9FD] text-[11px] font-bold uppercase tracking-wider text-[#5B6478]"
                         >
@@ -233,6 +288,7 @@
                                 <th class="px-4 py-3">In</th>
                                 <th class="px-4 py-3">Out</th>
                                 <th class="px-4 py-3">Worked</th>
+                                <th class="px-4 py-3">Location</th>
                                 <th class="px-4 py-3">Note</th>
                             </tr>
                         </thead>
@@ -241,13 +297,15 @@
                                 @php
                                     [$pillText, $pillClass] = $statusPill($record);
                                     $isOff = $record->status === \App\Models\Attendance::STATUS_LEAVE;
+                                    $isMissing = $record->status === \App\Models\Attendance::STATUS_MISSING;
                                     $isToday =
                                         $record->attendance_date->toDateString() === $todayKey;
+                                    $isActive = $isToday && $record->check_in && ! $record->check_out;
                                     $mode = $record->workModeLabel();
                                 @endphp
                                 <tr
                                     data-att-row
-                                    data-kind="{{ $isOff ? 'off' : 'present' }}"
+                                    data-kind="{{ $isMissing ? 'missing' : ($isOff ? 'off' : 'present') }}"
                                     class="{{ $isToday ? 'bg-[#F4F7FF]' : '' }} transition hover:bg-[#F7F9FD]"
                                 >
                                     <td class="whitespace-nowrap px-5 py-3">
@@ -278,7 +336,38 @@
                                         {{ $record->checkOutLocal() ?? '-' }}</td>
                                     <td
                                         class="whitespace-nowrap px-4 py-3 font-semibold text-[#1E293B]">
-                                        {{ $record->workedLabel() ?? '-' }}</td>
+                                        @if ($isActive)
+                                            <span
+                                                data-worked-live
+                                                data-worked-since="{{ $record->check_in->timestamp }}"
+                                            >{{ $record->workedLabel($today) }}</span>
+                                        @else
+                                            {{ $record->workedLabel() ?? '-' }}
+                                        @endif
+                                    </td>
+                                    <td class="max-w-[13rem] px-4 py-3 text-xs text-[#5B6478]">
+                                        @if ($record->hasLocation())
+                                            <a
+                                                href="{{ $record->mapLink() }}"
+                                                target="_blank"
+                                                rel="noopener"
+                                                title="{{ number_format((float) $record->latitude, 4) }}, {{ number_format((float) $record->longitude, 4) }}"
+                                                class="font-bold text-[#1F45D6] hover:underline"
+                                            >View map</a>
+                                            <span
+                                                class="mt-1 block truncate"
+                                                title="{{ $record->location_name ?: '' }}"
+                                            >{{ $record->location_name ?: number_format((float) $record->latitude, 4).', '.number_format((float) $record->longitude, 4) }}</span>
+                                        @elseif ($record->work_mode === 'Home')
+                                            <span>Not collected (WFH)</span>
+                                        @elseif ($record->location_status === 'denied')
+                                            <span>Not shared</span>
+                                        @elseif ($record->location_status === 'unavailable')
+                                            <span>Unavailable</span>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                     <td class="max-w-[12rem] px-4 py-3 text-[#5B6478]"><span
                                             class="block truncate"
                                             title="{{ $record->note ?: '' }}"
@@ -287,13 +376,13 @@
                             @empty
                                 <tr>
                                     <td
-                                        colspan="6"
+                                        colspan="7"
                                         class="px-5 py-12 text-center text-sm text-[#5B6478]"
                                     >
                                         <span
                                             class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F9FD] text-xl text-[#94A3B8]"
                                         ><i class="fa-regular fa-calendar-xmark"></i></span>
-                                        No attendance recorded yet. Clock in to start.
+                                        No attendance or missed scheduled days for this filter.
                                     </td>
                                 </tr>
                             @endforelse
@@ -304,7 +393,7 @@
                                 class="hidden"
                             >
                                 <td
-                                    colspan="6"
+                                    colspan="7"
                                     class="px-5 py-10 text-center text-sm text-[#5B6478]"
                                 >Nothing to show for this filter.</td>
                             </tr>
@@ -362,8 +451,59 @@
                 apply();
             });
 
+            document.addEventListener('change', function(event) {
+                var form = event.target && event.target.closest ? event.target.closest(
+                    '#attendance-history-filter') : null;
+                if (!form) return;
+
+                if (event.target.name === 'week') {
+                    form.querySelector('[name="date"]').value = '';
+                } else if (event.target.name === 'date' && event.target.value) {
+                    form.querySelector('[name="week"]').value = 'recent';
+                }
+            });
+
             // The live refresh replaces the history block, so re-apply the chosen tab afterwards.
             document.addEventListener('async:swapped', apply);
+        })();
+
+        (function() {
+            if (window.__attWorkedTimerBound) return;
+            window.__attWorkedTimerBound = true;
+
+            function formatMinutes(total) {
+                return {
+                    hours: Math.floor(total / 60),
+                    minutes: String(total % 60).padStart(2, '0')
+                };
+            }
+
+            function updateWorkedTimes() {
+                var now = Math.floor(Date.now() / 1000);
+
+                document.querySelectorAll('[data-worked-live]').forEach(function(element) {
+                    var start = Number(element.dataset.workedSince);
+                    var parts = formatMinutes(Math.max(0, Math.floor((now - start) / 60)));
+                    element.textContent = parts.hours + 'h ' + parts.minutes + 'm';
+                });
+
+                document.querySelectorAll('[data-worked-total]').forEach(function(element) {
+                    var total = Number(element.dataset.baseMinutes);
+                    var start = Number(element.dataset.activeStart);
+                    if (start) total += Math.max(0, Math.floor((now - start) / 60));
+
+                    var parts = formatMinutes(total);
+                    var hours = element.querySelector('[data-worked-hours]');
+                    var minutes = element.querySelector('[data-worked-minutes]');
+                    if (hours) hours.textContent = parts.hours;
+                    if (minutes) minutes.textContent = parts.minutes;
+                });
+            }
+
+            updateWorkedTimes();
+            window.setInterval(updateWorkedTimes, 15000);
+            document.addEventListener('async:swapped', updateWorkedTimes);
+            document.addEventListener('page:loaded', updateWorkedTimes);
         })();
     </script>
 @endsection

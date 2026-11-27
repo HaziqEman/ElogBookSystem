@@ -47,6 +47,37 @@ class LogbookAttachmentUploadTest extends TestCase
         ]);
     }
 
+    public function test_student_can_create_an_entry_with_multiple_attachments(): void
+    {
+        $student = $this->createStudent();
+
+        $this->mock(AttachmentStorage::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('store')
+                ->twice()
+                ->andReturn(
+                    ['file_name' => 'site-photo.jpg', 'file_path' => 'https://example.test/site-photo.jpg'],
+                    ['file_name' => 'work-proof.png', 'file_path' => 'https://example.test/work-proof.png'],
+                );
+        });
+
+        $this->actingAs($student, 'student')
+            ->post('/student/logbook/store', [
+                'week_no' => 1,
+                'description' => 'Captured and documented the site inspection progress.',
+                'activity_date' => Carbon::now(Attendance::TIMEZONE)->toDateString(),
+                'attachments' => [
+                    UploadedFile::fake()->image('site-photo.jpg'),
+                    UploadedFile::fake()->image('work-proof.png'),
+                ],
+            ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJson(['message' => 'Log entry created successfully.']);
+
+        $this->assertDatabaseCount('attachments', 2);
+        $this->assertDatabaseHas('attachments', ['file_name' => 'site-photo.jpg']);
+        $this->assertDatabaseHas('attachments', ['file_name' => 'work-proof.png']);
+    }
+
     public function test_student_can_update_an_entry_with_a_camera_photo_over_five_megabytes(): void
     {
         $student = $this->createStudent();

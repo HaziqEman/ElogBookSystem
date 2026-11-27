@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attendance;
 use App\Models\Lecturer;
 use App\Models\Attachment;
 use App\Models\Feedback;
@@ -35,6 +36,28 @@ class DashboardUiTest extends TestCase
             'phone_no' => '0123456789',
             'course' => 'ITT626',
         ]);
+        $today = now(Attendance::TIMEZONE);
+        Attendance::create([
+            'student_id' => $student->student_id,
+            'attendance_date' => $today->toDateString(),
+            'status' => Attendance::STATUS_PRESENT,
+            'check_in' => $today->copy()->subHours(2),
+            'check_out' => $today->copy()->subMinutes(30),
+            'work_mode' => 'Workplace',
+            'location_status' => 'shared',
+            'latitude' => 3.139,
+            'longitude' => 101.6869,
+            'location_name' => 'Dashboard test workplace',
+        ]);
+        Logbook::create([
+            'student_id' => $student->student_id,
+            'week_no' => 7,
+            'title' => 'Weekly Internship Progress',
+            'description' => 'Completed assigned tasks and attended the team meeting.',
+            'activity_date' => $today->toDateString(),
+            'status' => 'Pending',
+            'supervisor_status' => 'Pending',
+        ]);
 
         $response = $this->actingAs($student, 'student')->get('/student/dashboard');
 
@@ -45,6 +68,35 @@ class DashboardUiTest extends TestCase
         $response->assertSee('data-mobile-fold="deadlines"', false);
         $response->assertSee('data-mobile-fold="planner"', false);
         $response->assertSee('id="reminder-popup"', false);
+        $response->assertSee("Today's attendance", false);
+        $response->assertSee('Upcoming deadlines');
+        $response->assertSee('Quick actions');
+        $response->assertSee('Recent activities');
+        $response->assertSee('Dashboard test workplace');
+        $response->assertSee('View map');
+        $response->assertSee('data-dashboard-map-preview', false);
+        $response->assertSee('Clock-in map preview');
+        $response->assertDontSee('Map showing where you clocked in', false);
+        $response->assertDontSee('accurate to about', false);
+        $response->assertDontSee('Gemini');
+        $response->assertSee('dashboard-calendar-popup', false);
+        $response->assertSee('Logbook Preview');
+        $response->assertSee('data-popup-check-in', false);
+        $response->assertSee('data-popup-check-out', false);
+        $response->assertSee('data-popup-work-mode', false);
+        $response->assertSee('data-popup-location-card class="rounded-2xl', false);
+        $response->assertSee('Weekly Internship Progress');
+        $response->assertSee('View Full Calendar');
+        $response->assertDontSee("Today's Events");
+        $response->assertDontSee('To-do list');
+        $response->assertSeeInOrder(["Today's attendance", 'Clock in', 'Calendar']);
+        $response->assertSeeInOrder([
+            'Clock in',
+            'Clock out',
+            'Worked',
+            'At workplace',
+            'Done for today',
+        ]);
         $response->assertSee("font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif", false);
     }
 
@@ -76,6 +128,11 @@ class DashboardUiTest extends TestCase
         $this->get('/student/logbooks')
             ->assertOk()
             ->assertSee('Logbook by week')
+            ->assertSee('data-logbook-attachment-input', false)
+            ->assertSee('data-logbook-attachment-preview-section', false)
+            ->assertSee('name="attachments[]"', false)
+            ->assertSee('multiple', false)
+            ->assertSee('id="logbook-image-lightbox"', false)
             ->assertSee('id="reminder-popup"', false)
             ->assertSee("font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif", false);
     }

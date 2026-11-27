@@ -46,6 +46,10 @@ class StudentLogbookEditControllerTest extends TestCase
             ])
             ->assertOk()
             ->assertSee('data-edit-logbook-form', false)
+            ->assertSee('data-logbook-attachment-input', false)
+            ->assertSee('data-logbook-attachment-preview-section', false)
+            ->assertSee('name="attachments[]"', false)
+            ->assertSee('multiple', false)
             ->assertDontSee('<!DOCTYPE html>', false);
 
         $this->get('/student/logbook/edit/'.$logbook->logbook_id)

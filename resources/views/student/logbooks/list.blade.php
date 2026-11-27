@@ -131,15 +131,21 @@
             ></p>
         </div>
         <div>
-            <label class="mb-1 block text-xs font-semibold text-[#334155]">Upload Attachment (image,
-                PDF or Word, max 10 MB)</label>
+            <label class="mb-1 block text-xs font-semibold text-[#334155]">Attachments (up to 5 images,
+                PDF or Word files, max 10 MB each)</label>
             <input
                 type="file"
-                name="attachment"
+                name="attachments[]"
                 data-ai-file
+                data-logbook-attachment-input
+                multiple
                 accept="image/*,.pdf,.doc,.docx"
                 class="w-full rounded-xl border border-[#CBD3E3] p-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-[#E8EFFF] file:px-3 file:py-2 file:text-sm file:font-bold file:text-[#1F45D6]"
             >
+            <div data-logbook-attachment-preview-section class="mt-2 hidden">
+                <div data-logbook-attachment-previews class="flex flex-wrap gap-2"></div>
+            </div>
+            <p data-logbook-attachment-error class="mt-1 hidden text-xs font-semibold text-rose-600" role="alert"></p>
         </div>
         <div
             id="ai-read-file-box"
@@ -155,7 +161,7 @@
                     data-ai-read-file
                     class="mt-0.5 h-4 w-4"
                 >
-                <span><strong>Let AI Help read this file</strong> (photo or PDF) when it writes the
+                <span><strong>Let AI Help read the first selected file</strong> (photo or PDF) when it writes the
                     draft. The file is sent to Google's Gemini service, so do not use documents with
                     confidential company information.</span>
             </label>

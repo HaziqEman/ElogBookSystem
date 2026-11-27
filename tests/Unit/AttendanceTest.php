@@ -10,6 +10,8 @@ class AttendanceTest extends TestCase
 {
     public function test_it_formats_local_clock_times_and_work_duration(): void
     {
+        $this->travelTo(Carbon::parse('2026-11-17 01:45:00', 'UTC'));
+
         $attendance = new Attendance([
             'check_in' => Carbon::parse('2026-11-17 01:15:00', 'UTC'),
             'check_out' => Carbon::parse('2026-11-17 03:00:00', 'UTC'),
@@ -23,6 +25,9 @@ class AttendanceTest extends TestCase
         $incomplete = new Attendance(['check_in' => Carbon::parse('2026-11-17 01:15:00', 'UTC')]);
         $this->assertNull($incomplete->workedMinutes());
         $this->assertNull($incomplete->workedLabel());
+        $until = Carbon::parse('2026-11-17 01:45:00', 'UTC');
+        $this->assertSame(30, $incomplete->workedMinutes($until));
+        $this->assertSame('0h 30m', $incomplete->workedLabel($until));
     }
 
     public function test_it_formats_day_off_work_mode_and_mc_attachment_details(): void

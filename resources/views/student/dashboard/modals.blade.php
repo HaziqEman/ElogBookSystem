@@ -24,6 +24,26 @@
 </div>
 
 <div
+    id="logbook-image-lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Logbook image preview"
+    tabindex="-1"
+    class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+>
+    <div class="relative flex max-h-full max-w-full flex-col items-center">
+        <button
+            type="button"
+            data-logbook-image-close
+            aria-label="Close image preview"
+            class="absolute -right-2 -top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm text-slate-600 shadow-md transition hover:bg-white hover:text-slate-900 sm:-right-3 sm:-top-3"
+        ><i class="fa-solid fa-xmark"></i></button>
+        <img data-logbook-lightbox-image src="" alt="" class="max-h-[82vh] max-w-[92vw] rounded-xl object-contain shadow-2xl">
+        <p data-logbook-lightbox-caption class="mt-2 max-w-[92vw] truncate rounded-full bg-black/45 px-3 py-1 text-xs text-white"></p>
+    </div>
+</div>
+
+<div
     id="entry-dates"
     data-live
     data-dates="{{ json_encode($entryDates->values()->all()) }}"

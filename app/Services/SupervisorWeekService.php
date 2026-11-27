@@ -23,15 +23,22 @@ class SupervisorWeekService
     public function nextWaitingWeek(Supervisor $supervisor): ?array
     {
         $studentIds = Student::where('supervisor_id', $supervisor->supervisor_id)->pluck('student_id');
+        $students = Student::whereIn('student_id', $studentIds)->get()->keyBy('student_id');
         $submissions = WeekSubmission::whereIn('student_id', $studentIds)
             ->orderBy('sent_at')
             ->orderBy('week_no')
             ->get();
 
         foreach ($submissions as $submission) {
-            $waiting = $this->pending(
-                Logbook::where('student_id', $submission->student_id)->where('week_no', $submission->week_no)
-            )->exists();
+            $student = $students->get($submission->student_id);
+
+            if (! $student) {
+                continue;
+            }
+
+            $planner = new WeekPlanner($student, Carbon::now(Attendance::TIMEZONE));
+            $waiting = $planner->hasStart()
+                && $this->pending($this->weekEntries($student, (int) $submission->week_no, $planner))->exists();
 
             if ($waiting) {
                 return [
@@ -53,16 +60,33 @@ class SupervisorWeekService
         $batch = app(WeekBatchService::class);
         $submissions = WeekSubmission::where('student_id', $student->student_id)->get()->keyBy('week_no');
         $stats = [];
-
-        foreach (Logbook::where('student_id', $student->student_id)
-            ->selectRaw('week_no, supervisor_status, COUNT(*) as c')
-            ->groupBy('week_no', 'supervisor_status')
-            ->get() as $row) {
-            $stats[(int) $row->week_no][$row->supervisor_status ?: Logbook::SUPERVISOR_STATUS_PENDING] = (int) $row->c;
-        }
+        $weekRanges = [];
 
         $total = $planner->hasStart() ? $planner->totalWeeks() : 0;
         $current = $planner->hasStart() ? $planner->currentWeek() : null;
+
+        for ($number = 1; $number <= $total; $number++) {
+            $start = $planner->weekStart($number);
+            $weekRanges[$number] = [$start->toDateString(), $start->copy()->addDays(6)->toDateString()];
+        }
+
+        foreach (Logbook::where('student_id', $student->student_id)
+            ->selectRaw('week_no, activity_date, supervisor_status, COUNT(*) as c')
+            ->groupBy('week_no', 'activity_date', 'supervisor_status')
+            ->get() as $row) {
+            $number = (int) $row->week_no;
+            $activityDate = Carbon::parse($row->activity_date)->toDateString();
+
+            if (! isset($weekRanges[$number])
+                || $activityDate < $weekRanges[$number][0]
+                || $activityDate > $weekRanges[$number][1]) {
+                continue;
+            }
+
+            $status = $row->supervisor_status ?: Logbook::SUPERVISOR_STATUS_PENDING;
+            $stats[$number][$status] = ($stats[$number][$status] ?? 0) + (int) $row->c;
+        }
+
         $chips = [];
 
         for ($number = 1; $number <= $total; $number++) {
@@ -199,7 +223,8 @@ class SupervisorWeekService
         SupervisorWeekReviewRequest $request
     ): array {
         $back = '/supervisor/students/'.$student->student_id.'?week='.$week;
-        $entries = $this->pending(Logbook::where('student_id', $student->student_id)->where('week_no', $week))
+        $planner = new WeekPlanner($student, Carbon::now(Attendance::TIMEZONE));
+        $entries = $this->pending($this->weekEntries($student, $week, $planner))
             ->whereIn('logbook_id', array_keys($data['decision']))
             ->get();
 
@@ -229,7 +254,7 @@ class SupervisorWeekService
         $revisions = 0;
 
         try {
-            DB::transaction(function () use ($entries, $data, $supervisor, $submission, $student, $week, &$validated, &$revisions): void {
+            DB::transaction(function () use ($entries, $data, $supervisor, $submission, $student, $week, $planner, &$validated, &$revisions): void {
                 foreach ($entries as $entry) {
                     $decision = $data['decision'][$entry->logbook_id];
                     $comment = trim((string) ($data['comment'][$entry->logbook_id] ?? ''));
@@ -246,9 +271,7 @@ class SupervisorWeekService
                     }
                 }
 
-                $stillPending = $this->pending(
-                    Logbook::where('student_id', $student->student_id)->where('week_no', $week)
-                )->exists();
+                $stillPending = $this->pending($this->weekEntries($student, $week, $planner))->exists();
                 $submission->update(['reviewed_at' => $stillPending ? null : now()]);
             });
         } catch (\Throwable $e) {
@@ -271,7 +294,7 @@ class SupervisorWeekService
             ->orderBy('week_no')
             ->get()
             ->first(fn ($submission) => $this->pending(
-                Logbook::where('student_id', $student->student_id)->where('week_no', $submission->week_no)
+                $this->weekEntries($student, (int) $submission->week_no, $planner)
             )->exists());
 
         return [
@@ -359,5 +382,23 @@ class SupervisorWeekService
     {
         return $query->where(fn ($builder) => $builder->where('supervisor_status', Logbook::SUPERVISOR_STATUS_PENDING)
             ->orWhereNull('supervisor_status'));
+    }
+
+    /**
+     * The review page shows only entries whose activity dates fall within the selected calendar week.
+     *
+     * @return Builder<Logbook>
+     */
+    private function weekEntries(Student $student, int $week, WeekPlanner $planner): Builder
+    {
+        if (! $planner->hasStart() || $week < 1 || $week > $planner->totalWeeks()) {
+            return Logbook::whereRaw('1 = 0');
+        }
+
+        $start = $planner->weekStart($week);
+
+        return Logbook::where('student_id', $student->student_id)
+            ->where('week_no', $week)
+            ->whereBetween('activity_date', [$start->toDateString(), $start->copy()->addDays(6)->toDateString()]);
     }
 }

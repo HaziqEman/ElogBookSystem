@@ -2,9 +2,10 @@
 
 @section('content')
 <style>
-    .cal-day.is-today { color: #2F5BFF; background: #fff; box-shadow: inset 0 0 0 2px #2F5BFF; }
-    .cal-day.is-sel { color: #fff; background: #2F5BFF; border-color: #2F5BFF; box-shadow: none; }
-    .cal-day.is-sel .cal-dot { background: #fff !important; }
+    .cal-day.is-today { background: #eff6ff; }
+    .cal-day.is-today .cal-date { color: #fff; background: #2F5BFF; }
+    .cal-day.is-sel { background: #eff6ff; border-color: #2F5BFF; box-shadow: inset 0 0 0 1px #2F5BFF; }
+    .cal-day.is-sel .cal-date { color: #fff; background: #2F5BFF; }
 </style>
 
 @php
@@ -43,12 +44,7 @@
     ];
 
     $todayKey = $today->toDateString();
-    $supervisorAssigned = (bool) optional($student)->supervisor_id;
-    $chatHref = $supervisorAssigned ? '/student/messages/supervisor' : '/student/messages';
     $firstName = \Illuminate\Support\Str::words((string) optional($student)->name, 2, '');
-    $aiPct = $aiLimit > 0 ? (int) round($aiLeft / $aiLimit * 100) : 0;
-    $aiColor = $aiLeft <= (int) ceil($aiLimit * 0.2) ? '#C2410C' : '#6D28D9';
-    $card = 'rounded-[22px] border border-[#E3E8F2] bg-white shadow-[0_6px_18px_rgba(15,27,77,0.05)]';
     $firstMondayKey = $planner->hasStart() ? $planner->firstMonday()->toDateString() : '';
     $startKey = $planner->hasStart() ? $planner->start()->toDateString() : '';
     $workingDaysCsv = implode(',', $planner->workingDays());

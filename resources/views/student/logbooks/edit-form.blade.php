@@ -157,10 +157,15 @@
             type="file"
             name="attachments[]"
             data-ai-file
+            data-logbook-attachment-input
             multiple
             accept="image/*,.pdf,.doc,.docx"
             class="w-full rounded-lg border border-slate-200 p-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-blue-700"
         >
+        <div data-logbook-attachment-preview-section class="mt-2 hidden">
+            <div data-logbook-attachment-previews class="flex flex-wrap gap-2"></div>
+        </div>
+        <p data-logbook-attachment-error class="mt-1 hidden text-xs font-semibold text-rose-600" role="alert"></p>
         <p class="mt-1 text-xs text-slate-400">Select up to 5 files to add (10 MB maximum each).
             Existing files will be kept.</p>
     </div>

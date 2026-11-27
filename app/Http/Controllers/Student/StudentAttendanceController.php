@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class StudentAttendanceController extends Controller
@@ -39,11 +40,27 @@ class StudentAttendanceController extends Controller
         return back()->with($ok ? 'success' : 'error', $message);
     }
 
-    public function index(StudentAttendanceService $attendanceService): View
+    public function index(Request $request, StudentAttendanceService $attendanceService): View
     {
         $student = $this->student();
         $today = Carbon::now(Attendance::TIMEZONE);
-        $data = $attendanceService->indexData($student, $today);
+        $allowedWeeks = ['recent'];
+
+        if ($student->internship_start) {
+            $totalWeeks = max(1, (int) ($student->internship_weeks ?: 14));
+            $allowedWeeks = array_merge($allowedWeeks, array_map('strval', range(1, $totalWeeks)));
+        }
+
+        $filters = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:'.$today->toDateString()],
+            'week' => ['nullable', Rule::in($allowedWeeks)],
+        ]);
+        $data = $attendanceService->indexData(
+            $student,
+            $today,
+            $filters['date'] ?? null,
+            $filters['week'] ?? null
+        );
 
         return view('student.attendance', array_merge(['student' => $student, 'today' => $today], $data));
     }

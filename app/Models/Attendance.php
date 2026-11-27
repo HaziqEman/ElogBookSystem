@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -32,6 +33,8 @@ class Attendance extends Model
     public const STATUS_PRESENT = 'Present';
 
     public const STATUS_LEAVE = 'Leave';
+
+    public const STATUS_MISSING = 'Missing';
 
     public const DAY_OFF_TYPES = ['MC', 'Leave', 'Public holiday'];
 
@@ -91,18 +94,20 @@ class Attendance extends Model
         return $this->check_out ? $this->check_out->copy()->timezone(self::TIMEZONE)->format('H:i') : null;
     }
 
-    public function workedMinutes(): ?int
+    public function workedMinutes(?Carbon $until = null): ?int
     {
-        if (! $this->check_in || ! $this->check_out) {
+        if (! $this->check_in) {
             return null;
         }
 
-        return (int) floor(abs($this->check_in->diffInMinutes($this->check_out)));
+        $end = $this->check_out ?? $until;
+
+        return $end ? (int) floor(abs($this->check_in->diffInMinutes($end))) : null;
     }
 
-    public function workedLabel(): ?string
+    public function workedLabel(?Carbon $until = null): ?string
     {
-        $minutes = $this->workedMinutes();
+        $minutes = $this->workedMinutes($until);
 
         if ($minutes === null) {
             return null;

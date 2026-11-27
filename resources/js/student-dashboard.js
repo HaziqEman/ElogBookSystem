@@ -280,7 +280,10 @@ document.addEventListener('keydown', function (event) {
     });
 
     document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape') closeEditModal();
+        var imageLightbox = byId('logbook-image-lightbox');
+        if (event.key === 'Escape' && (!imageLightbox || imageLightbox.classList.contains('hidden'))) {
+            closeEditModal();
+        }
     });
 
     // After the new entry is saved: clear the form and close the panel.
@@ -357,6 +360,164 @@ document.addEventListener('keydown', function (event) {
             image.src = url;
         });
     }
+
+    function releaseLogbookAttachmentPreviews(input) {
+        (input.__logbookPendingAttachments || []).forEach(function (item) {
+            if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        });
+        input.__logbookPendingAttachments = [];
+    }
+
+    function renderLogbookAttachmentPreviews(input) {
+        var form = input.closest('form');
+        var section = form && form.querySelector('[data-logbook-attachment-preview-section]');
+        var previewList = form && form.querySelector('[data-logbook-attachment-previews]');
+        var error = form && form.querySelector('[data-logbook-attachment-error]');
+        var pending = input.__logbookPendingAttachments || [];
+
+        if (!section || !previewList) return;
+
+        section.classList.toggle('hidden', pending.length === 0);
+        if (error) {
+            error.textContent = '';
+            error.classList.add('hidden');
+        }
+
+        previewList.innerHTML = pending.map(function (item, index) {
+            var fileName = popupEscape(item.file.name);
+            var preview = item.previewUrl
+                ? '<button type="button" data-logbook-image-preview="' + popupEscape(item.previewUrl) +
+                    '" data-logbook-image-name="' + fileName + '" aria-label="Preview ' + fileName +
+                    '" class="block h-full w-full cursor-zoom-in bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"><img src="' +
+                    popupEscape(item.previewUrl) + '" alt="Selected image: ' + fileName +
+                    '" class="h-full w-full object-contain p-1"></button>'
+                : '<div class="flex h-full flex-col items-center justify-center gap-2 bg-slate-50 p-2 text-slate-500"><i class="fa-solid ' +
+                    (item.file.type === 'application/pdf' ? 'fa-file-pdf text-rose-500' : 'fa-file-lines text-blue-600') +
+                    ' text-2xl"></i><span class="max-w-full truncate text-xs font-semibold">' + fileName + '</span></div>';
+
+            return '<div class="relative h-32 w-44 overflow-hidden rounded-lg border border-blue-200 bg-white ring-1 ring-blue-50 sm:h-36 sm:w-48">' +
+                preview +
+                '<span class="absolute inset-x-0 bottom-0 truncate bg-slate-900/65 px-1.5 py-1 text-[10px] text-white">' + fileName + '</span>' +
+                '<span class="absolute left-1 top-1 rounded bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white">Pending</span>' +
+                '<button type="button" data-remove-logbook-attachment="' + index + '" aria-label="Remove ' + fileName +
+                ' from pending uploads" title="Remove file" class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/80 text-[9px] text-slate-500 shadow-sm transition hover:bg-white hover:text-rose-500"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>';
+        }).join('');
+    }
+
+    var logbookImageReturnFocus = null;
+    var logbookImageBodyWasLocked = false;
+
+    function closeLogbookImagePreview() {
+        var lightbox = byId('logbook-image-lightbox');
+        if (!lightbox || lightbox.classList.contains('hidden')) return;
+
+        lightbox.classList.add('hidden');
+        lightbox.classList.remove('flex');
+        lightbox.querySelector('[data-logbook-lightbox-image]').src = '';
+        lightbox.querySelector('[data-logbook-lightbox-caption]').textContent = '';
+        if (!logbookImageBodyWasLocked) document.body.classList.remove('overflow-hidden');
+        if (logbookImageReturnFocus && document.body.contains(logbookImageReturnFocus)) logbookImageReturnFocus.focus();
+        logbookImageReturnFocus = null;
+    }
+
+    function openLogbookImagePreview(button) {
+        var lightbox = byId('logbook-image-lightbox');
+        if (!lightbox) return;
+
+        lightbox.querySelector('[data-logbook-lightbox-image]').src = button.getAttribute('data-logbook-image-preview');
+        lightbox.querySelector('[data-logbook-lightbox-image]').alt = button.getAttribute('data-logbook-image-name');
+        lightbox.querySelector('[data-logbook-lightbox-caption]').textContent = button.getAttribute('data-logbook-image-name');
+        logbookImageReturnFocus = button;
+        logbookImageBodyWasLocked = document.body.classList.contains('overflow-hidden');
+        lightbox.classList.remove('hidden');
+        lightbox.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+        lightbox.focus();
+    }
+
+    document.addEventListener('click', function (event) {
+        var preview = event.target.closest ? event.target.closest('[data-logbook-image-preview]') : null;
+        if (preview) {
+            event.preventDefault();
+            openLogbookImagePreview(preview);
+            return;
+        }
+
+        var lightbox = byId('logbook-image-lightbox');
+        if (lightbox && !lightbox.classList.contains('hidden') &&
+            (event.target === lightbox || (event.target.closest && event.target.closest('[data-logbook-image-close]')))) {
+            closeLogbookImagePreview();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        var lightbox = byId('logbook-image-lightbox');
+        if (event.key === 'Escape' && lightbox && !lightbox.classList.contains('hidden')) {
+            closeLogbookImagePreview();
+        }
+    });
+
+    document.addEventListener('change', function (event) {
+        var input = event.target.closest ? event.target.closest('[data-logbook-attachment-input]') : null;
+        if (!input) return;
+
+        releaseLogbookAttachmentPreviews(input);
+        input.__logbookPendingAttachments = Array.prototype.slice.call(input.files || []).map(function (file) {
+            return {
+                file: file,
+                previewUrl: file.type.indexOf('image/') === 0 && window.URL && URL.createObjectURL
+                    ? URL.createObjectURL(file)
+                    : null
+            };
+        });
+        renderLogbookAttachmentPreviews(input);
+    });
+
+    document.addEventListener('async:success', function (event) {
+        var source = event.target;
+        if (!source || !source.querySelectorAll) return;
+
+        source.querySelectorAll('[data-logbook-attachment-input]').forEach(function (input) {
+            releaseLogbookAttachmentPreviews(input);
+            renderLogbookAttachmentPreviews(input);
+        });
+    });
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest ? event.target.closest('[data-remove-logbook-attachment]') : null;
+        if (!button) return;
+
+        event.preventDefault();
+        var form = button.closest('form');
+        var input = form && form.querySelector('[data-logbook-attachment-input]');
+        if (!input) return;
+
+        var pending = input.__logbookPendingAttachments || [];
+        var index = parseInt(button.getAttribute('data-remove-logbook-attachment'), 10);
+        if (!pending[index]) return;
+
+        if (pending.length > 1) {
+            if (typeof DataTransfer === 'undefined') {
+                var error = form.querySelector('[data-logbook-attachment-error]');
+                if (error) {
+                    error.textContent = 'Your browser cannot remove one file from the selection. Please use a recent browser.';
+                    error.classList.remove('hidden');
+                }
+                return;
+            }
+
+            var transfer = new DataTransfer();
+            pending.forEach(function (item, itemIndex) {
+                if (itemIndex !== index) transfer.items.add(item.file);
+            });
+            input.files = transfer.files;
+        } else {
+            input.value = '';
+        }
+
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
 
     document.addEventListener('change', function (event) {
         var fileInput = event.target.closest ? event.target.closest('[data-ai-file]') : null;
@@ -637,19 +798,187 @@ document.addEventListener('keydown', function (event) {
         });
     }
 
+    var dashboardDayPopup = null;
+    var popupReturnFocus = null;
+    var popupBodyWasLocked = false;
+
+    function popupEscape(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[character];
+        });
+    }
+
+    function closeDashboardDay() {
+        dashboardDayPopup = byId('dashboard-calendar-popup');
+        if (!dashboardDayPopup || dashboardDayPopup.classList.contains('hidden')) return;
+
+        dashboardDayPopup.classList.add('hidden');
+        dashboardDayPopup.classList.remove('flex');
+        if (!popupBodyWasLocked) document.body.classList.remove('overflow-hidden');
+        if (popupReturnFocus && document.body.contains(popupReturnFocus)) popupReturnFocus.focus();
+        popupReturnFocus = null;
+    }
+
+    function openDashboardDay(details, trigger) {
+        dashboardDayPopup = byId('dashboard-calendar-popup');
+        if (!dashboardDayPopup || !details) return;
+
+        var title = dashboardDayPopup.querySelector('[data-popup-title]');
+        var subtitle = dashboardDayPopup.querySelector('[data-popup-subtitle]');
+        var summary = details.summary || {};
+        var attendance = details.attendance;
+        var note = details.note;
+        var tasks = details.tasks || [];
+        var logs = details.logs || [];
+
+        title.textContent = details.label || 'Day details';
+        subtitle.textContent = (details.weekday || '') + (details.week ? ' · Week ' + details.week : '');
+        dashboardDayPopup.querySelector('[data-popup-logs]').textContent = summary.logs || 0;
+        dashboardDayPopup.querySelector('[data-popup-attendance-count]').textContent = summary.attendance || 0;
+        dashboardDayPopup.querySelector('[data-popup-leave]').textContent = summary.leave || 0;
+        dashboardDayPopup.querySelector('[data-popup-tasks-count]').textContent = summary.tasks || 0;
+
+        var map = dashboardDayPopup.querySelector('[data-popup-map]');
+        var mapLink = dashboardDayPopup.querySelector('[data-popup-map-link]');
+        var attendanceStatus = dashboardDayPopup.querySelector('[data-popup-attendance-status]');
+        var checkIn = dashboardDayPopup.querySelector('[data-popup-check-in]');
+        var checkOut = dashboardDayPopup.querySelector('[data-popup-check-out]');
+        var workMode = dashboardDayPopup.querySelector('[data-popup-work-mode]');
+        var locationName = dashboardDayPopup.querySelector('[data-popup-location-name]');
+        attendanceStatus.classList.remove('bg-emerald-100', 'text-emerald-700', 'bg-amber-100', 'text-amber-700', 'bg-slate-100', 'text-slate-700');
+        if (attendance) {
+            attendanceStatus.textContent = attendance.status || 'Attendance recorded';
+            if (attendance.status === 'Present') {
+                attendanceStatus.classList.add('bg-emerald-100', 'text-emerald-700');
+            } else {
+                attendanceStatus.classList.add('bg-amber-100', 'text-amber-700');
+            }
+            checkIn.textContent = attendance.check_in || '--:--';
+            checkOut.textContent = attendance.check_out || '--:--';
+            workMode.innerHTML = attendance.work_mode
+                ? '<i class="fa-solid ' + (attendance.work_mode.toLowerCase().indexOf('home') !== -1 ? 'fa-house' : 'fa-building') +
+                    ' mr-1"></i>' + popupEscape(attendance.work_mode)
+                : '';
+            workMode.classList.toggle('hidden', !attendance.work_mode);
+            locationName.textContent = attendance.location_name
+                || (attendance.location_status === 'shared' ? 'Location name unavailable' : 'Location was not shared');
+            if (attendance.map_embed) {
+                map.src = attendance.map_embed;
+                map.classList.remove('hidden');
+            } else {
+                map.removeAttribute('src');
+                map.classList.add('hidden');
+            }
+            if (attendance.map_link) {
+                mapLink.href = attendance.map_link;
+                mapLink.classList.remove('hidden');
+            } else {
+                mapLink.removeAttribute('href');
+                mapLink.classList.add('hidden');
+            }
+        } else {
+            attendanceStatus.textContent = 'No attendance';
+            attendanceStatus.classList.add('bg-slate-100', 'text-slate-700');
+            checkIn.textContent = '--:--';
+            checkOut.textContent = '--:--';
+            workMode.innerHTML = '';
+            workMode.classList.add('hidden');
+            locationName.textContent = 'No location recorded for this day.';
+            map.removeAttribute('src');
+            map.classList.add('hidden');
+            mapLink.removeAttribute('href');
+            mapLink.classList.add('hidden');
+        }
+
+        var noteText = dashboardDayPopup.querySelector('[data-popup-note]');
+        var noteImages = dashboardDayPopup.querySelector('[data-popup-note-images]');
+        noteText.textContent = note && note.body ? note.body : 'No daily note saved for this day.';
+        noteImages.innerHTML = note && note.images && note.images.length
+            ? note.images.map(function (image) {
+                return '<img src="' + popupEscape(image.url) + '" alt="' + popupEscape(image.name) + '" loading="lazy" class="h-14 w-full rounded-lg object-cover">';
+            }).join('')
+            : '';
+
+        var completedTasks = tasks.filter(function (task) { return task.done; }).length;
+        dashboardDayPopup.querySelector('[data-popup-task-progress]').textContent = completedTasks + ' / ' + tasks.length + ' done';
+        dashboardDayPopup.querySelector('[data-popup-tasks]').innerHTML = tasks.length
+            ? tasks.map(function (task) {
+                return '<div class="flex items-center gap-2 rounded-lg bg-white px-2 py-1.5 text-xs ' +
+                    (task.done ? 'text-slate-400 line-through' : 'text-[#334155]') +
+                    '"><i class="fa-solid ' + (task.done ? 'fa-square-check text-blue-600' : 'fa-square text-slate-300') +
+                    '"></i><span class="min-w-0 flex-1 truncate">' + popupEscape(task.title) + '</span>' +
+                    (task.done ? '<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 no-underline">Completed</span>' : '') +
+                    '</div>';
+            }).join('')
+            : '<p class="text-xs text-[#64748B]">No tasks scheduled for this day.</p>';
+
+        var logbookList = dashboardDayPopup.querySelector('[data-popup-logbook]');
+        var logbookLink = dashboardDayPopup.querySelector('[data-popup-logbook-link]');
+        if (logs.length) {
+            logbookLink.href = logs[0].url || '/student/logbooks';
+            logbookLink.classList.remove('hidden');
+            logbookList.innerHTML = logs.slice(0, 2).map(function (log) {
+                var preview = log.thumbnail
+                    ? '<img src="' + popupEscape(log.thumbnail) + '" alt="" loading="lazy" class="h-16 w-20 flex-none rounded-xl object-cover">'
+                    : '<span class="flex h-16 w-20 flex-none items-center justify-center rounded-xl bg-blue-100 text-blue-600"><i class="fa-solid fa-book-open text-xl"></i></span>';
+                return '<a href="' + popupEscape(log.url || '/student/logbooks') + '" class="flex min-w-0 items-center gap-3 rounded-xl border border-[#E8EDF6] bg-white p-2">' +
+                    preview + '<span class="min-w-0 flex-1"><span class="block truncate text-xs font-extrabold text-[#1E293B]">' +
+                    popupEscape(log.title) + '</span><span class="mt-1 block line-clamp-2 text-[11px] leading-4 text-[#64748B]">' +
+                    popupEscape(log.description || 'Logbook entry submitted.') + '</span><span class="mt-1 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">' +
+                    popupEscape(log.status || 'Submitted') + '</span></span></a>';
+            }).join('');
+        } else {
+            logbookLink.classList.add('hidden');
+            logbookLink.removeAttribute('href');
+            logbookList.innerHTML = '<p class="rounded-xl bg-white px-3 py-2 text-xs text-[#64748B]">No logbook entry recorded for this day.</p>';
+        }
+
+        dashboardDayPopup.querySelector('[data-popup-full-calendar]').href =
+            '/student/calendar?month=' + encodeURIComponent((details.date || '').slice(0, 7)) +
+            '&selected=' + encodeURIComponent(details.date || '');
+
+        popupReturnFocus = trigger;
+        popupBodyWasLocked = document.body.classList.contains('overflow-hidden');
+        dashboardDayPopup.classList.remove('hidden');
+        dashboardDayPopup.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+        dashboardDayPopup.querySelector('[data-popup-close]').focus();
+    }
+
     document.addEventListener('click', function (event) {
         var target = event.target;
         if (!target || !target.closest) return;
 
         var day = target.closest('[data-cal-day]');
         if (day) {
-            applyCalendar(day.getAttribute('data-cal-day'));
+            var selectedDate = day.getAttribute('data-cal-day');
+            applyCalendar(selectedDate);
             applyTodoTab('day');
+            var dayPanel = document.querySelector('[data-cal-panel="' + selectedDate + '"]');
+            if (dayPanel) openDashboardDay(JSON.parse(dayPanel.getAttribute('data-day-details') || '{}'), day);
             return;
+        }
+
+        var activeDayPopup = byId('dashboard-calendar-popup');
+        if (activeDayPopup && !activeDayPopup.classList.contains('hidden')) {
+            if (target === activeDayPopup || target.closest('[data-popup-close]')) {
+                closeDashboardDay();
+                return;
+            }
         }
 
         var tab = target.closest('[data-todo-tab]');
         if (tab) applyTodoTab(tab.getAttribute('data-todo-tab'));
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') closeDashboardDay();
     });
 
     document.addEventListener('async:swapped', function () {

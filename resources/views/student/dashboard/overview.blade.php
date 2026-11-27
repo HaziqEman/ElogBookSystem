@@ -189,9 +189,9 @@
                 class="fa-solid fa-chevron-right text-xs text-[#CBD3E3] transition group-hover:text-[#047857]"></i>
         </a>
 
-        {{-- Open tasks (goes to the to-do list lower on this page) --}}
+        {{-- Open tasks (the full task list is available from the calendar) --}}
         <a
-            href="#todo-list"
+            href="/student/calendar"
             class="{{ $statCard }} {{ $statOverdue > 0 ? 'border-[#FBCFCB] hover:border-[#F3A5B5]' : 'hover:border-[#FDE68A]' }}"
         >
             <span
@@ -252,94 +252,5 @@
         </a>
     </div>
 
-    {{-- ATTENDANCE | QUICK ACTIONS + AI --}}
-    <section class="flex flex-wrap items-stretch gap-5">
-        <div class="flex min-w-0 flex-[1.3_1_420px] flex-col gap-4 [&>#attendance-card]:flex-1">
-            @if ($extrasReady)
-                @include('student.attendance.card')
-            @else
-                <div
-                    class="rounded-[22px] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
-                    Attendance and to-do tables are not set up yet. Ask the administrator to run the
-                    database update.
-                </div>
-            @endif
-        </div>
-
-        <div class="flex min-w-0 flex-[1_1_360px] flex-col gap-4">
-            <div class="{{ $card }} p-3 sm:p-5">
-                <h2 class="mb-2.5 text-base font-extrabold sm:mb-3.5">Quick actions</h2>
-                <div class="grid grid-cols-2 gap-2 sm:gap-2.5">
-                    <a
-                        href="#new-entry"
-                        data-write-date="{{ $todayKey }}"
-                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#9DB4FF] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
-                    >
-                        <span
-                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#2F5BFF] text-white sm:h-10 sm:w-10"
-                        ><i class="fa-solid fa-plus"></i></span>
-                        <span class="text-xs font-bold leading-tight sm:text-[13px]">New logbook entry</span>
-                    </a>
-                    <a
-                        href="/student/calendar"
-                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#8FD6B3] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
-                    >
-                        <span
-                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#047857] text-white sm:h-10 sm:w-10"
-                        ><i class="fa-solid fa-calendar-days"></i></span>
-                        <span class="text-xs font-bold leading-tight sm:text-[13px]">View calendar</span>
-                    </a>
-                    <a
-                        href="#new-entry"
-                        data-focus="attachment"
-                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#B9A7F5] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
-                    >
-                        <span
-                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#6D28D9] text-white sm:h-10 sm:w-10"
-                        ><i class="fa-solid fa-arrow-up-from-bracket"></i></span>
-                        <span class="text-xs font-bold leading-tight sm:text-[13px]">Upload files</span>
-                    </a>
-                    <a
-                        href="{{ $chatHref }}"
-                        class="flex items-center gap-2 rounded-2xl border border-[#E3E8F2] bg-[#F7F9FD] p-2.5 transition hover:border-[#F3A5B5] hover:bg-white hover:shadow-md sm:gap-3 sm:p-3"
-                    >
-                        <span
-                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#BE123C] text-white sm:h-10 sm:w-10"
-                        ><i class="fa-solid fa-comment"></i></span>
-                        <span class="text-xs font-bold leading-tight sm:text-[13px]">Chat with
-                            supervisor</span>
-                    </a>
-                </div>
-            </div>
-
-            @if ($aiReady)
-                <div
-                    class="flex flex-col gap-2 rounded-[22px] border border-[#E3E8F2] bg-white px-3 py-3 shadow-[0_6px_18px_rgba(15,27,77,0.05)] sm:px-5 sm:py-4">
-                    <div class="flex items-center gap-2.5">
-                        <span
-                            class="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#F0EAFF] text-[#6D28D9]"
-                        ><i class="fa-solid fa-wand-magic-sparkles text-sm"></i></span>
-                        <div class="min-w-0 flex-1 text-sm font-extrabold">AI Help &middot; Gemini
-                        </div>
-                        <div class="whitespace-nowrap text-[13px] font-bold text-[#334155]"><span
-                                id="ai-left"
-                                data-limit="{{ $aiLimit }}"
-                                class="text-base font-extrabold"
-                                style="color:{{ $aiColor }}"
-                            >{{ $aiLeft }}</span> / {{ $aiLimit }} left</div>
-                    </div>
-                    <div class="h-2 overflow-hidden rounded-[5px] bg-[#EEE9FB]">
-                        <div
-                            id="ai-bar"
-                            class="h-full rounded-[5px]"
-                            style="width:{{ $aiPct }}%;background:{{ $aiColor }}"
-                        ></div>
-                    </div>
-                    <div class="text-xs text-[#5B6478]">Resets every day at midnight</div>
-                </div>
-            @endif
-        </div>
-    </section>
-
-    {{-- DEADLINES + CALENDAR | TO-DO --}}
+    {{-- Dashboard workspace --}}
     @include('student.dashboard.planner-card')

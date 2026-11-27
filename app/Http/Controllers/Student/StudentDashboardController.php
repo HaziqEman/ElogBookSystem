@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Attendance;
+use App\Models\CalendarDailyNote;
 use App\Models\Feedback;
 use App\Models\Logbook;
 use App\Models\Message;
@@ -169,13 +170,16 @@ class StudentDashboardController extends Controller
         $gridStart = $monthStart->copy()->startOfWeek(Carbon::MONDAY);
         $gridEnd = $monthStart->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
 
-        $gridLogs = Logbook::where('student_id', $student->student_id)
+        $gridLogs = Logbook::with('attachments')
+            ->where('student_id', $student->student_id)
             ->whereBetween('activity_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
             ->orderBy('logbook_id')
-            ->get(['logbook_id', 'activity_date', 'description'])
+            ->get(['logbook_id', 'activity_date', 'week_no', 'title', 'description', 'status', 'supervisor_status'])
             ->groupBy(fn ($log) => Carbon::parse($log->activity_date)->toDateString());
 
         $gridTodos = collect();
+        $gridAttendance = collect();
+        $gridNotes = collect();
 
         if ($extrasReady) {
             $gridTodos = Todo::with('supervisor')
@@ -185,14 +189,44 @@ class StudentDashboardController extends Controller
                 ->orderBy('todo_id')
                 ->get()
                 ->groupBy(fn ($todo) => $todo->due_date->toDateString());
+
+            $gridAttendance = Attendance::where('student_id', $student->student_id)
+                ->whereBetween('attendance_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
+                ->get()
+                ->keyBy(fn ($record) => $record->attendance_date->toDateString());
+        }
+
+        if (Schema::hasTable('calendar_daily_notes')) {
+            $gridNotes = CalendarDailyNote::with('images')
+                ->where('student_id', $student->student_id)
+                ->whereBetween('note_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
+                ->get()
+                ->keyBy(fn ($note) => $note->note_date->toDateString());
         }
 
         $cells = [];
         $agenda = [];
+        $dayDetails = [];
 
         for ($cursor = $gridStart->copy(); $cursor->lte($gridEnd); $cursor->addDay()) {
             $key = $cursor->toDateString();
             $inMonth = $cursor->month === $monthStart->month;
+            $dayAttendance = $gridAttendance->get($key);
+            $dayNote = $gridNotes->get($key);
+            $dayLogs = $gridLogs->get($key, collect());
+            $dayTodos = $gridTodos->get($key, collect());
+            $logbookItems = $dayLogs->map(function (Logbook $log) {
+                $preview = $log->attachments->first(fn (Attachment $attachment) => $attachment->thumbnailUrl());
+
+                return [
+                    'title' => $log->title ?: 'Week '.$log->week_no,
+                    'week' => $log->week_no,
+                    'description' => Str::limit(trim((string) $log->description), 180),
+                    'status' => $log->supervisor_status ?: ($log->status ?: 'Submitted'),
+                    'thumbnail' => $preview?->thumbnailUrl(),
+                    'url' => '/student/logbooks?week='.$log->week_no,
+                ];
+            })->values()->all();
 
             $cells[] = [
                 'key' => $key,
@@ -202,6 +236,7 @@ class StudentDashboardController extends Controller
                 'is_today' => $key === $todayKey,
                 'has_log' => $gridLogs->has($key),
                 'has_due' => $gridTodos->has($key),
+                'has_note' => (bool) ($dayNote && (filled($dayNote->body) || $dayNote->images->isNotEmpty())),
             ];
 
             if (! $inMonth) {
@@ -231,7 +266,7 @@ class StudentDashboardController extends Controller
                 }
             }
 
-            foreach ($gridLogs->get($key, collect()) as $log) {
+            foreach ($dayLogs as $log) {
                 $items[] = [
                     'type' => 'log',
                     'title' => 'Logbook entry',
@@ -240,7 +275,7 @@ class StudentDashboardController extends Controller
                 ];
             }
 
-            foreach ($gridTodos->get($key, collect()) as $todo) {
+            foreach ($dayTodos as $todo) {
                 $items[] = [
                     'type' => 'due',
                     'title' => $todo->title,
@@ -249,7 +284,65 @@ class StudentDashboardController extends Controller
                 ];
             }
 
+            if ($dayAttendance) {
+                $items[] = [
+                    'type' => $dayAttendance->isDayOff() ? 'leave' : 'attendance',
+                    'title' => $dayAttendance->isDayOff() ? $dayAttendance->dayOffTitle() : 'Present',
+                    'meta' => $dayAttendance->workModeLabel() ?: '',
+                    'action' => null,
+                ];
+            }
+
+            if ($dayNote && (filled($dayNote->body) || $dayNote->images->isNotEmpty())) {
+                $items[] = [
+                    'type' => 'note',
+                    'title' => 'Daily note',
+                    'meta' => 'Note saved for this day',
+                    'action' => null,
+                ];
+            }
+
             $agenda[$key] = $items;
+
+            if ($inMonth) {
+                $dayDetails[$key] = [
+                    'date' => $key,
+                    'label' => $cursor->format('j F Y'),
+                    'weekday' => $cursor->format('l'),
+                    'week' => $logbookItems[0]['week'] ?? null,
+                    'summary' => [
+                        'logs' => count($logbookItems),
+                        'attendance' => $dayAttendance && ! $dayAttendance->isDayOff() ? 1 : 0,
+                        'leave' => $dayAttendance && $dayAttendance->isDayOff() ? 1 : 0,
+                        'tasks' => $dayTodos->count(),
+                    ],
+                    'attendance' => $dayAttendance ? [
+                        'status' => $dayAttendance->isDayOff() ? $dayAttendance->dayOffTitle() : 'Present',
+                        'check_in' => $dayAttendance->checkInLocal(),
+                        'check_out' => $dayAttendance->checkOutLocal(),
+                        'worked' => $dayAttendance->workedLabel(),
+                        'work_mode' => $dayAttendance->workModeLabel(),
+                        'location_name' => $dayAttendance->location_name,
+                        'location_status' => $dayAttendance->location_status,
+                        'latitude' => $dayAttendance->latitude,
+                        'longitude' => $dayAttendance->longitude,
+                        'map_embed' => $dayAttendance->mapEmbedUrl(),
+                        'map_link' => $dayAttendance->mapLink(),
+                    ] : null,
+                    'note' => $dayNote ? [
+                        'body' => $dayNote->body ?: '',
+                        'images' => $dayNote->images->map(fn ($image) => [
+                            'url' => $image->url,
+                            'name' => $image->file_name,
+                        ])->values()->all(),
+                    ] : null,
+                    'tasks' => $dayTodos->map(fn ($todo) => [
+                        'title' => $todo->title,
+                        'done' => (bool) $todo->is_done,
+                    ])->values()->all(),
+                    'logs' => $logbookItems,
+                ];
+            }
         }
 
         $calendar = [
@@ -258,6 +351,7 @@ class StudentDashboardController extends Controller
             'next' => $monthStart->copy()->addMonthNoOverflow()->format('Y-m'),
             'cells' => $cells,
             'agenda' => $agenda,
+            'day_details' => $dayDetails,
         ];
 
         // Upcoming deadlines: open tasks that are still ahead, plus the weekly logbook dates.
@@ -319,16 +413,33 @@ class StudentDashboardController extends Controller
             ->values()
             ->all();
 
-        // Daily AI draft allowance.
-        $aiLimit = max(1, (int) config('aihelp.daily_limit', 10));
-        $aiReady = Schema::hasTable('ai_help_usages');
-        $aiUsed = $aiReady
-            ? (int) DB::table('ai_help_usages')
-                ->where('student_id', $student->student_id)
-                ->where('used_on', $todayKey)
-                ->value('used_count')
-            : 0;
-        $aiLeft = max($aiLimit - $aiUsed, 0);
+        $recentActivities = Logbook::where('student_id', $student->student_id)
+            ->orderByDesc('updated_at')
+            ->take(4)
+            ->get(['week_no', 'updated_at'])
+            ->map(fn (Logbook $logbook) => [
+                'label' => 'Submitted logbook entry for Week '.$logbook->week_no,
+                'date' => $logbook->updated_at,
+                'icon' => 'fa-book-open',
+                'tone' => 'bg-[#D1FAE5] text-[#047857]',
+                'href' => '/student/logbooks',
+            ]);
+
+        if ($attendance && $attendance->check_in) {
+            $recentActivities->push([
+                'label' => 'Clocked in'.($attendance->workModeLabel() ? ' · '.$attendance->workModeLabel() : ''),
+                'date' => $attendance->check_in,
+                'icon' => 'fa-clock',
+                'tone' => 'bg-[#E8EFFF] text-[#2F5BFF]',
+                'href' => '/student/attendance',
+            ]);
+        }
+
+        $recentActivities = $recentActivities
+            ->sortByDesc('date')
+            ->take(4)
+            ->values();
+
         $universities = $this->visibleUniversitiesFor($student);
 
         return view('student.dashboard', compact(
@@ -356,10 +467,8 @@ class StudentDashboardController extends Controller
             'overdueCount',
             'upcomingCount',
             'deadlines',
+            'recentActivities',
             'calendar',
-            'aiReady',
-            'aiLimit',
-            'aiLeft'
         ));
     }
 
